@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Python Gym</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="path-panel">
+        <div class="brand">
+          <span class="brand-mark">PY</span>
+          <div>
+            <h1>Python Gym</h1>
+            <p id="course-count">Loading</p>
+          </div>
+        </div>
+        <div id="level-tabs" class="level-tabs"></div>
+        <div id="topic-list" class="topic-list"></div>
+      </aside>
+
+      <section class="work-panel">
+        <header class="topbar">
+          <div>
+            <div class="eyebrow" id="exercise-level">Foundations</div>
+            <h2 id="exercise-title">Loading exercise</h2>
+          </div>
+          <div class="top-actions">
+            <button id="shuffle-btn" class="icon-btn" title="Generate another exercise">Next</button>
+            <button id="reset-btn" class="icon-btn subtle" title="Reset local progress">Reset</button>
+          </div>
+        </header>
+
+        <section class="lesson-band">
+          <p id="exercise-concept"></p>
+        </section>
+
+        <section class="prompt-band">
+          <p id="exercise-prompt"></p>
+          <pre id="exercise-code" class="code-block hidden"></pre>
+        </section>
+
+        <section id="answer-zone" class="answer-zone"></section>
+
+        <div class="run-row">
+          <button id="check-btn" class="check-btn" title="Check answer">Check</button>
+          <button id="new-btn" class="next-btn" title="Generate another exercise">New Variant</button>
+          <span id="save-state" class="save-state">Ready</span>
+        </div>
+      </section>
+
+      <aside class="feedback-panel">
+        <section class="score-strip">
+          <div>
+            <span>Total</span>
+            <strong id="total-count">0</strong>
+          </div>
+          <div>
+            <span>Correct</span>
+            <strong id="correct-count">0</strong>
+          </div>
+          <div>
+            <span>Streak</span>
+            <strong id="streak-count">0</strong>
+          </div>
+        </section>
+
+        <section class="feedback-box" id="feedback-box">
+          <h3>Feedback</h3>
+          <p id="feedback-message">Generate an exercise to begin.</p>
+          <div id="test-details" class="test-details"></div>
+        </section>
+
+        <section class="mastery-box">
+          <h3>Topic Mastery</h3>
+          <div id="mastery-list" class="mastery-list"></div>
+        </section>
+      </aside>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
+

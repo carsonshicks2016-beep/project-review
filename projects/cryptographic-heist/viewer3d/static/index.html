@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cryptographic Heist Engine - Cinematic Viewer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="viewer-shell">
+      <!-- 3D Scene Container -->
+      <section class="stage">
+        <canvas id="scene" data-fallback-renderer="2d"></canvas>
+      </section>
+
+      <!-- Glassmorphism Top HUD -->
+      <header class="top-hud">
+        <div class="hud-left">
+          <h1>NIGHT CHASE <span class="subtitle">| The Cryptographic Heist Engine</span></h1>
+          <p id="status">No replay loaded</p>
+        </div>
+        <div class="hud-controls">
+          <select id="replay-select" title="Replay"></select>
+          <button id="file-replay" class="btn-glow" title="Load local JSONL">File</button>
+          <input id="file-input" type="file" accept=".jsonl,.json" />
+          <button id="audio-toggle" class="btn-glow" title="Toggle procedural audio">Audio Off</button>
+        </div>
+      </header>
+
+      <!-- Glassmorphism Bottom Dashboard -->
+      <section class="dashboard">
+        
+        <!-- Left Zone: Info Warfare Feed -->
+        <div class="panel info-warfare-zone">
+          <div class="panel-head">
+            <span>RADIO TRANSMISSIONS LOG</span>
+            <strong id="radio-count">0</strong>
+          </div>
+          <div id="radio" class="radio-log"></div>
+          
+          <div class="panel-head">
+            <span>SCANNER PREDICTIONS</span>
+          </div>
+          <div id="predictions" class="prediction-grid"></div>
+
+          <div class="panel-head mt-auto">
+            <span>SCANNER CONFIDENCE</span>
+            <strong id="confidence-label">0%</strong>
+          </div>
+          <div class="confidence-track">
+            <div id="confidence-fill"></div>
+          </div>
+          <div id="soundtrack-label" class="soundtrack">silent</div>
+        </div>
+
+        <!-- Center Zone: Cinematic Timeline -->
+        <div class="panel timeline-zone">
+          <div class="panel-head center">
+            <button id="play-toggle" class="btn-icon" title="Play or pause">⏸ PLAY</button>
+            <strong id="sim-stats">00:00</strong>
+          </div>
+          
+          <div class="timeline-container">
+            <canvas id="timeline-canvas"></canvas>
+            <input id="scrub" type="range" min="0" max="0" value="0" />
+          </div>
+        </div>
+
+        <!-- Right Zone: Vehicle Telemetry -->
+        <div class="panel telemetry-zone">
+          <div class="panel-head">
+            <span>UNIT TELEMETRY</span>
+            <select id="agent-select" class="inline-select"></select>
+          </div>
+          
+          <div class="gauges">
+            <div class="gauge">
+              <svg viewBox="0 0 100 50" class="gauge-arc">
+                <path d="M 10 50 A 40 40 0 0 1 90 50" class="gauge-bg"/>
+                <path d="M 10 50 A 40 40 0 0 1 90 50" class="gauge-val" id="rpm-arc"/>
+              </svg>
+              <div class="gauge-value"><span id="rpm-val">0</span><small>RPM</small></div>
+            </div>
+            <div class="gauge">
+              <svg viewBox="0 0 100 50" class="gauge-arc">
+                <path d="M 10 50 A 40 40 0 0 1 90 50" class="gauge-bg"/>
+                <path d="M 10 50 A 40 40 0 0 1 90 50" class="gauge-val speed-val" id="speed-arc"/>
+              </svg>
+              <div class="gauge-value"><span id="speed-val">0</span><small>km/h</small></div>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-row">
+              <span>G-FORCE</span>
+              <strong id="gforce-val">1.0G</strong>
+            </div>
+          </div>
+
+          <!-- Slip & Grip Diagram -->
+          <div class="slip-grip-diagram">
+            <div class="car-outline">
+              <div class="tire fl" id="tire-fl"></div>
+              <div class="tire fr" id="tire-fr"></div>
+              <div class="tire rl" id="tire-rl"></div>
+              <div class="tire rr" id="tire-rr"></div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </main>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.150.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.150.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script src="app.js" type="module"></script>
+  </body>
+</html>

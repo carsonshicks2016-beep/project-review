@@ -1,0 +1,352 @@
+:root {
+  color-scheme: dark;
+  --ink: #e8ebe6;
+  --muted: #8b938a;
+  --panel: rgba(10, 12, 14, 0.82);
+  --line: rgba(232, 235, 230, 0.14);
+  --live: #6fdb8c;
+  --warn: #e0b45a;
+  --bad: #e07272;
+  --dash: #c8f06a;
+  --dash-dim: #3a4a2a;
+  font-family: "IBM Plex Mono", "SF Mono", "Menlo", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #101214;
+  color: var(--ink);
+}
+
+#app {
+  position: relative;
+}
+
+#stage {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.75rem 1rem 1rem;
+  background: linear-gradient(180deg, var(--panel) 0%, rgba(10, 12, 14, 0.45) 70%, transparent);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.hud-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 8rem;
+}
+
+.brand em {
+  font-style: normal;
+  letter-spacing: 0.14em;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.brand strong {
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+}
+
+.hud-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.45rem;
+}
+
+.audio-toggle {
+  pointer-events: auto;
+  cursor: pointer;
+  margin: 0;
+  padding: 0.28rem 0.55rem;
+  border: 1px solid var(--line);
+  background: rgba(6, 8, 6, 0.75);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+}
+
+.audio-toggle:hover {
+  color: var(--ink);
+  border-color: rgba(232, 235, 230, 0.28);
+}
+
+.audio-toggle[aria-pressed="true"] {
+  color: var(--live);
+  border-color: rgba(111, 219, 140, 0.45);
+  background: rgba(111, 219, 140, 0.12);
+}
+
+.audio-toggle.degraded {
+  color: var(--warn);
+  border-color: rgba(224, 180, 90, 0.4);
+}
+
+.meta-readouts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.2rem;
+  margin: 0;
+  justify-content: flex-end;
+}
+
+.meta-readouts > div {
+  min-width: 3.8rem;
+  text-align: right;
+}
+
+.meta-readouts dt {
+  margin: 0;
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.meta-readouts dd {
+  margin: 0.12rem 0 0;
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+}
+
+#hud-conn[data-state="connecting"] {
+  color: var(--warn);
+}
+
+#hud-conn[data-state="live"] {
+  color: var(--live);
+}
+
+#hud-conn[data-state="error"] {
+  color: var(--bad);
+}
+
+/* Rally-ish fat digital cluster — readable, not Observatory chrome. */
+.dash {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1fr) auto minmax(8rem, 0.7fr);
+  gap: 0.55rem 0.85rem;
+  align-items: stretch;
+  max-width: 36rem;
+  padding: 0.55rem 0.7rem;
+  background: rgba(6, 8, 6, 0.72);
+  border: 2px solid rgba(200, 240, 106, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+
+.dash-label {
+  display: block;
+  font-size: 0.55rem;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+  margin-bottom: 0.1rem;
+}
+
+.dash-speed {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr;
+  column-gap: 0.35rem;
+  align-items: end;
+}
+
+.dash-speed .dash-label {
+  grid-column: 1 / -1;
+}
+
+.dash-digits {
+  font-size: clamp(2.1rem, 5.5vw, 3.2rem);
+  line-height: 0.92;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--dash);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 0 transparent;
+}
+
+.dash-unit {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--dash-dim);
+  align-self: end;
+  padding-bottom: 0.35rem;
+}
+
+.dash-gear {
+  min-width: 4.2rem;
+  padding: 0 0.35rem;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  text-align: center;
+}
+
+.dash-gear-digit {
+  display: block;
+  font-size: clamp(2rem, 5vw, 2.9rem);
+  line-height: 0.95;
+  font-weight: 700;
+  color: var(--dash);
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-lap {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.15rem;
+}
+
+.dash-lap-digits {
+  font-size: clamp(1.15rem, 2.8vw, 1.55rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-time {
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  color: var(--dash);
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-note {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--warn);
+}
+
+.hud-note[hidden] {
+  display: none;
+}
+
+.status {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  padding-top: 0.5rem;
+}
+
+/* CRT / scanline / dither finish — pointer-events none, presentation only. */
+.crt-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.crt-overlay.crt-off {
+  display: none;
+}
+
+.crt-scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.18) 2px,
+    rgba(0, 0, 0, 0.18) 3px
+  );
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+}
+
+.crt-mild .crt-scanlines {
+  opacity: 0.22;
+}
+
+.crt-hard .crt-scanlines {
+  opacity: 0.55;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 1px,
+    rgba(0, 0, 0, 0.28) 1px,
+    rgba(0, 0, 0, 0.28) 2px
+  );
+}
+
+.crt-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 48%,
+    rgba(0, 0, 0, 0.35) 100%
+  );
+  opacity: 0.55;
+}
+
+.crt-hard .crt-vignette {
+  opacity: 0.85;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 40%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+}
+
+.crt-dither {
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='1' height='1' fill='%23fff'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23fff'/%3E%3C/svg%3E");
+  background-size: 4px 4px;
+  mix-blend-mode: overlay;
+  image-rendering: pixelated;
+}
+
+.crt-hard .crt-dither {
+  opacity: 0.12;
+}
+
+.crt-mild .crt-dither {
+  opacity: 0.05;
+}
+
+@media (max-width: 640px) {
+  .dash {
+    grid-template-columns: 1fr auto;
+    max-width: none;
+  }
+
+  .dash-lap {
+    grid-column: 1 / -1;
+  }
+}

@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Braindance Dream Machine | Aphex Twin × LTJ Bukem Neural Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0a0b10;
+      --bg-panel: #12141d;
+      --bg-card: #181b28;
+      --bg-card-hover: #202436;
+      --border-color: #272c42;
+      --text-main: #f0f2fa;
+      --text-muted: #8b92b2;
+      --accent-cyan: #00f5d4;
+      --accent-purple: #9d4edd;
+      --accent-acid: #ccff00;
+      --accent-red: #ff3366;
+      --glow-cyan: rgba(0, 245, 212, 0.3);
+      --glow-purple: rgba(157, 78, 221, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    code, pre, .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Top Bar */
+    header {
+      background: rgba(18, 20, 29, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-icon {
+      font-size: 1.8rem;
+      filter: drop-shadow(0 0 10px var(--accent-purple));
+    }
+
+    .brand-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 0%, var(--accent-cyan) 50%, var(--accent-purple) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-tag {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .sys-badges {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+    }
+
+    .badge-mps {
+      color: var(--accent-acid);
+      border-color: rgba(204, 255, 0, 0.3);
+      box-shadow: 0 0 10px rgba(204, 255, 0, 0.15);
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 6px currentColor;
+      animation: pulse 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .model-select-wrapper select {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* Tabs Navigation */
+    .nav-tabs {
+      display: flex;
+      gap: 0.5rem;
+      padding: 1rem 2rem 0;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.75rem 1.25rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      color: var(--accent-cyan);
+      border-bottom-color: var(--accent-cyan);
+      text-shadow: 0 0 12px var(--glow-cyan);
+    }
+
+    /* Content Container */
+    main {
+      flex: 1;
+      padding: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .tab-pane {
+      display: none;
+    }
+
+    .tab-pane.active {
+      display: block;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Layout Grids */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 960px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Card Panels */
+    .card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.75rem;
+    }
+
+    /* Presets Row */
+    .presets-bar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .preset-pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 0.4rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .preset-pill:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-main);
+      border-color: var(--accent-purple);
+    }
+
+    /* Sliders & Controls */
+    .control-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .control-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4rem;
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .control-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+    }
+
+    .val-badge {
+      color: var(--accent-cyan);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--bg-card);
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      cursor: pointer;
+      box-shadow: 0 0 10px var(--accent-cyan);
+      transition: transform 0.1s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.25);
+    }
+
+    .text-input {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 0.6rem 0.8rem;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .text-input:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    /* Action Buttons */
+    .btn-action {
+      width: 100%;
+      padding: 1rem;
+      border-radius: 10px;
+      border: none;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .btn-dream {
+      background: linear-gradient(135deg, var(--accent-purple) 0%, #7928ca 50%, var(--accent-cyan) 100%);
+      color: white;
+      box-shadow: 0 4px 20px var(--glow-purple);
+    }
+
+    .btn-dream:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(0, 245, 212, 0.4);
+    }
+
+    .btn-dream:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent-cyan);
+    }
+
+    /* Audio Player & Visualizer Deck */
+    .player-deck {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      align-items: center;
+      text-align: center;
+      padding: 2rem 1rem;
+      background: radial-gradient(circle at center, rgba(157, 78, 221, 0.08) 0%, transparent 70%);
+      border-radius: 12px;
+      border: 1px dashed var(--border-color);
+    }
+
+    .viz-canvas-wrapper {
+      width: 100%;
+      height: 120px;
+      background: #0d0f17;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+      position: relative;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    audio {
+      width: 100%;
+      outline: none;
+      filter: invert(0.9) hue-rotate(180deg);
+    }
+
+    /* History & Tables */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    th, td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+    }
+
+    tr:hover td {
+      background: var(--bg-card-hover);
+    }
+
+    .btn-inline {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--accent-cyan);
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-inline:hover {
+      background: var(--accent-cyan);
+      color: #000;
+    }
+
+    /* Dropzone */
+    .dropzone {
+      border: 2px dashed var(--border-color);
+      border-radius: 10px;
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      background: var(--bg-card);
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .dropzone:hover {
+      border-color: var(--accent-cyan);
+    }
+
+    /* Terminal Console */
+    .terminal-box {
+      background: #08090d;
+      border: 1px solid #1a1e2d;
+      border-radius: 10px;
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: #38ef7d;
+      height: 380px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+
+    .status-msg {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+
+    /* Spinner */
+    .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.2);
+      border-top: 3px solid #fff;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">🌌</div>
+      <div>
+        <div class="brand-title">BRAINDANCE DREAM MACHINE</div>
+        <div class="brand-tag">Aphex Twin × LTJ Bukem Neural Audio Console</div>
+      </div>
+    </div>
+
+    <div class="sys-badges">
+      <div class="badge badge-mps">
+        <span class="badge-dot"></span>
+        <span id="hw-status">Apple M2 Pro (Metal MPS)</span>
+      </div>
+
+      <div class="model-select-wrapper">
+        <select id="model-select" onchange="onModelChange()">
+          <option value="">Loading models...</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <!-- Nav Tabs -->
+  <nav class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('tab-dream')">🔮 Dream Machine (Latent Walk)</button>
+    <button class="tab-btn" onclick="switchTab('tab-composer')">🎵 Song Composer (MusicGen AI)</button>
+    <button class="tab-btn" onclick="switchTab('tab-transformer')">🎛️ Timbre Transformer</button>
+    <button class="tab-btn" onclick="switchTab('tab-library')">📂 Music Library & Preprocessor</button>
+    <button class="tab-btn" onclick="switchTab('tab-training')">⚡ Training Station</button>
+    <button class="tab-btn" onclick="switchTab('tab-vault')">📜 Dream Vault</button>
+  </nav>
+
+  <!-- Main Content -->
+  <main>
+
+    <!-- TAB 1: DREAM MACHINE -->
+    <div id="tab-dream" class="tab-pane active">
+      <div class="grid-2">
+        
+        <!-- Controls Column -->
+        <div class="card">
+          <div class="card-title">
+            <span>Latent Space Hallucination Parameters</span>
+            <span class="val-badge">UNCONDITIONAL MODE</span>
+          </div>
+
+          <!-- Presets -->
+          <div class="presets-bar">
+            <button class="preset-pill" onclick="applyPreset('bukem')">🍃 Lush Bukem Ambient</button>
+            <button class="preset-pill" onclick="applyPreset('aphex')">⚡ Aphex Drill Glitch</button>
+            <button class="preset-pill" onclick="applyPreset('liquid')">🌊 Liquid Jungle Drift</button>
+            <button class="preset-pill" onclick="applyPreset('idm')">🛸 Alien IDM Soundscape</button>
+          </div>
+
+          <!-- Duration -->
+          <div class="control-group">
+            <div class="control-header">
+              <span>Duration</span>
+              <span id="val-duration" class="val-badge">8.0s</span>
+            </div>
+            <input type="range" id="param-duration" min="2" max="30" step="1" value="8" oninput="updateVal('duration', 's')">
+            <div class="control-desc">Length of generated hallucination in seconds.</div>
+          </div>
+
+          <!-- Temperature / Chaos -->
+          <div class="control-group">
+            <div class="control-header">
+              <span>Chaos / Temperature</span>
+              <span id="val-temp" class="val-badge">1.00</span>
+            </div>
+            <input type="range" id="param-temp" min="0.2" max="2.5" step="0.05" value="1.0" oninput="updateVal('temp', '')">
+            <div class="control-desc">Variance of latent energy (0.4 = calm ambient, 1.8 = chaotic noise).</div>
+          </div>
+
+          <!-- Atmospheric Drift / Momentum -->
+          <div class="control-group">
+            <div class="control-header">
+              <span>Atmospheric Drift (Bukem Momentum)</span>
+              <span id="val-momentum" class="val-badge">0.92</span>
+            </div>
+            <input type="range" id="param-momentum" min="0.5" max="0.99" step="0.01" value="0.92" oninput="updateVal('momentum', '')">
+            <div class="control-desc">Trajectory inertia (0.95 = liquid continuous chords; 0.6 = rapid jerky jumps).</div>
+          </div>
+
+          <!-- Aphex Micro-Stutter -->
+          <div class="control-group">
+            <div class="control-header">
+              <span>Aphex Micro-Stutter Probability</span>
+              <span id="val-glitch" class="val-badge">15%</span>
+            </div>
+            <input type="range" id="param-glitch" min="0.0" max="0.5" step="0.01" value="0.15" oninput="updateGlitchVal()">
+            <div class="control-desc">Chance of temporal frame freezing / rapid beat-repeat glitch bursts.</div>
+          </div>
+
+          <!-- Seed -->
+          <div class="control-group">
+            <div class="control-header">
+              <span>Latent Seed</span>
+              <span class="mono" style="font-size:0.75rem; color:var(--text-muted);">RANDOM BY DEFAULT</span>
+            </div>
+            <input type="text" id="param-seed" class="text-input" placeholder="e.g. 42 (leave blank for random)">
+          </div>
+
+          <button id="btn-dream" class="btn-action btn-dream" onclick="triggerDream()">
+            <span id="btn-dream-icon">🔮</span>
+            <span id="btn-dream-text">DREAM AUDIO NOW</span>
+          </button>
+          <div id="dream-status-msg" class="status-msg mono">Ready to dream.</div>
+        </div>
+
+        <!-- Player & Visualizer Deck -->
+        <div class="card">
+          <div class="card-title">
+            <span>Neural Acoustic Output Deck</span>
+            <span id="out-track-badge" class="val-badge mono">STANDBY</span>
+          </div>
+
+          <div class="player-deck">
+            <div class="viz-canvas-wrapper">
+              <canvas id="dream-canvas"></canvas>
+            </div>
+
+            <audio id="dream-audio-player" controls preload="auto"></audio>
+
+            <div id="dream-meta" style="font-size:0.85rem; color:var(--text-muted);" class="mono">
+              Hit "DREAM AUDIO NOW" to sample latent trajectories.
+            </div>
+
+            <button id="btn-download-dream" class="btn-inline" style="padding:0.5rem 1rem; display:none;" onclick="downloadCurrentDream()">
+              💾 Download .WAV File
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 1.5: REAL SONG COMPOSER (MUSICGEN) -->
+    <div id="tab-composer" class="tab-pane">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">
+            <span>Autoregressive Music Transformer (Real Drums, Chords & Melodies)</span>
+            <span class="val-badge">MUSICGEN AI</span>
+          </div>
+
+          <!-- Presets -->
+          <div class="presets-bar">
+            <button class="preset-pill" onclick="applyComposerPreset('bukem')">🍃 LTJ Bukem (Atmospheric DnB)</button>
+            <button class="preset-pill" onclick="applyComposerPreset('aphex')">⚡ Aphex Twin (Drill 'n' Bass)</button>
+            <button class="preset-pill" onclick="applyComposerPreset('saw')">🎹 Selected Ambient Works</button>
+            <button class="preset-pill" onclick="applyComposerPreset('acid')">🧪 303 Braindance Acid</button>
+          </div>
+
+          <div class="control-group">
+            <div class="control-header">
+              <span>Musical Prompt / Style Description</span>
+            </div>
+            <textarea id="composer-prompt" class="text-input" rows="3" style="width:100%; resize:vertical;">165 bpm atmospheric jungle, rolling amen breakbeats, lush ambient rhodes chords, deep sub bass, LTJ Bukem style</textarea>
+            <div class="control-desc">Describe the genre, instruments, tempo (BPM), mood, and artist aesthetic.</div>
+          </div>
+
+          <div class="control-group">
+            <div class="control-header">
+              <span>Duration</span>
+              <span id="val-comp-duration" class="val-badge">8.0s</span>
+            </div>
+            <input type="range" id="param-comp-duration" min="4" max="25" step="1" value="8" oninput="document.getElementById('val-comp-duration').innerText = this.value + '.0s'">
+            <div class="control-desc">Length of composed audio track in seconds.</div>
+          </div>
+
+          <button id="btn-compose" class="btn-action btn-dream" onclick="triggerCompose()">
+            <span>🎵</span> COMPOSE REAL MUSIC NOW
+          </button>
+          <div id="comp-status-msg" class="status-msg mono">Ready to compose.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Composed Musical Output</span>
+            <span id="comp-track-badge" class="val-badge mono">STANDBY</span>
+          </div>
+
+          <div class="player-deck">
+            <audio id="comp-audio-player" controls preload="auto"></audio>
+            <div id="comp-meta" class="mono" style="font-size:0.85rem; color:var(--text-muted);">
+              Hit "COMPOSE REAL MUSIC NOW" to synthesize drums, basslines, and chords.
+            </div>
+            <a id="btn-download-comp" class="btn-inline" style="padding:0.5rem 1rem; display:none; text-decoration:none;" download>
+              💾 Download .WAV Track
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: TIMBRE TRANSFORMER -->
+    <div id="tab-transformer" class="tab-pane">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">
+            <span>Neural Timbre Transfer & Morph</span>
+            <span class="val-badge">STYLE RE-SYNTHESIS</span>
+          </div>
+
+          <div class="control-group">
+            <div class="control-header">
+              <span>Select Input Audio (or Upload Beat)</span>
+            </div>
+            <input type="file" id="trans-file-input" accept="audio/*" class="text-input">
+            <div class="control-desc">Feed a breakbeat, vocal sample, or melody to re-synthesize.</div>
+          </div>
+
+          <div class="control-group">
+            <div class="control-header">
+              <span>Dream Blend Factor</span>
+              <span id="val-blend" class="val-badge">30%</span>
+            </div>
+            <input type="range" id="param-blend" min="0.0" max="1.0" step="0.05" value="0.3" oninput="document.getElementById('val-blend').innerText = Math.round(this.value*100)+'%'">
+            <div class="control-desc">0% = Exact rhythmic timbre transfer; 100% = Completely dissolved into dream state.</div>
+          </div>
+
+          <div class="control-group">
+            <div class="control-header">
+              <span>Latent Excitation Temperature</span>
+              <span id="val-trans-temp" class="val-badge">1.00</span>
+            </div>
+            <input type="range" id="param-trans-temp" min="0.5" max="2.0" step="0.05" value="1.0" oninput="document.getElementById('val-trans-temp').innerText = parseFloat(this.value).toFixed(2)">
+          </div>
+
+          <button id="btn-transform" class="btn-action btn-dream" onclick="triggerTransform()">
+            <span>⚡</span> RE-SYNTHESIZE AUDIO
+          </button>
+          <div id="trans-status-msg" class="status-msg mono">Ready to transform audio.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Re-Synthesized Waveform</span>
+          </div>
+          <div class="player-deck">
+            <audio id="trans-audio-player" controls></audio>
+            <div id="trans-meta" class="mono" style="font-size:0.85rem; color:var(--text-muted);">
+              Uploaded sound will appear here re-imagined by the neural model.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: MUSIC LIBRARY & PREPROCESSOR -->
+    <div id="tab-library" class="tab-pane">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">
+            <span>Audio Ingestion Dropzone</span>
+            <span class="val-badge">RAW CATALOG</span>
+          </div>
+
+          <div class="dropzone" onclick="document.getElementById('upload-files').click()">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📥</div>
+            <div style="font-weight: 700; margin-bottom: 0.25rem;">Drop Aphex Twin & LTJ Bukem Audio Files Here</div>
+            <div style="font-size: 0.82rem; color: var(--text-muted);">Supports .mp3, .wav, .flac, .aiff, .ogg</div>
+            <input type="file" id="upload-files" multiple accept="audio/*" style="display:none;" onchange="handleFileUpload(this.files)">
+          </div>
+
+          <div style="display:flex; gap:0.75rem; margin-top:1.25rem;">
+            <button class="btn-action btn-secondary" onclick="generateDemoStarterPack()" style="font-size:0.85rem;">
+              ✨ Generate Demo Starter Pack
+            </button>
+            <button class="btn-action btn-dream" onclick="triggerPreprocess()" style="font-size:0.85rem;">
+              ⚙️ Preprocess for RAVE
+            </button>
+          </div>
+          <div id="lib-status-msg" class="status-msg mono"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Catalog Summary & Tracks</span>
+            <span id="lib-source-badge" class="val-badge mono">-</span>
+          </div>
+
+          <div id="lib-stats-pills" style="display:flex; gap:0.75rem; margin-bottom:1rem; flex-wrap:wrap;">
+            <div class="badge">Tracks: <span id="stat-tracks" class="mono" style="color:var(--accent-cyan)">0</span></div>
+            <div class="badge">Duration: <span id="stat-duration" class="mono" style="color:var(--accent-cyan)">0s</span></div>
+            <div class="badge">RAVE DB: <span id="stat-db" class="mono" style="color:var(--accent-acid)">Ready</span></div>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Track Name</th>
+                  <th>Duration</th>
+                  <th>Sample Rate</th>
+                  <th>Play</th>
+                </tr>
+              </thead>
+              <tbody id="library-table-body">
+                <tr><td colspan="4" style="color:var(--text-muted)">Scanning audio files...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: TRAINING STATION -->
+    <div id="tab-training" class="tab-pane">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">
+            <span>RAVE Multi-Band Training Station</span>
+            <span class="val-badge">M2 PRO ACCELERATION</span>
+          </div>
+
+          <div class="control-group">
+            <div class="control-header"><span>Run Name</span></div>
+            <input type="text" id="train-run-name" class="text-input" value="aphex_bukem_run">
+          </div>
+
+          <div class="control-group">
+            <div class="control-header"><span>RAVE Architecture Configuration</span></div>
+            <select id="train-config" class="text-input">
+              <option value="v2">v2 (Recommended: Multi-band PQMF + Spectral Discriminators)</option>
+              <option value="v2_small">v2_small (Lightweight / Faster on M2)</option>
+              <option value="discrete">discrete (Quantized latent tokens for autoregression)</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <div class="control-header"><span>Batch Size</span></div>
+            <select id="train-batch" class="text-input">
+              <option value="4" selected>4 (Balanced for 16GB Unified Memory)</option>
+              <option value="8">8 (Maximum throughput)</option>
+              <option value="2">2 (Conservative)</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <div class="control-header"><span>Max Steps</span></div>
+            <input type="number" id="train-steps" class="text-input" value="50000">
+          </div>
+
+          <div style="display:flex; gap:0.75rem; margin-top:1.5rem;">
+            <button id="btn-start-train" class="btn-action btn-dream" onclick="startTraining()">
+              🚀 START TRAINING
+            </button>
+            <button id="btn-stop-train" class="btn-action btn-secondary" onclick="stopTraining()">
+              🛑 STOP
+            </button>
+          </div>
+
+          <div style="margin-top:1.5rem; border-top:1px solid var(--border-color); padding-top:1.25rem;">
+            <div class="control-header"><span>Export Checkpoint to TorchScript (.ts)</span></div>
+            <button class="btn-action btn-secondary" style="margin-top:0.5rem;" onclick="exportCurrentRun()">
+              💾 Export Run to `models/exported/`
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Live Training Telemetry & Logs</span>
+            <span id="train-status-pill" class="badge">IDLE</span>
+          </div>
+          <div id="terminal" class="terminal-box">Waiting for training process...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: DREAM VAULT -->
+    <div id="tab-vault" class="tab-pane">
+      <div class="card">
+        <div class="card-title">
+          <span>Generated Dream Vault</span>
+          <button class="btn-inline" onclick="loadDreamsVault()">🔄 Refresh</button>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>File Name</th>
+                <th>Duration</th>
+                <th>Size</th>
+                <th>Listen</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="vault-table-body">
+              <tr><td colspan="5" style="color:var(--text-muted)">Loading dreams...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // Tab Switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+
+      event.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+
+      if (tabId === 'tab-library') loadLibrary();
+      if (tabId === 'tab-vault') loadDreamsVault();
+    }
+
+    // Sliders Helper
+    function updateVal(id, unit) {
+      const val = parseFloat(document.getElementById('param-' + id).value);
+      document.getElementById('val-' + id).innerText = (unit === 's' ? val.toFixed(1) : val.toFixed(2)) + unit;
+    }
+
+    function updateGlitchVal() {
+      const val = parseFloat(document.getElementById('param-glitch').value);
+      document.getElementById('val-glitch').innerText = Math.round(val * 100) + '%';
+    }
+
+    // Presets
+    function applyPreset(name) {
+      if (name === 'bukem') {
+        document.getElementById('param-duration').value = 12;
+        document.getElementById('param-temp').value = 0.85;
+        document.getElementById('param-momentum').value = 0.96;
+        document.getElementById('param-glitch').value = 0.02;
+      } else if (name === 'aphex') {
+        document.getElementById('param-duration').value = 8;
+        document.getElementById('param-temp').value = 1.35;
+        document.getElementById('param-momentum').value = 0.88;
+        document.getElementById('param-glitch').value = 0.32;
+      } else if (name === 'liquid') {
+        document.getElementById('param-duration').value = 10;
+        document.getElementById('param-temp').value = 1.0;
+        document.getElementById('param-momentum').value = 0.93;
+        document.getElementById('param-glitch').value = 0.12;
+      } else if (name === 'idm') {
+        document.getElementById('param-duration').value = 14;
+        document.getElementById('param-temp').value = 1.6;
+        document.getElementById('param-momentum').value = 0.82;
+        document.getElementById('param-glitch').value = 0.25;
+      }
+      updateVal('duration', 's');
+      updateVal('temp', '');
+      updateVal('momentum', '');
+      updateGlitchVal();
+    }
+
+    // System Status & Model Loading
+    async function loadSystemStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        
+        document.getElementById('hw-status').innerText = data.device;
+        
+        const select = document.getElementById('model-select');
+        select.innerHTML = '';
+        data.models.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.path;
+          opt.innerText = m.name;
+          if (m.path === data.active_model) opt.selected = true;
+          select.appendChild(opt);
+        });
+      } catch (err) {
+        console.error("Status load failed", err);
+      }
+    }
+
+    function onModelChange() {
+      // Model selected will be passed to dream/transform calls
+    }
+
+    // Real Song Composer (MusicGen)
+    function applyComposerPreset(preset) {
+      const p = document.getElementById('composer-prompt');
+      if (preset === 'bukem') {
+        p.value = "165 bpm atmospheric jungle, rolling amen breakbeats, lush ambient rhodes chords, deep sub bass, LTJ Bukem style";
+      } else if (preset === 'aphex') {
+        p.value = "175 bpm chaotic braindance drill 'n' bass, micro-edited sliced breakbeats, acidic 303 synth line, glitch stutters, Aphex Twin style";
+      } else if (preset === 'saw') {
+        p.value = "warm analog synthesizer pads, gentle lo-fi 808 drum machine, eerie melancholic melody, Aphex Twin Selected Ambient Works style";
+      } else if (preset === 'acid') {
+        p.value = "fast 160 bpm squelchy resonant 303 acid line, distorted 909 kick drum, braindance IDM breaks";
+      }
+    }
+
+    async function triggerCompose() {
+      const btn = document.getElementById('btn-compose');
+      const msg = document.getElementById('comp-status-msg');
+      const player = document.getElementById('comp-audio-player');
+      const badge = document.getElementById('comp-track-badge');
+      const btnDl = document.getElementById('btn-download-comp');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> <span>COMPOSING WITH MUSICGEN...</span>';
+      msg.innerText = "Generating musical harmony, drums, and structure on M2 Pro GPU...";
+      badge.innerText = "COMPOSING...";
+
+      const formData = new FormData();
+      formData.append('prompt', document.getElementById('composer-prompt').value);
+      formData.append('duration', document.getElementById('param-comp-duration').value);
+
+      try {
+        const res = await fetch('/api/compose', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.status === 'success') {
+          player.src = data.audio_url;
+          player.play();
+          badge.innerText = data.filename;
+          msg.innerText = `🎵 Composed ${data.duration}s in ${data.elapsed_sec}s!`;
+          btnDl.href = data.audio_url;
+          btnDl.download = data.filename;
+          btnDl.style.display = 'inline-block';
+        } else {
+          msg.innerText = "Error: " + (data.detail || "Failed");
+        }
+      } catch (err) {
+        msg.innerText = "Error: " + err;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🎵</span> COMPOSE REAL MUSIC NOW';
+      }
+    }
+
+    // Dream Trigger
+    let currentDreamUrl = null;
+    async function triggerDream() {
+      const btn = document.getElementById('btn-dream');
+      const msg = document.getElementById('dream-status-msg');
+      const player = document.getElementById('dream-audio-player');
+      const badge = document.getElementById('out-track-badge');
+      const btnDl = document.getElementById('btn-download-dream');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> <span>HALLUCINATING AUDIO...</span>';
+      msg.innerText = "Exploring latent trajectory on Apple Silicon Metal...";
+      badge.innerText = "SYNTHESIZING...";
+
+      const formData = new FormData();
+      formData.append('duration', document.getElementById('param-duration').value);
+      formData.append('temperature', document.getElementById('param-temp').value);
+      formData.append('momentum', document.getElementById('param-momentum').value);
+      formData.append('glitch', document.getElementById('param-glitch').value);
+      formData.append('seed', document.getElementById('param-seed').value);
+      formData.append('model_path', document.getElementById('model-select').value);
+
+      try {
+        const res = await fetch('/api/dream', { method: 'POST', body: formData });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+          currentDreamUrl = data.audio_url;
+          player.src = data.audio_url;
+          player.play();
+          badge.innerText = data.filename;
+          msg.innerText = `✨ Generated ${data.duration}s in ${data.elapsed_sec}s!`;
+          btnDl.style.display = 'inline-block';
+          drawStaticWaveform();
+        } else {
+          msg.innerText = "Error: " + (data.detail || "Generation failed");
+        }
+      } catch (err) {
+        msg.innerText = "Generation failed: " + err;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🔮</span> <span>DREAM AUDIO NOW</span>';
+      }
+    }
+
+    function downloadCurrentDream() {
+      if (currentDreamUrl) {
+        const a = document.createElement('a');
+        a.href = currentDreamUrl;
+        a.download = currentDreamUrl.split('/').pop();
+        a.click();
+      }
+    }
+
+    // Canvas Fake Waveform Visualizer
+    function drawStaticWaveform() {
+      const canvas = document.getElementById('dream-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = 120;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const bars = Math.floor(canvas.width / 5);
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+      gradient.addColorStop(0, '#9d4edd');
+      gradient.addColorStop(0.5, '#00f5d4');
+      gradient.addColorStop(1, '#ccff00');
+
+      ctx.fillStyle = gradient;
+      for (let i = 0; i < bars; i++) {
+        const h = Math.random() * (canvas.height - 20) + 10;
+        const y = (canvas.height - h) / 2;
+        ctx.fillRect(i * 5, y, 3, h);
+      }
+    }
+
+    // Timbre Transformer
+    async function triggerTransform() {
+      const fileInput = document.getElementById('trans-file-input');
+      const btn = document.getElementById('btn-transform');
+      const msg = document.getElementById('trans-status-msg');
+      const player = document.getElementById('trans-audio-player');
+
+      if (!fileInput.files.length) {
+        alert("Please select an audio file first!");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> <span>RE-SYNTHESIZING...</span>';
+      msg.innerText = "Passing audio through encoder & latent resynthesis...";
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      formData.append('blend', document.getElementById('param-blend').value);
+      formData.append('temperature', document.getElementById('param-trans-temp').value);
+      formData.append('model_path', document.getElementById('model-select').value);
+
+      try {
+        const res = await fetch('/api/transform', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.status === 'success') {
+          player.src = data.audio_url;
+          player.play();
+          msg.innerText = `⚡ Morphed audio in ${data.elapsed_sec}s! Saved to: ${data.filename}`;
+        } else {
+          msg.innerText = "Error: " + (data.detail || "Failed");
+        }
+      } catch (err) {
+        msg.innerText = "Error: " + err;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>⚡</span> RE-SYNTHESIZE AUDIO';
+      }
+    }
+
+    // Library Functions
+    async function loadLibrary() {
+      try {
+        const res = await fetch('/api/library');
+        const data = await res.json();
+        
+        document.getElementById('stat-tracks').innerText = data.stats.count;
+        document.getElementById('stat-duration').innerText = data.stats.total_seconds + 's';
+        document.getElementById('stat-db').innerText = data.db_ready ? `Ready (${data.db_size_mb} MB)` : 'Not built';
+        document.getElementById('lib-source-badge').innerText = data.stats.is_demo ? 'DEMO PACK' : 'USER RAW';
+
+        const tbody = document.getElementById('library-table-body');
+        tbody.innerHTML = '';
+
+        if (!data.stats.files.length) {
+          tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted)">No files found. Drop files into data/raw/</td></tr>';
+          return;
+        }
+
+        data.stats.files.forEach(f => {
+          const category = f.path.includes('data/demo') ? 'demo' : 'raw';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="mono"><strong>${f.name}</strong></td>
+            <td class="mono">${f.duration_sec || '?'}s</td>
+            <td class="mono">${f.samplerate || '?'} Hz</td>
+            <td>
+              <button class="btn-inline" onclick="playPreview('${category}', '${f.name}')">▶ Play</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error("Library load error", err);
+      }
+    }
+
+    function playPreview(category, filename) {
+      const player = document.getElementById('dream-audio-player');
+      player.src = `/api/audio/${category}/${filename}`;
+      player.play();
+      document.getElementById('out-track-badge').innerText = filename;
+    }
+
+    async function handleFileUpload(files) {
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        formData.append('files', files[i]);
+      }
+      document.getElementById('lib-status-msg').innerText = "Uploading audio tracks...";
+      await fetch('/api/library/upload', { method: 'POST', body: formData });
+      document.getElementById('lib-status-msg').innerText = "Upload complete!";
+      loadLibrary();
+    }
+
+    async function generateDemoStarterPack() {
+      document.getElementById('lib-status-msg').innerText = "Synthesizing Bukem pads and Aphex breakbeats...";
+      await fetch('/api/library/generate-demo', { method: 'POST' });
+      document.getElementById('lib-status-msg').innerText = "Demo pack synthesized!";
+      loadLibrary();
+    }
+
+    async function triggerPreprocess() {
+      document.getElementById('lib-status-msg').innerText = "Starting RAVE preprocessing...";
+      await fetch('/api/library/preprocess', { method: 'POST' });
+      document.getElementById('lib-status-msg').innerText = "Preprocessing running in background!";
+      setTimeout(loadLibrary, 3000);
+    }
+
+    // Training Terminal Telemetry
+    let logInterval = null;
+    async function startTraining() {
+      const formData = new FormData();
+      formData.append('run_name', document.getElementById('train-run-name').value);
+      formData.append('config', document.getElementById('train-config').value);
+      formData.append('batch_size', document.getElementById('train-batch').value);
+      formData.append('max_steps', document.getElementById('train-steps').value);
+
+      const res = await fetch('/api/training/start', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.status === 'started') {
+        document.getElementById('train-status-pill').innerText = "TRAINING RUNNING";
+        document.getElementById('train-status-pill').className = "badge badge-mps";
+        pollLogs();
+      } else {
+        alert(data.message || data.detail);
+      }
+    }
+
+    async function stopTraining() {
+      await fetch('/api/training/stop', { method: 'POST' });
+      document.getElementById('train-status-pill').innerText = "STOPPED";
+      document.getElementById('train-status-pill').className = "badge";
+    }
+
+    function pollLogs() {
+      if (logInterval) clearInterval(logInterval);
+      logInterval = setInterval(async () => {
+        const res = await fetch('/api/training/logs');
+        const data = await res.json();
+        const term = document.getElementById('terminal');
+        term.innerText = data.logs.join('\n');
+        term.scrollTop = term.scrollHeight;
+
+        if (data.is_running) {
+          document.getElementById('train-status-pill').innerText = "TRAINING RUNNING";
+          document.getElementById('train-status-pill').className = "badge badge-mps";
+        } else {
+          document.getElementById('train-status-pill').innerText = "IDLE";
+          document.getElementById('train-status-pill').className = "badge";
+        }
+      }, 2000);
+    }
+
+    async function exportCurrentRun() {
+      const runName = document.getElementById('train-run-name').value;
+      const formData = new FormData();
+      formData.append('run_name', runName);
+      try {
+        const res = await fetch('/api/models/export', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.status === 'success') {
+          alert("Export complete! Saved to: " + data.exported_path);
+          loadSystemStatus();
+        } else {
+          alert("Export error: " + data.detail);
+        }
+      } catch (err) {
+        alert("Export error: " + err);
+      }
+    }
+
+    // Vault Functions
+    async function loadDreamsVault() {
+      try {
+        const res = await fetch('/api/dreams');
+        const data = await res.json();
+        const tbody = document.getElementById('vault-table-body');
+        tbody.innerHTML = '';
+
+        if (!data.dreams.length) {
+          tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-muted)">No dreams generated yet.</td></tr>';
+          return;
+        }
+
+        data.dreams.forEach(d => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="mono"><strong>${d.name}</strong></td>
+            <td class="mono">${d.duration}s</td>
+            <td class="mono">${d.size_kb} KB</td>
+            <td>
+              <button class="btn-inline" onclick="playVaultTrack('${d.url}', '${d.name}')">▶ Play</button>
+            </td>
+            <td>
+              <a href="${d.url}" download="${d.name}" class="btn-inline" style="text-decoration:none; display:inline-block;">💾 Download</a>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error("Vault load error", err);
+      }
+    }
+
+    function playVaultTrack(url, filename) {
+      const player = document.getElementById('dream-audio-player');
+      player.src = url;
+      player.play();
+      document.getElementById('out-track-badge').innerText = filename;
+      switchTab('tab-dream');
+    }
+
+    // Init
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSystemStatus();
+      loadLibrary();
+      pollLogs();
+      drawStaticWaveform();
+    });
+  </script>
+</body>
+</html>

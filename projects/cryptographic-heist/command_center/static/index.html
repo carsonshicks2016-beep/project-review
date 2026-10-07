@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Crypt Heist Command Center</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="rail">
+        <div class="mark">CHE</div>
+        <button class="rail-btn active" data-view="commands" title="Commands">▶</button>
+        <button class="rail-btn" data-view="curriculum" title="Curriculum">◇</button>
+        <button class="rail-btn" data-view="replays" title="Replays">▤</button>
+        <button class="rail-btn" data-view="configs" title="Configs">⚙</button>
+        <button class="rail-btn" data-view="jobs" title="Jobs">≣</button>
+      </aside>
+
+      <header class="topbar">
+        <div>
+          <h1>The Cryptographic Heist Engine</h1>
+          <div class="subline">
+            <span id="command-count">0 commands</span>
+            <span id="replay-count">0 replays</span>
+            <span id="job-count">0 jobs</span>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button id="refresh-all" class="icon-btn" title="Refresh">↻</button>
+          <a class="link-btn" href="/viewer3d/index.html" target="_blank" rel="noreferrer">3D Replay</a>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="pane pane-main" data-panel="commands">
+          <div id="metric-cards" class="metric-cards"></div>
+          <div id="readiness-board" class="readiness-board"></div>
+          <div class="pane-head">
+            <div class="tabs" id="group-tabs"></div>
+            <input id="command-search" class="search" type="search" placeholder="Filter" />
+          </div>
+          <div id="command-list" class="command-list"></div>
+        </section>
+
+        <section class="pane hidden" data-panel="curriculum">
+          <div class="pane-head">
+            <h2>Curriculum</h2>
+            <button id="refresh-curriculum" class="icon-btn" title="Refresh curriculum plan">↻</button>
+          </div>
+          <div id="curriculum-summary" class="curriculum-summary"></div>
+          <div id="curriculum-actions" class="curriculum-actions"></div>
+        </section>
+
+        <section class="pane hidden" data-panel="replays">
+          <div class="pane-head">
+            <h2>Replays</h2>
+            <button id="refresh-replays" class="icon-btn" title="Refresh replays">↻</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Frames</th>
+                  <th>Duration</th>
+                  <th>Agents</th>
+                  <th>Radio</th>
+                  <th>Metrics</th>
+                  <th>Modified</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="replay-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="pane hidden" data-panel="configs">
+          <div class="pane-head">
+            <h2>Configs</h2>
+            <select id="config-picker"></select>
+            <button id="save-config" class="icon-btn" title="Save config">✓</button>
+          </div>
+          <textarea id="config-editor" spellcheck="false"></textarea>
+        </section>
+
+        <section class="pane hidden" data-panel="jobs">
+          <div class="pane-head">
+            <h2>Jobs</h2>
+            <button id="refresh-jobs" class="icon-btn" title="Refresh jobs">↻</button>
+          </div>
+          <div id="job-list" class="job-list"></div>
+        </section>
+
+        <aside class="inspector">
+          <section class="terminal-panel">
+            <div class="terminal-head">
+              <div>
+                <h2 id="active-job-title">Terminal</h2>
+                <span id="active-job-status" class="status idle">idle</span>
+              </div>
+              <button id="stop-job" class="icon-btn danger" title="Stop active job">■</button>
+            </div>
+            <pre id="terminal"></pre>
+          </section>
+
+          <section class="run-panel">
+            <label for="args-line">Args</label>
+            <input id="args-line" type="text" />
+            <div class="run-row">
+              <button id="run-selected" class="run-btn" title="Run selected command">▶</button>
+              <code id="selected-command"></code>
+            </div>
+          </section>
+        </aside>
+      </main>
+    </div>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

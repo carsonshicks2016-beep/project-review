@@ -1,0 +1,334 @@
+/* ============================================================
+   Night Cruise — Style System
+   ============================================================ */
+
+:root {
+  --font-display: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  --color-bg: #0a0a0f;
+  --color-surface: #12121a;
+  --color-surface-hover: #1a1a26;
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-text: #e8e6f0;
+  --color-text-dim: #8a8694;
+  --color-accent: #f5a623;
+  --color-accent-glow: rgba(245, 166, 35, 0.3);
+  --color-spotify: #1DB954;
+  --color-spotify-hover: #1ed760;
+  --color-neon-blue: #4fc3f7;
+  --color-neon-pink: #f06292;
+  --color-neon-purple: #b388ff;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  --shadow-glow: 0 0 40px rgba(245, 166, 35, 0.15), 0 0 80px rgba(245, 166, 35, 0.05);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg);
+  font-family: var(--font-body);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- Canvas ---- */
+#scene-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+}
+
+/* ---- HUD ---- */
+.hud {
+  position: fixed;
+  bottom: 32px;
+  left: 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px 12px 12px;
+  background: rgba(10, 10, 15, 0.7);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  z-index: 100;
+}
+
+.hud.hidden {
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+}
+
+.hud-album-art {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--color-surface);
+}
+
+.hud-album-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hud-track {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud-artist {
+  font-size: 13px;
+  color: var(--color-text-dim);
+  white-space: nowrap;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* ---- Modal ---- */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  background: rgba(5, 5, 10, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: opacity 0.5s ease;
+}
+
+.modal.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal-content {
+  position: relative;
+  width: 420px;
+  max-width: 90vw;
+  padding: 48px 40px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card), var(--shadow-glow);
+  text-align: center;
+  overflow: hidden;
+}
+
+.modal-glow {
+  position: absolute;
+  top: -60%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--color-accent-glow) 0%, transparent 70%);
+  pointer-events: none;
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.15); }
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--color-accent) 0%, #ffcc80 50%, var(--color-neon-blue) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 4px;
+  position: relative;
+}
+
+.modal-subtitle {
+  font-size: 14px;
+  color: var(--color-text-dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 36px;
+  position: relative;
+}
+
+.modal-section {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.modal-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0;
+  position: relative;
+}
+
+.modal-divider::before,
+.modal-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.modal-divider span {
+  font-size: 11px;
+  color: var(--color-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.audio-options {
+  display: flex;
+  gap: 12px;
+}
+
+/* ---- Buttons ---- */
+.btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.btn-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.btn-hint {
+  font-size: 11px;
+  color: var(--color-text-dim);
+  font-weight: 400;
+}
+
+.btn-spotify {
+  width: 100%;
+  flex-direction: row;
+  gap: 12px;
+  padding: 16px 24px;
+  background: var(--color-spotify);
+  border-color: var(--color-spotify);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.btn-spotify:hover:not(:disabled) {
+  background: var(--color-spotify-hover);
+  border-color: var(--color-spotify-hover);
+  box-shadow: 0 6px 24px rgba(29, 185, 84, 0.35);
+}
+
+.btn-spotify .btn-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.btn-audio {
+  flex: 1;
+}
+
+.btn-audio:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 20px var(--color-accent-glow);
+}
+
+/* ---- Modal Status ---- */
+.modal-status {
+  font-size: 13px;
+  color: var(--color-accent);
+  min-height: 20px;
+  margin-top: 16px;
+  position: relative;
+  transition: opacity 0.3s ease;
+}
+
+.modal-status:empty {
+  opacity: 0;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 36px 24px;
+  }
+  .modal-title {
+    font-size: 28px;
+  }
+  .audio-options {
+    flex-direction: column;
+  }
+  .hud {
+    left: 16px;
+    bottom: 16px;
+  }
+}
