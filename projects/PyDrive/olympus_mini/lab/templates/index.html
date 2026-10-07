@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Olympus Mini — Athletic Biomechanics Lab</title>
+  <link rel="stylesheet" href="/static/css/lab.css">
+</head>
+<body>
+
+  <!-- Top Lab Header -->
+  <header class="lab-header">
+    <div class="logo-area">
+      <div class="logo-badge">OLYMPUS</div>
+      <div class="logo-title">MINI <span class="logo-subtitle">| Athletic RL Laboratory</span></div>
+    </div>
+    <div class="status-bar">
+      <div class="status-item">
+        <span>TASK:</span>
+        <span id="active-task-pill" style="color: var(--accent-orange); font-weight: bold;">SPRINT</span>
+      </div>
+      <div class="status-item">
+        <span id="live-fps">0 FPS</span>
+      </div>
+      <div class="status-item">
+        <div class="beacon-dot"></div>
+        <span>LIVE TELEMETRY</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="lab-container">
+    
+    <!-- Left Column: Simulation Viewport -->
+    <section class="viewport-card">
+      
+      <!-- Top Viewport Toolbar -->
+      <div class="viewport-toolbar">
+        <div class="btn-group">
+          <button class="btn btn-task active" data-task="sprint">⚡ 100M SPRINT</button>
+          <button class="btn btn-task" data-task="hurdle">🚧 HURDLES</button>
+          <button class="btn btn-task" data-task="vault">🎯 POLE VAULT</button>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-cam active" data-cam="side">SIDE</button>
+          <button class="btn btn-cam" data-cam="orbit">ORBIT</button>
+          <button class="btn btn-cam" data-cam="chase">CHASE</button>
+          <button class="btn btn-cam" data-cam="front">FRONT</button>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn" id="btn-play-pause">⏸️ PAUSE</button>
+          <button class="btn" id="btn-reset">🔄 RESET</button>
+          <button class="btn btn-accent" id="btn-record">📹 CAPTURE GIF</button>
+        </div>
+      </div>
+
+      <!-- Live Video Stream -->
+      <div class="video-wrapper">
+        <img src="/video_feed" alt="Simulation Stream" class="video-stream" />
+        
+        <!-- On-Screen Telemetry HUD -->
+        <div class="video-hud-overlay">
+          <div>OLYMPUS MINI: <span id="hud-task">SPRINT</span></div>
+          <div>Speed: <span id="hud-speed">0.00</span> m/s</div>
+          <div>Dist: <span id="hud-dist">0.00</span> m</div>
+          <div>Height: <span id="hud-height">0.00</span> m</div>
+          <div>Step: <span id="hud-step">0</span></div>
+        </div>
+      </div>
+
+      <!-- Manual Drive Deck -->
+      <div class="manual-deck">
+        <button class="btn" id="btn-mode-toggle">🤖 AUTONOMOUS AI</button>
+
+        <div class="manual-sliders" id="manual-controls-panel" style="display: none;">
+          <div class="slider-group">
+            <label>LEAN:</label>
+            <input type="range" id="slider-lean" min="-0.3" max="0.7" step="0.05" value="0.25">
+            <span id="val-lean">0.25</span>
+          </div>
+          <div class="slider-group">
+            <label>CADENCE:</label>
+            <input type="range" id="slider-cadence" min="0.8" max="3.2" step="0.1" value="1.6">
+            <span id="val-cadence">1.6 Hz</span>
+          </div>
+          <div class="slider-group">
+            <label>THRUST:</label>
+            <input type="range" id="slider-thrust" min="0.1" max="1.0" step="0.05" value="0.5">
+            <span id="val-thrust">50%</span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-left: 10px;">
+            Keys: <b>[W/S]</b> Lean | <b>[A/D]</b> Cadence | <b>[SPACE]</b> Jump
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Right Column: Biomechanical Telemetry Deck -->
+    <aside class="sidebar-panel">
+      
+      <!-- Real-Time Physics Meters -->
+      <div class="card">
+        <div class="card-title">REAL-TIME TELEMETRY</div>
+        <div class="metric-grid">
+          <div class="metric-box">
+            <div class="metric-label">FORWARD SPEED</div>
+            <div class="metric-val"><span id="metric-speed">0.00</span> <span class="metric-unit">m/s</span></div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">TRACK PROGRESS</div>
+            <div class="metric-val"><span id="metric-dist">0.00</span> <span class="metric-unit">m</span></div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">COM HEIGHT</div>
+            <div class="metric-val"><span id="metric-height">0.00</span> <span class="metric-unit">m</span></div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">GAIT PHASE</div>
+            <div class="metric-val"><span id="metric-phase">0.00</span></div>
+          </div>
+          <div class="metric-box" id="metric-hurdles-box" style="display: none;">
+            <div class="metric-label">HURDLES CLEARED</div>
+            <div class="metric-val" style="color: var(--accent-orange);"><span id="metric-hurdles">0</span></div>
+          </div>
+          <div class="metric-box" id="metric-vault-box" style="display: none;">
+            <div class="metric-label">PEAK APEX HEIGHT</div>
+            <div class="metric-val" style="color: var(--accent-cyan);"><span id="metric-peak-z">0.00</span> <span class="metric-unit">m</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Biomechanical Foot Contact Heatmap -->
+      <div class="card">
+        <div class="card-title">GROUND REACTION FORCES (GRF)</div>
+        <div class="foot-diagram-container">
+          <div class="foot-box">
+            <div class="foot-label">LEFT FOOT</div>
+            <canvas id="canvas-foot-left" class="foot-canvas" width="76" height="130"></canvas>
+          </div>
+          <div class="foot-box">
+            <div class="foot-label">RIGHT FOOT</div>
+            <canvas id="canvas-foot-right" class="foot-canvas" width="76" height="130"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Knee Limit-Cycle Phase-Plane Orbit -->
+      <div class="card">
+        <div class="card-title">KNEE LIMIT-CYCLE ATTRACTOR (θ vs θ̇)</div>
+        <canvas id="canvas-phase-orbit" class="orbit-canvas" width="340" height="150"></canvas>
+      </div>
+
+    </aside>
+
+    <!-- Bottom Training Control Hub -->
+    <section class="training-deck">
+      <div class="training-controls">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <button class="btn btn-accent" id="btn-toggle-train" data-training="false" style="padding: 8px 16px; font-size: 13px;">
+            🚀 START PPO TRAINING
+          </button>
+          <div style="font-family: var(--font-mono); font-size: 12px; color: var(--text-muted);" id="train-status-text">
+            PPO Trainer Idle. Ready to launch.
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 16px; align-items: center;">
+          <div class="slider-group">
+            <label>STEPS:</label>
+            <input type="number" id="train-steps" value="20000" style="width: 80px; background: #161d27; border: 1px solid var(--border-color); color: #fff; padding: 4px; border-radius: 4px; font-family: var(--font-mono);">
+          </div>
+          <div class="slider-group">
+            <label>LR:</label>
+            <input type="text" id="train-lr" value="0.0003" style="width: 70px; background: #161d27; border: 1px solid var(--border-color); color: #fff; padding: 4px; border-radius: 4px; font-family: var(--font-mono);">
+          </div>
+        </div>
+      </div>
+
+      <!-- Training Learning Curve Canvas -->
+      <canvas id="canvas-training" class="train-chart-container" width="1200" height="140"></canvas>
+    </section>
+
+  </main>
+
+  <script src="/static/js/lab.js"></script>
+</body>
+</html>

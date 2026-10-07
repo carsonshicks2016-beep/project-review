@@ -1,0 +1,181 @@
+/* Asclepius console — visual language shared with assets/make_logo.py.
+   Amber phosphor on warm black, hexagonal chamfers, gauge ticks, bloom. */
+
+:root{
+  --amber:#FF9E2C; --hi:#FFDCA2; --dim:#965014; --hot:#FF4E1A;
+  --bg:#0A0807; --panel:#100C09; --panel2:#15100B;
+  --line:rgba(150,80,21,.55); --hair:rgba(150,80,21,.20);
+  --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  --glow:drop-shadow(0 0 6px rgba(255,158,44,.55));
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--amber); font:13px/1.5 var(--mono);
+  background-image:radial-gradient(ellipse 90% 55% at 50% -10%,#2E1709 0%,transparent 65%);
+  background-attachment:fixed; padding:20px 18px 80px;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden;
+}
+/* CRT scanlines + vignette, kept faint enough not to fight the data */
+body::after{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:9;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);
+  opacity:.30; mix-blend-mode:multiply;
+}
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:8;
+  box-shadow:inset 0 0 180px 40px rgba(0,0,0,.75);
+}
+::selection{background:rgba(255,158,44,.28)}
+
+/* ---------------------------------------------------------------- layout */
+.wrap{max-width:1440px;margin:0 auto;display:grid;gap:16px;
+  grid-template-columns:repeat(12,1fr)}
+.c3{grid-column:span 3}.c4{grid-column:span 4}.c5{grid-column:span 5}
+.c6{grid-column:span 6}.c7{grid-column:span 7}.c8{grid-column:span 8}
+.c9{grid-column:span 9}.c12{grid-column:1/-1}
+
+/* ---------------------------------------------------------------- panels */
+.panel .frame{background:var(--line);padding:1px;height:100%;
+  clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px)}
+.panel .inner{background:var(--panel);padding:14px 16px 16px;height:100%;
+  clip-path:polygon(15px 0,100% 0,100% calc(100% - 15px),calc(100% - 15px) 100%,0 100%,0 15px);
+  display:flex;flex-direction:column}
+.p-head{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex:none}
+.p-tag{color:var(--hi);letter-spacing:.30em;text-transform:uppercase;
+  font-size:10.5px;white-space:nowrap}
+.p-ticks{flex:1;height:9px;opacity:.65;
+  background:repeating-linear-gradient(90deg,var(--dim) 0 1px,transparent 1px 9px)}
+.p-note{color:var(--dim);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  white-space:nowrap}
+
+/* ------------------------------------------------------------- masthead */
+.top{grid-column:1/-1;display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  border-bottom:1px solid var(--line);padding-bottom:14px}
+.top img{width:70px;height:70px;flex:none}
+.brand{letter-spacing:.42em;font-size:21px;color:var(--hi);text-transform:uppercase}
+.sub{color:var(--dim);letter-spacing:.2em;font-size:10px;margin-top:5px;text-transform:uppercase}
+.top .spacer{flex:1 1 auto}
+.stamp{text-align:right;color:var(--dim);font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;line-height:1.85}
+.stamp b{color:var(--amber);font-weight:400;white-space:nowrap}
+.pulse{display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--amber);margin-right:7px;animation:pulse 2.4s ease-in-out infinite;
+  vertical-align:middle}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 6px var(--amber)}50%{opacity:.35;box-shadow:none}}
+
+/* -------------------------------------------------------------- controls */
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button,.btn{font:inherit;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--amber);background:transparent;border:1px solid var(--line);
+  padding:5px 11px;cursor:pointer;transition:.14s;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+button:hover{color:var(--hi);border-color:var(--amber);
+  background:rgba(255,158,44,.09);box-shadow:0 0 12px rgba(255,158,44,.18)}
+button[aria-pressed="true"]{color:#160E06;background:var(--amber);border-color:var(--amber);
+  box-shadow:0 0 14px rgba(255,158,44,.4)}
+select{font:inherit;font-size:11px;color:var(--hi);background:var(--panel2);
+  border:1px solid var(--line);padding:5px 8px;cursor:pointer;max-width:100%}
+select:focus,button:focus-visible{outline:1px solid var(--amber);outline-offset:2px}
+input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;
+  height:20px;cursor:pointer;flex:1;min-width:120px}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:16px;
+  background:var(--amber);margin-top:-7px;box-shadow:0 0 8px rgba(255,158,44,.6)}
+input[type=range]::-moz-range-track{height:2px;background:var(--line)}
+input[type=range]::-moz-range-thumb{width:11px;height:16px;border:0;background:var(--amber)}
+label.ctl{color:var(--dim);font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+
+/* ---------------------------------------------------------------- charts */
+.chart{width:100%;overflow:hidden}
+.chart svg{width:100%;height:auto;display:block;overflow:visible}
+.ax{fill:var(--dim);font:10px var(--mono);letter-spacing:.08em}
+.ax.r{text-anchor:start}.ax.l{text-anchor:end}.ax.c{text-anchor:middle}
+.lit{filter:var(--glow)}
+.legend{display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-size:10px;
+  letter-spacing:.16em;color:var(--dim);margin-bottom:10px;text-transform:uppercase}
+.legend i{display:inline-block;width:13px;height:3px;margin-right:6px;vertical-align:middle}
+.readout{margin-left:auto;color:var(--hi);white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* ----------------------------------------------------------------- dials */
+.gauges{display:flex;gap:6px;justify-content:space-around;flex-wrap:wrap}
+.gauge{text-align:center;flex:1 1 130px;min-width:120px;cursor:pointer;
+  border:1px solid transparent;padding:4px 2px;transition:.14s}
+.gauge:hover{border-color:var(--hair);background:rgba(255,158,44,.04)}
+.gauge svg{width:100%;max-width:150px;height:auto}
+.g-val{fill:var(--hi);font:28px var(--mono);text-anchor:middle}
+.g-unit{fill:var(--dim);font:10px var(--mono);text-anchor:middle;letter-spacing:.16em}
+.g-label{color:var(--amber);letter-spacing:.22em;font-size:10px;margin-top:2px}
+.g-delta{font-size:10px;letter-spacing:.1em;margin-top:3px;color:var(--dim)}
+.g-delta.up{color:var(--hi)}.g-delta.down{color:var(--hot)}
+
+/* ---------------------------------------------------------------- tables */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;color:var(--dim);font-weight:400;letter-spacing:.18em;font-size:9.5px;
+  padding:0 9px 7px 0;border-bottom:1px solid var(--line);text-transform:uppercase}
+td{padding:6px 9px 6px 0;border-bottom:1px solid var(--hair)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.sig td{color:var(--hi)}
+tbody tr{cursor:default}
+tbody tr.pick{cursor:pointer}
+tbody tr.pick:hover td{background:rgba(255,158,44,.07);color:var(--hi)}
+.cells{display:inline-flex;gap:2px}
+.cell{width:8px;height:10px;border:1px solid;display:inline-block}
+
+/* -------------------------------------------------------------- calendar */
+.cal{display:flex;gap:3px;overflow-x:auto;padding-bottom:6px}
+.cal .wk{display:flex;flex-direction:column;gap:3px}
+.cal .d{width:15px;height:15px;border:1px solid var(--hair);cursor:pointer;
+  transition:.1s;flex:none}
+.cal .dow{margin-right:3px}
+.cal .dl{width:12px;height:15px;line-height:15px;font-size:9px;color:var(--dim);
+  text-align:right;flex:none}
+.cal .d:hover{outline:1px solid var(--hi);outline-offset:1px}
+.cal .d.sel{outline:2px solid var(--hi);outline-offset:1px}
+.cal-scale{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--dim);
+  letter-spacing:.14em;margin-top:8px;text-transform:uppercase}
+.cal-scale i{width:13px;height:13px;display:inline-block;border:1px solid var(--hair)}
+
+/* ------------------------------------------------------------ day detail */
+dl.kv{margin:0;display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:12px}
+dl.kv dt{color:var(--dim);letter-spacing:.14em;text-transform:uppercase;font-size:10px;
+  align-self:center}
+dl.kv dd{margin:0;color:var(--hi);text-align:right;font-variant-numeric:tabular-nums}
+.wo{border-top:1px solid var(--hair);margin-top:10px;padding-top:9px}
+.wo-row{display:flex;justify-content:space-between;gap:10px;font-size:11px;padding:3px 0}
+.wo-row span:first-child{color:var(--amber);text-transform:uppercase;letter-spacing:.1em}
+.wo-row span:last-child{color:var(--dim);font-variant-numeric:tabular-nums}
+.empty{color:var(--dim);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  padding:14px 0}
+
+/* -------------------------------------------------------- metric chooser */
+.mlist{max-height:270px;overflow-y:auto;display:flex;flex-direction:column;gap:1px;
+  scrollbar-width:thin;scrollbar-color:var(--dim) transparent}
+.mlist button{text-align:left;border:0;border-left:2px solid transparent;
+  clip-path:none;padding:5px 8px;letter-spacing:.08em;text-transform:none;font-size:11px;
+  color:var(--dim)}
+.mlist button:hover{background:rgba(255,158,44,.07);color:var(--hi);box-shadow:none}
+.mlist button[aria-pressed="true"]{background:transparent;color:var(--hi);
+  border-left-color:var(--amber);box-shadow:none}
+.mlist button[data-slot="1"]{border-left-color:var(--hi)}
+.mlist button[data-slot="2"]{border-left-color:var(--hot)}
+
+/* ---------------------------------------------------------------- footer */
+.foot{grid-column:1/-1;color:var(--dim);font-size:9.5px;letter-spacing:.16em;
+  text-transform:uppercase;text-align:center;padding-top:6px;line-height:2}
+kbd{border:1px solid var(--line);padding:1px 5px;color:var(--amber);font-size:9.5px}
+
+/* ------------------------------------------------------------------ boot */
+#boot{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;
+  align-items:center;justify-content:center;flex-direction:column;gap:7px;
+  font-size:11px;letter-spacing:.24em;color:var(--amber);text-transform:uppercase}
+#boot.done{opacity:0;pointer-events:none;transition:opacity .45s ease}
+#boot .ln{opacity:0;animation:fade .2s forwards}
+@keyframes fade{to{opacity:1}}
+
+@media(max-width:1080px){
+  .c3,.c4,.c5,.c6,.c7,.c8,.c9{grid-column:1/-1}
+}
+@media(prefers-reduced-motion:reduce){
+  .pulse{animation:none}#boot{display:none}
+}

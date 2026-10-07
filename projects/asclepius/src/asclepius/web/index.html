@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Asclepius</title>
+<style>__CSS__</style>
+</head>
+<body>
+
+<div id="boot">
+  <div class="ln" style="animation-delay:.00s">ASCLEPIUS</div>
+  <div class="ln" style="animation-delay:.12s">LOCAL INSTANCE · NO NETWORK</div>
+  <div class="ln" style="animation-delay:.26s">__COUNTS__</div>
+  <div class="ln" style="animation-delay:.40s">SYSTEM NOMINAL</div>
+</div>
+
+<div class="wrap">
+
+  <div class="top">
+    __LOGO__
+    <div>
+      <div class="brand">Asclepius</div>
+      <div class="sub">Physiological readout · local instance</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="stamp">
+      <div><span class="pulse"></span>Range <b>__FROM__</b> → <b>__TO__</b></div>
+      <div>__COUNTS__</div>
+      <div>Generated __STAMP__</div>
+    </div>
+  </div>
+
+  <!-- range ------------------------------------------------------------ -->
+  <section class="panel c12"><div class="frame"><div class="inner">
+    <header class="p-head">
+      <span class="p-tag">Range</span><span class="p-ticks"></span>
+      <span class="p-note" id="rangeLabel"></span>
+    </header>
+    <div class="bar" style="margin-bottom:10px">
+      <button data-preset="30">30d</button>
+      <button data-preset="90">90d</button>
+      <button data-preset="180">180d</button>
+      <button data-preset="0">All</button>
+      <span class="p-note" style="margin-left:6px">drag across the trace to zoom · <kbd>R</kbd> resets</span>
+    </div>
+    <div class="chart" id="rangeChart"></div>
+  </div></div></section>
+
+  <!-- vitals ----------------------------------------------------------- -->
+  <section class="panel c12"><div class="frame"><div class="inner">
+    <header class="p-head">
+      <span class="p-tag">Vitals</span><span class="p-ticks"></span>
+      <span class="p-note">latest in range · pale tick = range mean · click a dial to plot it</span>
+    </header>
+    <div class="gauges" id="vitals"></div>
+  </div></div></section>
+
+  <!-- metric chooser + explorer ---------------------------------------- -->
+  <section class="panel c3"><div class="frame"><div class="inner">
+    <header class="p-head"><span class="p-tag">Metrics</span><span class="p-ticks"></span></header>
+    <div class="p-note" style="margin-bottom:8px;white-space:normal;line-height:1.7">
+      click to plot · <kbd>shift</kbd>+click to overlay
+    </div>
+    <div class="mlist" id="mlist"></div>
+  </div></div></section>
+
+  <section class="panel c9"><div class="frame"><div class="inner">
+    <header class="p-head">
+      <span class="p-tag">Explorer</span><span class="p-ticks"></span>
+      <label class="ctl" for="roll">Smoothing</label>
+      <input type="range" id="roll" min="1" max="28" value="7" style="max-width:120px">
+      <span class="p-note" id="rollVal">7d</span>
+    </header>
+    <div class="legend" id="expLegend"></div>
+    <div class="chart" id="expChart"></div>
+  </div></div></section>
+
+  <!-- correlation lab --------------------------------------------------- -->
+  <section class="panel c7"><div class="frame"><div class="inner">
+    <header class="p-head">
+      <span class="p-tag">Correlation lab</span><span class="p-ticks"></span>
+    </header>
+    <div class="bar" style="margin-bottom:10px">
+      <label class="ctl" for="driverSel">Driver</label>
+      <select id="driverSel"></select>
+      <button id="swap" title="Swap driver and outcome">⇄</button>
+      <label class="ctl" for="outcomeSel">Outcome</label>
+      <select id="outcomeSel"></select>
+    </div>
+    <div class="bar" style="margin-bottom:12px">
+      <label class="ctl" for="lag">Lag</label>
+      <input type="range" id="lag" min="-7" max="7" value="1" style="max-width:180px">
+      <span class="p-note" id="lagVal">+1</span>
+      <span class="p-note">days the driver leads the outcome</span>
+    </div>
+    <div class="p-note" style="color:var(--hi);margin-bottom:10px" id="corrStats"></div>
+    <div class="legend"><span>r across every lag — bar height is |r|, hot = negative</span></div>
+    <div class="chart" id="lagChart"></div>
+    <div class="legend" style="margin-top:14px"><span id="scatterAx"></span></div>
+    <div class="chart" id="scatter"></div>
+    <p class="p-note" style="white-space:normal;line-height:1.8;margin:12px 0 0;color:var(--dim)">
+      Effective n is Bartlett-adjusted, so autocorrelation is not inflating these.
+      No FDR correction and no confounders held fixed — for those, use
+      whoop_rank_drivers and whoop_regress.
+    </p>
+  </div></div></section>
+
+  <!-- day detail -------------------------------------------------------- -->
+  <section class="panel c5"><div class="frame"><div class="inner">
+    <header class="p-head">
+      <span class="p-tag">Day</span><span class="p-ticks"></span>
+      <span class="p-note" id="dayTitle"></span>
+    </header>
+    <div class="p-note" style="margin-bottom:10px">
+      click the trace or a calendar cell · <kbd>←</kbd> <kbd>→</kbd> to step
+    </div>
+    <div id="dayBody"></div>
+    <div id="dayWo"></div>
+  </div></div></section>
+
+  <!-- calendar ---------------------------------------------------------- -->
+  <section class="panel c8"><div class="frame"><div class="inner">
+    <header class="p-head">
+      <span class="p-tag">Calendar</span><span class="p-ticks"></span>
+      <label class="ctl" for="calSel">Colour by</label>
+      <select id="calSel"></select>
+    </header>
+    <div class="cal" id="cal"></div>
+    <div class="cal-scale" id="calScale"></div>
+  </div></div></section>
+
+  <!-- sports ------------------------------------------------------------ -->
+  <section class="panel c4"><div class="frame"><div class="inner">
+    <header class="p-head">
+      <span class="p-tag">Sports</span><span class="p-ticks"></span>
+      <span class="p-note">in range</span>
+    </header>
+    <table>
+      <thead><tr><th>Activity</th><th class="num">N</th><th>Minutes</th>
+        <th class="num">Min</th><th class="num">Strain</th></tr></thead>
+      <tbody id="sports"></tbody>
+    </table>
+  </div></div></section>
+
+  <div class="foot">
+    Asclepius · all computation local · no network requests<br>
+    <kbd>←</kbd> <kbd>→</kbd> step day &nbsp; <kbd>R</kbd> reset range &nbsp;
+    <kbd>shift</kbd>+click a metric to overlay
+  </div>
+
+</div>
+
+<script>window.__ASCLEPIUS__ = __DATA__;</script>
+<script>__JS__</script>
+</body>
+</html>

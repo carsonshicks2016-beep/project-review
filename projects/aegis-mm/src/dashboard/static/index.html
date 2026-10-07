@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AegisMM | Institutional Liquidity Command Center</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              500: '#0ea5e9',
+              900: '#0c4a6e',
+            },
+            dark: {
+              800: '#111827',
+              900: '#0b0f19',
+              950: '#050811',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+    .glow-green { box-shadow: 0 0 15px rgba(34, 197, 94, 0.25); }
+    .glow-cyan { box-shadow: 0 0 15px rgba(6, 182, 212, 0.35); }
+    .glow-red { box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #0b0f19; }
+    ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-dark-950 text-slate-200 min-h-screen flex flex-col antialiased selection:bg-cyan-500 selection:text-white">
+
+  <!-- TOP NAV -->
+  <header class="border-b border-slate-800/80 bg-dark-900/90 backdrop-blur px-6 py-3.5 flex items-center justify-between sticky top-0 z-50">
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-2.5">
+        <div class="h-3 w-3 rounded-full bg-cyan-400 animate-pulse glow-cyan"></div>
+        <span class="text-xl font-black tracking-tight bg-gradient-to-r from-cyan-400 to-sky-500 bg-clip-text text-transparent">AEGIS<span class="text-white">MM</span></span>
+      </div>
+      <span class="text-xs font-mono uppercase tracking-widest px-2.5 py-0.5 rounded border border-cyan-500/30 bg-cyan-950/40 text-cyan-300">Microstructure Engine</span>
+      <span id="market-symbol-badge" class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-semibold">BTC/USD</span>
+    </div>
+
+    <!-- ENGINE CONTROLS -->
+    <div class="flex items-center space-x-3">
+      <div id="status-pill" class="flex items-center space-x-2 text-xs font-mono font-medium px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-400">
+        <span class="h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <span id="status-text">QUOTING ACTIVE</span>
+      </div>
+
+      <button id="btn-toggle-engine" onclick="toggleEngine()" class="text-xs font-semibold px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+        Pause
+      </button>
+
+      <button id="btn-emergency-flatten" onclick="emergencyFlatten()" class="text-xs font-semibold px-4 py-1.5 rounded-lg bg-red-600/90 hover:bg-red-500 text-white font-mono transition glow-red">
+        🚨 FLATTEN ALL
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN DASHBOARD CONTENT -->
+  <main class="flex-1 p-6 space-y-6 max-w-[1600px] w-full mx-auto">
+
+    <!-- METRICS GRID -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      
+      <!-- Portfolio Equity -->
+      <div class="bg-dark-900 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between">
+        <div class="flex justify-between items-start">
+          <span class="text-xs font-mono uppercase text-slate-400">Portfolio Equity</span>
+          <span id="pnl-badge" class="text-xs font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 font-semibold">+0.00%</span>
+        </div>
+        <div class="mt-2">
+          <span id="val-equity" class="text-2xl font-mono font-bold text-white tracking-tight">$10,000.00</span>
+          <p id="val-net-pnl" class="text-xs font-mono text-emerald-400 mt-0.5">+$0.00 Net PnL</p>
+        </div>
+      </div>
+
+      <!-- Realized vs Unrealized -->
+      <div class="bg-dark-900 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between">
+        <span class="text-xs font-mono uppercase text-slate-400">Spread PnL Breakdown</span>
+        <div class="mt-2 space-y-1">
+          <div class="flex justify-between text-xs font-mono">
+            <span class="text-slate-400">Realized:</span>
+            <span id="val-realized" class="text-emerald-400 font-semibold">+$0.00</span>
+          </div>
+          <div class="flex justify-between text-xs font-mono">
+            <span class="text-slate-400">Unrealized:</span>
+            <span id="val-unrealized" class="text-slate-300 font-semibold">$0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Maker Rebates Earned -->
+      <div class="bg-dark-900 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between">
+        <div class="flex justify-between items-start">
+          <span class="text-xs font-mono uppercase text-slate-400">Maker Rebates</span>
+          <span class="text-[10px] font-mono uppercase px-1 rounded bg-amber-950/60 border border-amber-500/40 text-amber-300">Negative Fee</span>
+        </div>
+        <div class="mt-2">
+          <span id="val-rebates" class="text-2xl font-mono font-bold text-amber-400">+$0.0000</span>
+          <p class="text-xs text-slate-500 mt-0.5">Pure liquidity yield</p>
+        </div>
+      </div>
+
+      <!-- Inventory Risk -->
+      <div class="bg-dark-900 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between">
+        <div class="flex justify-between items-start">
+          <span class="text-xs font-mono uppercase text-slate-400">Inventory Position</span>
+          <span id="inv-ratio-badge" class="text-xs font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">0.0% Max</span>
+        </div>
+        <div class="mt-2">
+          <div class="flex items-baseline space-x-1.5">
+            <span id="val-inventory" class="text-2xl font-mono font-bold text-white">0.0000</span>
+            <span class="text-xs text-slate-400 font-mono">BTC</span>
+          </div>
+          <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-2">
+            <div id="inv-progress-bar" class="bg-cyan-500 h-full w-0 transition-all duration-300"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Microstructure Alpha -->
+      <div class="bg-dark-900 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between">
+        <div class="flex justify-between items-start">
+          <span class="text-xs font-mono uppercase text-slate-400">Flow Toxicity</span>
+          <span id="toxicity-badge" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-500/30 text-emerald-400">LOW</span>
+        </div>
+        <div class="mt-2 space-y-1 text-xs font-mono">
+          <div class="flex justify-between">
+            <span class="text-slate-400">OFI Imbalance:</span>
+            <span id="val-ofi" class="text-slate-200">+0.000</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Micro-Price:</span>
+            <span id="val-micro-price" class="text-cyan-400 font-semibold">$0.00</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- MAIN GRID: L2 LADDER + CHARTS -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- L2 DEPTH LADDER (4 COLS) -->
+      <div class="lg:col-span-4 bg-dark-900 border border-slate-800/80 rounded-xl p-5 flex flex-col">
+        <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+          <div class="flex items-center space-x-2">
+            <span class="text-sm font-bold tracking-tight text-white uppercase font-mono">Order Book Ladder</span>
+            <span class="text-[10px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">L2 Top Depth</span>
+          </div>
+          <div class="text-xs font-mono text-slate-400">
+            Spread: <span id="val-spread" class="text-white font-bold">$0.00</span>
+          </div>
+        </div>
+
+        <!-- L2 Table -->
+        <div class="mt-3 flex-1 flex flex-col justify-between font-mono text-xs select-none">
+          <!-- Asks (Red) -->
+          <div id="asks-container" class="space-y-1 flex flex-col-reverse">
+            <!-- populated by JS -->
+          </div>
+
+          <!-- Mid Spread Divider -->
+          <div class="py-2.5 my-1.5 border-y border-dashed border-slate-700/80 flex items-center justify-between px-2 bg-slate-950/40">
+            <span class="text-slate-400 text-[11px]">MID PRICE</span>
+            <span id="val-mid-price" class="text-sm font-bold text-amber-400 tracking-wider">$65,000.00</span>
+            <span id="val-spread-bps" class="text-[11px] text-slate-400">0.0 bps</span>
+          </div>
+
+          <!-- Bids (Green) -->
+          <div id="bids-container" class="space-y-1">
+            <!-- populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- CHARTS & CONTROLS (8 COLS) -->
+      <div class="lg:col-span-8 space-y-6">
+
+        <!-- REAL-TIME CHARTS TABS -->
+        <div class="bg-dark-900 border border-slate-800/80 rounded-xl p-5">
+          <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center space-x-3">
+              <span class="text-sm font-bold tracking-tight text-white font-mono uppercase">Performance Trajectory</span>
+              <span class="text-xs text-slate-400 font-mono">Live Mark-to-Market</span>
+            </div>
+            <div class="flex space-x-2 text-xs font-mono">
+              <span class="px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-300">Equity Curve</span>
+            </div>
+          </div>
+          <div class="h-64 w-full">
+            <canvas id="equityChart"></canvas>
+          </div>
+        </div>
+
+        <!-- RECENT FILLS LOG -->
+        <div class="bg-dark-900 border border-slate-800/80 rounded-xl p-5">
+          <div class="flex justify-between items-center mb-3">
+            <span class="text-sm font-bold tracking-tight text-white font-mono uppercase">Execution & Fill Stream</span>
+            <span id="fill-count-badge" class="text-xs font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded">0 Fills</span>
+          </div>
+          <div class="overflow-x-auto max-h-48 overflow-y-auto">
+            <table class="w-full text-left font-mono text-xs">
+              <thead class="text-slate-400 border-b border-slate-800 text-[11px]">
+                <tr>
+                  <th class="pb-2">Time</th>
+                  <th class="pb-2">Side</th>
+                  <th class="pb-2 text-right">Price</th>
+                  <th class="pb-2 text-right">Size</th>
+                  <th class="pb-2 text-center">Type</th>
+                  <th class="pb-2 text-right">Rebate / Fee</th>
+                </tr>
+              </thead>
+              <tbody id="fills-tbody" class="divide-y divide-slate-800/50">
+                <tr>
+                  <td colspan="6" class="py-4 text-center text-slate-500">Waiting for market fills...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- JAVASCRIPT WEBSOCKET & UI LOGIC -->
+  <script>
+    let ws = null;
+    let isRunning = true;
+    let equityChart = null;
+    const maxChartPoints = 60;
+    const chartLabels = [];
+    const chartData = [];
+
+    // Initialize Chart.js
+    function initChart() {
+      const ctx = document.getElementById('equityChart').getContext('2d');
+      equityChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartLabels,
+          datasets: [{
+            label: 'Equity ($)',
+            data: chartData,
+            borderColor: '#06b6d4',
+            backgroundColor: 'rgba(6, 182, 212, 0.08)',
+            borderWidth: 2,
+            pointRadius: 0,
+            fill: true,
+            tension: 0.15,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          scales: {
+            x: {
+              display: false,
+              grid: { display: false }
+            },
+            y: {
+              grid: { color: 'rgba(51, 65, 85, 0.25)' },
+              ticks: {
+                color: '#94a3b8',
+                font: { family: 'monospace', size: 10 },
+                callback: (val) => '$' + val.toLocaleString()
+              }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                label: (ctx) => ' Equity: $' + ctx.parsed.y.toFixed(2)
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Connect WebSocket to AegisMM Web Server
+    function connectWS() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const url = `${protocol}//${window.location.host}/ws`;
+      ws = new WebSocket(url);
+
+      ws.onopen = () => {
+        console.log('[AegisMM] Connected to live engine.');
+      };
+
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        renderState(msg);
+      };
+
+      ws.onclose = () => {
+        console.warn('[AegisMM] Disconnected. Reconnecting in 2s...');
+        setTimeout(connectWS, 2000);
+      };
+    }
+
+    function renderState(data) {
+      if (!data) return;
+
+      // 1. Metric Cards
+      const equity = data.equity || 10000;
+      const initialCash = data.initial_cash || 10000;
+      const netPnl = equity - initialCash;
+      const pnlPct = (netPnl / initialCash) * 100;
+
+      document.getElementById('val-equity').textContent = '$' + equity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      
+      const pnlEl = document.getElementById('val-net-pnl');
+      pnlEl.textContent = (netPnl >= 0 ? '+$' : '-$') + Math.abs(netPnl).toFixed(2) + ' Net PnL';
+      pnlEl.className = netPnl >= 0 ? 'text-xs font-mono text-emerald-400 mt-0.5' : 'text-xs font-mono text-red-400 mt-0.5';
+
+      const pnlBadge = document.getElementById('pnl-badge');
+      pnlBadge.textContent = (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%';
+      pnlBadge.className = pnlPct >= 0 ? 'text-xs font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 font-semibold' : 'text-xs font-mono px-1.5 py-0.5 rounded bg-red-950 text-red-400 font-semibold';
+
+      document.getElementById('val-realized').textContent = (data.realized_pnl >= 0 ? '+$' : '-$') + Math.abs(data.realized_pnl || 0).toFixed(2);
+      document.getElementById('val-unrealized').textContent = (data.unrealized_pnl >= 0 ? '+$' : '-$') + Math.abs(data.unrealized_pnl || 0).toFixed(2);
+      document.getElementById('val-rebates').textContent = '+$' + (data.total_maker_rebates || 0).toFixed(4);
+
+      // Inventory
+      const inv = data.inventory || 0;
+      const maxInv = data.max_inventory || 0.50;
+      const invRatio = Math.min(100, Math.abs(inv / maxInv) * 100);
+      document.getElementById('val-inventory').textContent = inv.toFixed(4);
+      document.getElementById('inv-ratio-badge').textContent = invRatio.toFixed(1) + '% Max';
+      
+      const invBar = document.getElementById('inv-progress-bar');
+      invBar.style.width = invRatio + '%';
+      invBar.className = invRatio > 70 ? 'bg-red-500 h-full transition-all' : (invRatio > 40 ? 'bg-amber-400 h-full transition-all' : 'bg-cyan-500 h-full transition-all');
+
+      // Microstructure
+      document.getElementById('val-ofi').textContent = (data.ofi >= 0 ? '+' : '') + (data.ofi || 0).toFixed(3);
+      document.getElementById('val-micro-price').textContent = '$' + (data.micro_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+      
+      const toxBadge = document.getElementById('toxicity-badge');
+      const tox = data.toxicity || 0;
+      if (tox > 0.6) {
+        toxBadge.textContent = 'HIGH';
+        toxBadge.className = 'text-[10px] font-mono px-1.5 py-0.5 rounded bg-red-950 border border-red-500/40 text-red-400';
+      } else if (tox > 0.3) {
+        toxBadge.textContent = 'MODERATE';
+        toxBadge.className = 'text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-950 border border-amber-500/40 text-amber-300';
+      } else {
+        toxBadge.textContent = 'LOW';
+        toxBadge.className = 'text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-500/30 text-emerald-400';
+      }
+
+      // 2. Order Book Ladder
+      document.getElementById('val-mid-price').textContent = '$' + (data.mid_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+      document.getElementById('val-spread').textContent = '$' + (data.spread || 0).toFixed(2);
+      document.getElementById('val-spread-bps').textContent = (data.spread_bps || 0).toFixed(1) + ' bps';
+
+      renderLadder(data.bids || [], data.asks || [], data.agent_quotes || {});
+
+      // 3. Update Chart
+      chartLabels.push('');
+      chartData.push(equity);
+      if (chartLabels.length > maxChartPoints) {
+        chartLabels.shift();
+        chartData.shift();
+      }
+      if (equityChart) equityChart.update();
+
+      // 4. Fill Stream
+      renderFills(data.recent_fills || []);
+    }
+
+    function renderLadder(bids, asks, agentQuotes) {
+      const asksContainer = document.getElementById('asks-container');
+      const bidsContainer = document.getElementById('bids-container');
+
+      asksContainer.innerHTML = '';
+      bidsContainer.innerHTML = '';
+
+      const topAsks = asks.slice(0, 7);
+      const topBids = bids.slice(0, 7);
+
+      const maxVol = Math.max(
+        ...topAsks.map(a => a[1]),
+        ...topBids.map(b => b[1]),
+        0.01
+      );
+
+      // Render Asks (reversed in container so best ask is at bottom near mid)
+      topAsks.forEach(([price, size]) => {
+        const isAgent = agentQuotes.ask && Math.abs(agentQuotes.ask - price) < 1e-4;
+        const widthPct = Math.min(100, (size / maxVol) * 100);
+        const el = document.createElement('div');
+        el.className = `relative flex justify-between items-center px-2 py-1 rounded overflow-hidden ${isAgent ? 'bg-red-950/80 border border-red-500/80' : 'hover:bg-slate-800/40'}`;
+        el.innerHTML = `
+          <div class="absolute inset-y-0 right-0 bg-red-500/10 pointer-events-none" style="width: ${widthPct}%"></div>
+          <div class="flex items-center space-x-2 z-10">
+            ${isAgent ? '<span class="text-[9px] bg-red-600 text-white font-bold px-1 rounded">OUR ASK</span>' : ''}
+            <span class="text-red-400 font-bold">$${price.toFixed(2)}</span>
+          </div>
+          <span class="text-slate-300 z-10">${size.toFixed(4)}</span>
+        `;
+        asksContainer.appendChild(el);
+      });
+
+      // Render Bids
+      topBids.forEach(([price, size]) => {
+        const isAgent = agentQuotes.bid && Math.abs(agentQuotes.bid - price) < 1e-4;
+        const widthPct = Math.min(100, (size / maxVol) * 100);
+        const el = document.createElement('div');
+        el.className = `relative flex justify-between items-center px-2 py-1 rounded overflow-hidden ${isAgent ? 'bg-emerald-950/80 border border-emerald-500/80' : 'hover:bg-slate-800/40'}`;
+        el.innerHTML = `
+          <div class="absolute inset-y-0 right-0 bg-emerald-500/10 pointer-events-none" style="width: ${widthPct}%"></div>
+          <div class="flex items-center space-x-2 z-10">
+            ${isAgent ? '<span class="text-[9px] bg-emerald-600 text-white font-bold px-1 rounded">OUR BID</span>' : ''}
+            <span class="text-emerald-400 font-bold">$${price.toFixed(2)}</span>
+          </div>
+          <span class="text-slate-300 z-10">${size.toFixed(4)}</span>
+        `;
+        bidsContainer.appendChild(el);
+      });
+    }
+
+    function renderFills(fills) {
+      const tbody = document.getElementById('fills-tbody');
+      document.getElementById('fill-count-badge').textContent = fills.length + ' Total Fills';
+      if (!fills || fills.length === 0) return;
+
+      tbody.innerHTML = '';
+      fills.slice(-8).reverse().forEach(f => {
+        const tr = document.createElement('tr');
+        const isBuy = f.side === 'buy';
+        tr.className = 'hover:bg-slate-800/30';
+        tr.innerHTML = `
+          <td class="py-2 text-slate-400">${f.time || 'now'}</td>
+          <td class="py-2 font-bold ${isBuy ? 'text-emerald-400' : 'text-red-400'}">${f.side.toUpperCase()}</td>
+          <td class="py-2 text-right">$${Number(f.price).toFixed(2)}</td>
+          <td class="py-2 text-right">${Number(f.size).toFixed(4)}</td>
+          <td class="py-2 text-center"><span class="px-1.5 py-0.5 rounded text-[10px] ${f.is_maker ? 'bg-amber-950/80 text-amber-300 border border-amber-500/30' : 'bg-slate-800 text-slate-400'}">${f.is_maker ? 'MAKER' : 'TAKER'}</span></td>
+          <td class="py-2 text-right font-bold text-amber-400">${f.fee < 0 ? '+$' + Math.abs(f.fee).toFixed(4) : '-$' + Number(f.fee).toFixed(4)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function toggleEngine() {
+      isRunning = !isRunning;
+      fetch('/api/toggle', { method: 'POST', body: JSON.stringify({ running: isRunning }) });
+      document.getElementById('btn-toggle-engine').textContent = isRunning ? 'Pause' : 'Resume';
+      document.getElementById('status-text').textContent = isRunning ? 'QUOTING ACTIVE' : 'PAUSED';
+      document.getElementById('status-pill').className = isRunning
+        ? 'flex items-center space-x-2 text-xs font-mono font-medium px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-400'
+        : 'flex items-center space-x-2 text-xs font-mono font-medium px-3 py-1 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-400';
+    }
+
+    function emergencyFlatten() {
+      if (confirm('EMERGENCY: Cancel all quotes and immediately market-flatten all inventory?')) {
+        fetch('/api/flatten', { method: 'POST' });
+      }
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      initChart();
+      connectWS();
+    });
+  </script>
+</body>
+</html>
