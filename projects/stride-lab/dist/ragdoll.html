@@ -1,0 +1,178 @@
+<!doctype html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stride Lab — Ragdoll</title>
+<style>
+:root{--bg:#0f1115;--panel:#161a21;--line:#232936;--ink:#e6e9ef;--dim:#8b94a7;--acc:#c3f53c;--warn:#ff7a6b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+h1{font-size:16px;margin:0;letter-spacing:.02em}
+.sub{color:var(--dim);font-size:12px}
+main{display:grid;grid-template-columns:1fr 300px;gap:18px;padding:18px 24px;align-items:start}
+@media(max-width:820px){main{grid-template-columns:1fr}}
+canvas{width:100%;height:auto;background:#0b0d11;border:1px solid var(--line);border-radius:10px;display:block}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border:0}
+.row span{color:var(--dim)}
+.row b{font-weight:600;font-variant-numeric:tabular-nums}
+button{background:var(--acc);color:#12160c;border:0;border-radius:7px;padding:9px 13px;font:inherit;font-weight:600;cursor:pointer}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:disabled{opacity:.45;cursor:default}
+.bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.note{color:var(--dim);font-size:12px;margin-top:12px}
+.bad{color:var(--warn)}.good{color:var(--acc)}
+</style>
+<header>
+ <h1>STRIDE LAB · RAGDOLL</h1>
+ <span class="sub">9 links · 11 degrees of freedom · Winter anthropometry · torques from a learned linear policy</span>
+</header>
+<main>
+ <div>
+  <div class="bar">
+   <button id="run">Balance policy</button>
+   <button id="walkbtn">Walk policy</button>
+   <button id="limp" class="ghost">Zero torque</button>
+   <button id="poke" class="ghost">Shove</button>
+  </div>
+  <canvas id="c" width="1000" height="520"></canvas>
+  <p class="note" id="cap">Nothing here prescribes a posture. The policy sees joint angles, rates, torso attitude, pelvis state and which soles are loaded, and returns eight joint torques inside human limits.</p>
+ </div>
+ <div class="panel">
+  <div class="row"><span>Time upright</span><b id="t">0.00 s</b></div>
+  <div class="row"><span>Pelvis height</span><b id="h">—</b></div>
+  <div class="row"><span>Torso pitch</span><b id="p">—</b></div>
+  <div class="row"><span>Travelled</span><b id="d">—</b></div>
+  <div class="row"><span>Speed</span><b id="v">—</b></div>
+  <div class="row"><span>Loaded-foot slip</span><b id="sl">—</b></div>
+  <div class="row"><span>Steps</span><b id="st">—</b></div>
+  <div class="row"><span>Ground reaction</span><b id="g">—</b></div>
+  <div class="row"><span>Actuator work</span><b id="w">—</b></div>
+  <div class="row"><span>Energy residual</span><b id="r">—</b></div>
+  <div class="row"><span>Status</span><b id="s">idle</b></div>
+ </div>
+</main>
+<script type="module">
+import {LINKS,ATTACH,kinematics,pointJacobian,NQ} from './body.js';
+import {step,contactPoints,NC,SOLE_POINTS,SOLE_LINKS} from './dynamics.js';
+import {reset,observe,act,upright,OBS,ACT,STAND} from './task.js';
+import {makePolicy} from './policy.js';
+
+const c=document.getElementById('c'),g=c.getContext('2d');
+const $=i=>document.getElementById(i);
+async function grab(n){try{const r=await fetch(n);if(r.ok)return await r.json();}catch{}return null;}
+const trained=await grab('balance.json'),walker=await grab('walk.json');
+if(!trained)$('run').disabled=true;
+if(!walker)$('walkbtn').disabled=true;
+if(!trained&&!walker)$('cap').textContent='No trained policy found — run scripts/train_balance.mjs or scripts/train_walk.mjs, which publish next to this page. Zero torque still works.';
+
+const SEGW=[16,11,9,7,11,9,7,6,6];
+function draw(b,k){
+ const W=c.width,H=c.height,px=200,gy=H-90;
+ g.fillStyle='#0b0d11';g.fillRect(0,0,W,H);
+ const camx=b.q[0];
+ const X=x=>W/2+(x-camx)*px, Y=y=>gy-y*px;
+ // ground and metre marks
+ g.strokeStyle='#1d2330';g.lineWidth=1;
+ for(let m=Math.floor(camx)-6;m<=Math.ceil(camx)+6;m++){g.beginPath();g.moveTo(X(m),gy-6);g.lineTo(X(m),gy+10);g.stroke();}
+ g.strokeStyle='#39425a';g.lineWidth=2;g.beginPath();g.moveTo(0,Y(0));g.lineTo(W,Y(0));g.stroke();
+ // limbs
+ g.lineCap='round';
+ for(let i=LINKS-1;i>=0;i--){
+  const ax=k.ax[i],ay=k.ay[i],a=k.phi[i],L=b.seg[i].len;
+  const sn=Math.sin(a),cs=Math.cos(a);
+  g.strokeStyle=i===0?'#dfe6f2':(i<7?'#9fb0cc':'#6f7d96');
+  g.lineWidth=SEGW[i];
+  g.beginPath();
+  if(i===3||i===6){
+   // Feet touch the ground along the sole, 7 cm below the foot's own axis. Drawing only
+   // the axis makes a planted foot look like it floats above the floor it is standing on.
+   const px=-cs,py=-sn;
+   g.moveTo(X(ax),Y(ay));
+   g.lineTo(X(ax+0.02*sn+0.07*px),Y(ay-0.02*cs+0.07*py));
+   g.lineTo(X(ax+0.20*sn+0.07*px),Y(ay-0.20*cs+0.07*py));
+  }else{
+   g.moveTo(X(ax),Y(ay));g.lineTo(X(ax+L*sn),Y(ay-L*cs));
+  }
+  g.stroke();
+ }
+ // head
+ const hx=k.ax[0]+0.60*Math.sin(k.phi[0]),hy=k.ay[0]-0.60*Math.cos(k.phi[0]);
+ g.fillStyle='#dfe6f2';g.beginPath();g.arc(X(hx),Y(hy),13,0,7);g.fill();
+ // contact forces
+ contactPoints(b,k);
+ for(let i=0;i<NC;i++){
+  if(b.fn[i]<=0)continue;
+  const s=0.00035*px;
+  g.strokeStyle='#c3f53c';g.lineWidth=2;
+  g.beginPath();g.moveTo(X(b.cx[i]),Y(b.cy[i]));
+  g.lineTo(X(b.cx[i])+b.ft[i]*s,Y(b.cy[i])-b.fn[i]*s);g.stroke();
+ }
+}
+let raf=null;
+const jac=new Float64Array(2*NQ);
+// A planted foot is stationary while it carries load. Watching this number separates
+// walking from skating more reliably than watching the figure.
+function footSlip(b,k){
+ let loaded=0,slip=0;
+ for(let i=0;i<SOLE_POINTS.length;i++){
+  const c=SOLE_POINTS[i];
+  if(b.fn[c]<=1)continue;
+  pointJacobian(k,b.seg,SOLE_LINKS[i],b.cx[c],b.cy[c],jac);
+  let vx=0;for(let j=0;j<NQ;j++)vx+=jac[j]*b.qd[j];
+  loaded++;slip+=Math.abs(vx);
+ }
+ return loaded?slip/loaded:0;
+}
+function play(policy,label){
+ cancelAnimationFrame(raf);
+ const b=reset();b.audit=true;
+ const obs=new Float64Array(OBS),a=new Float64Array(ACT);
+ let n=0,live=0,shove=0,slipSum=0,slipN=0;
+ const foot=[{s:true,p:true,t:0,n:0},{s:true,p:true,t:0,n:0}];
+ $('s').textContent=label;$('s').className='';
+ window.__shove=()=>{shove=260;};
+ (function frame(){
+  for(let i=0;i<32;i++){
+   if(n%20===0){observe(b,obs);policy(obs,a);act(b,a);}
+   if(shove>0){b.tau[0]=0;b.qd[0]+=shove*b.env.dt/b.env.mass;shove-=1;}
+   step(b);n++;
+   if(upright(b))live=b.t;
+  }
+  const k=kinematics(b.q,b.qd,b.seg,b.k);
+  contactPoints(b,k);
+  const sl=footSlip(b,k);
+  if(b.grf[1]>1){slipSum+=sl;slipN++;}
+  // Debounced stance: 40 ms of continuous load, so contact chatter is not a step.
+  for(let f=0;f<2;f++){
+   const on=b.fn[SOLE_POINTS[2*f]]>1||b.fn[SOLE_POINTS[2*f+1]]>1,g=foot[f];
+   if(on!==g.p){g.p=on;g.t=b.t;}
+   else if(on!==g.s&&b.t-g.t>=0.04){g.s=on;if(on)g.n++;}
+  }
+  draw(b,k);
+  $('t').textContent=live.toFixed(2)+' s';
+  $('h').textContent=b.q[1].toFixed(3)+' m';
+  $('p').textContent=(b.q[2]*57.3).toFixed(1)+'°';
+  $('d').textContent=b.q[0].toFixed(2)+' m';
+  $('v').textContent=(b.q[0]/Math.max(b.t,1e-9)).toFixed(2)+' m/s';
+  const ms=slipN?slipSum/slipN:0;
+  $('sl').innerHTML=ms.toFixed(2)+' m/s'+(ms>0.25?' <span class="bad">skating</span>':'');
+  $('st').textContent=foot[0].n+'L / '+foot[1].n+'R';
+  $('g').textContent=(b.grf[1]/(b.env.mass*9.81)).toFixed(2)+' BW';
+  $('w').textContent=b.work.toFixed(0)+' J';
+  $('r').textContent=b.residual.toFixed(1)+' J';
+  const ok=upright(b);
+  $('s').textContent=ok?label:'fell after '+live.toFixed(2)+' s';
+  $('s').className=ok?'good':'bad';
+  if(b.t<20)raf=requestAnimationFrame(frame);
+ })();
+}
+const zero=(o,out)=>out.fill(0);
+$('limp').onclick=()=>play(zero,'zero torque');
+$('poke').onclick=()=>window.__shove&&window.__shove();
+const run=(art,label)=>()=>play(makePolicy(Float64Array.from(art.w),art.obs,art.act,
+ {mean:Float64Array.from(art.norm.mean),std:Float64Array.from(art.norm.std)}),label);
+if(trained)$('run').onclick=run(trained,'balance policy');
+if(walker)$('walkbtn').onclick=run(walker,'walk policy');
+play(zero,'zero torque');
+</script>

@@ -1,0 +1,35 @@
+{
+  "version": "macro-actions-v1",
+  "controller": 1,
+  "allowed_buttons": ["Up", "Down", "Left", "Right", "A", "B", "X", "Y", "L", "R", "Start", "Select"],
+  "macros": [
+    {"name": "idle", "hold_frames": 1, "buttons": []},
+    {"name": "walk_right", "hold_frames": 6, "buttons": ["Right"]},
+    {"name": "run_right", "hold_frames": 8, "buttons": ["Right", "Y"]},
+    {"name": "run_left", "hold_frames": 8, "buttons": ["Left", "Y"]},
+    {"name": "tap_left", "hold_frames": 3, "buttons": ["Left"]},
+    {"name": "tap_right", "hold_frames": 3, "buttons": ["Right"]},
+    {"name": "duck", "hold_frames": 8, "buttons": ["Down"]},
+    {"name": "look_up", "hold_frames": 8, "buttons": ["Up"]},
+    {"name": "jump", "hold_frames": 5, "buttons": ["B"]},
+    {"name": "jump_right", "hold_frames": 10, "buttons": ["Right", "B"]},
+    {"name": "run_jump_right", "hold_frames": 14, "buttons": ["Right", "Y", "B"]},
+    {"name": "short_hop_right", "hold_frames": 6, "buttons": ["Right", "Y", "B"]},
+    {"name": "spin_jump", "hold_frames": 8, "buttons": ["A"]},
+    {"name": "spin_jump_right", "hold_frames": 12, "buttons": ["Right", "Y", "A"]},
+    {"name": "swim_right", "hold_frames": 6, "buttons": ["Right", "B"]},
+    {"name": "swim_down_right", "hold_frames": 6, "buttons": ["Right", "Down", "B"]},
+    {"name": "climb_up", "hold_frames": 6, "buttons": ["Up"]},
+    {"name": "climb_down", "hold_frames": 6, "buttons": ["Down"]},
+    {"name": "item", "hold_frames": 2, "buttons": ["Select"]},
+    {"name": "confirm", "hold_frames": 2, "buttons": ["B"]},
+    {"name": "start", "hold_frames": 2, "buttons": ["Start"]},
+    {"name": "pause_toggle", "hold_frames": 2, "buttons": ["Start"]},
+    {"name": "cape_hold_right", "hold_frames": 18, "buttons": ["Right", "Y", "B"]},
+    {"name": "cape_pump_left", "hold_frames": 6, "buttons": ["Left", "Y"]},
+    {"name": "cape_pump_right", "hold_frames": 6, "buttons": ["Right", "Y"]},
+    {"name": "throw_up", "hold_frames": 4, "buttons": ["Up", "Y"]},
+    {"name": "throw_forward", "hold_frames": 4, "buttons": ["Right", "Y"]}
+  ]
+}
+

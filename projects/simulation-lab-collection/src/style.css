@@ -1,0 +1,613 @@
+:root {
+  --bg-color: #050508;
+  --panel-bg: rgba(16, 16, 26, 0.85);
+  --cyan: #00ffff;
+  --magenta: #ff007f;
+  --text-main: #ffffff;
+  --text-muted: #a0a0b0;
+  --border: 1px solid rgba(0, 255, 255, 0.7);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg-color);
+  color: var(--text-main);
+  font-family: monospace;
+  overflow: hidden;
+}
+
+#app {
+  display: grid;
+  grid-template-columns: 260px 1fr 260px;
+  height: 100vh;
+  width: 100vw;
+}
+
+.panel {
+  background: var(--panel-bg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.15);
+}
+
+#left-panel { border-right: var(--border); }
+#right-panel { border-left: var(--border); }
+
+#center-panel {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+#viewport {
+  flex: 1;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+#viewport canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#bottom-panel {
+  height: 240px;
+  border-top: var(--border);
+  padding: 12px 20px;
+  gap: 8px; /* .panel's 20px gap overflowed the fixed height */
+}
+
+.graph-header {
+  font-size: 12px;
+  color: var(--cyan);
+  margin-bottom: 5px;
+}
+
+#fitness-graph {
+  width: 100%;
+  height: 175px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 4px;
+}
+
+h2 {
+  font-size: 16px;
+  color: var(--cyan);
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+h3 {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.section {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.section.disabled,
+#editor-tools.disabled {
+  opacity: 0.3;
+  pointer-events: none;
+  filter: grayscale(0.5);
+}
+
+.control-group {
+  display: flex;
+  gap: 10px;
+}
+
+label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-main);
+}
+
+.highlight {
+  color: var(--cyan);
+  font-weight: bold;
+}
+
+.btn {
+  background: rgba(0, 229, 255, 0.1);
+  color: var(--cyan);
+  border: 1px solid var(--cyan);
+  padding: 8px 12px;
+  cursor: pointer;
+  font-family: monospace;
+  font-size: 13px;
+  border-radius: 4px;
+  text-align: center;
+  transition: all 0.2s;
+  flex: 0 0 auto;
+}
+
+/* Only buttons laid out in a row should share the width. Previously `flex: 1` on the
+   base class made buttons that are direct children of a column-flex panel stretch to
+   fill the panel's leftover height. */
+.control-group > .btn,
+.toolbar > .btn {
+  flex: 1;
+}
+
+.btn:hover {
+  background: rgba(0, 229, 255, 0.3);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+}
+
+.btn.active {
+  background: var(--cyan);
+  color: #000;
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
+}
+
+.btn.outline {
+  background: transparent;
+  border-color: var(--text-muted);
+  color: var(--text-main);
+}
+
+.btn.outline:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.btn.danger,
+.btn.text-danger {
+  border-color: var(--magenta);
+  color: var(--magenta);
+}
+
+.btn.danger:hover,
+.btn.text-danger:hover {
+  background: rgba(255, 0, 127, 0.2);
+  box-shadow: 0 0 10px rgba(255, 0, 127, 0.4);
+}
+
+.mt-2 { margin-top: 10px; }
+.mt-10 { margin-top: 10px; }
+
+/* --- Track Studio Editor UI --- */
+.panel-header {
+  font-size: 1.2rem;
+  color: var(--cyan);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: bold;
+  border-bottom: 1px solid rgba(0,255,255,0.3);
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.section-divider {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 25px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 5px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+}
+
+.toolbar .tool, .toolbar .btn {
+  flex: 1;
+  padding: 8px 3px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.toolbar-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.success {
+  border-color: #00ff88 !important;
+  color: #00ff88 !important;
+}
+.success:hover {
+  background: rgba(0,255,136,0.1) !important;
+}
+
+/* --- Toast Notifications --- */
+#toast-container {
+  position: absolute;
+  bottom: 20px;
+  right: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.toast {
+  background: rgba(16,16,26,0.95);
+  border: 1px solid var(--cyan);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 4px;
+  box-shadow: 0 0 15px rgba(0,255,255,0.2);
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+.toast.fade-out {
+  animation: slideOut 0.3s ease-in forwards;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0; }
+}
+
+/* --- In-Viewport HUD --- */
+/* Sits over the canvas so the fast-changing numbers are next to the action instead of
+   in the far-left rail. Never intercepts pointer events -- the editor needs the canvas. */
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-family: ui-monospace, monospace;
+  z-index: 5;
+}
+
+.hud-block {
+  background: linear-gradient(180deg, rgba(6,8,14,0.82), rgba(6,8,14,0.6));
+  border: 1px solid rgba(120,180,220,0.16);
+  border-radius: 8px;
+  padding: 10px 12px;
+  backdrop-filter: blur(6px);
+  align-self: flex-start;
+  min-width: 320px;
+}
+
+.hud-bottom {
+  align-self: stretch;
+  background: none;
+  border: none;
+  backdrop-filter: none;
+  padding: 0;
+}
+
+.hud-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.hud-label {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: rgba(200,215,235,0.5);
+}
+
+.hud-value {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  color: #f0f4ff;
+  line-height: 1.1;
+}
+
+.hud-unit {
+  font-size: 10px;
+  color: rgba(200,215,235,0.45);
+  margin-left: 2px;
+}
+
+.hud-status {
+  margin-left: auto;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+
+.hud-metrics {
+  gap: 18px;
+  margin-top: 8px;
+}
+
+.hud-metrics .hud-value { font-size: 15px; }
+
+/* Gate pips: the lap read at a glance. Amber is the gate being flown at. */
+.hud-pips {
+  display: flex;
+  gap: 3px;
+  margin-top: 10px;
+}
+
+.hud-pips i {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(150,180,210,0.16);
+  transition: background 0.15s;
+}
+
+.hud-pips i.done { background: #2fd6a8; }
+
+.hud-pips i.next {
+  background: #ffb020;
+  box-shadow: 0 0 8px rgba(255,176,32,0.8);
+}
+
+.hud-progress {
+  height: 3px;
+  background: rgba(150,180,210,0.14);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.hud-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #a855f7;
+}
+
+.hud-hint {
+  margin-top: 8px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: rgba(200,215,235,0.35);
+  text-align: right;
+}
+
+/* --- Replay Window --- */
+.replay-body { overflow: hidden; }
+
+#replay-app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+
+#replay-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+#replay-viewport canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.replay-panel {
+  position: absolute;
+  background: linear-gradient(180deg, rgba(6,8,14,0.9), rgba(6,8,14,0.72));
+  border: 1px solid rgba(120,180,220,0.18);
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  z-index: 10;
+}
+
+#replay-meta {
+  top: 18px;
+  left: 18px;
+  padding: 12px 14px;
+  min-width: 300px;
+}
+
+.replay-select {
+  width: 100%;
+  background: rgba(0,0,0,0.5);
+  color: var(--cyan);
+  border: 1px solid rgba(0,229,255,0.35);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.replay-stats {
+  display: flex;
+  gap: 18px;
+}
+
+.replay-stats span { display: flex; flex-direction: column; }
+
+.replay-stats b {
+  font-size: 19px;
+  color: #f0f4ff;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.replay-stats i {
+  font-style: normal;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: rgba(200,215,235,0.45);
+  text-transform: uppercase;
+}
+
+.replay-date {
+  margin-top: 8px;
+  font-size: 10px;
+  color: rgba(200,215,235,0.35);
+}
+
+#replay-transport {
+  bottom: 18px;
+  left: 18px;
+  right: 18px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#replay-transport .btn { flex: 0 0 auto; min-width: 54px; }
+
+#scrub {
+  flex: 1;
+  accent-color: #a855f7;
+}
+
+.replay-time {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  color: rgba(220,225,240,0.75);
+  font-variant-numeric: tabular-nums;
+  min-width: 110px;
+  text-align: center;
+}
+
+.replay-sep {
+  width: 1px;
+  height: 22px;
+  background: rgba(255,255,255,0.12);
+}
+
+/* An ID rule setting display:flex outranks the UA stylesheet's [hidden]{display:none},
+   so hidden overlays kept rendering. This has to win over both. */
+[hidden] { display: none !important; }
+
+#replay-loading, #replay-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3,4,10,0.94);
+  z-index: 50;
+}
+
+.replay-loading-inner { text-align: center; max-width: 360px; }
+
+.replay-loading-title {
+  color: var(--cyan);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.replay-loading-bar {
+  height: 4px;
+  background: rgba(150,180,210,0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+#replay-loading-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--cyan);
+  transition: width 0.2s;
+}
+
+#replay-loading-pct {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  color: rgba(220,225,240,0.6);
+  margin-bottom: 16px;
+}
+
+.btn.disabled, .btn:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* --- Trainer switch --- */
+/* The toolbar tool buttons already carry the active styling; this just makes the
+   inactive one clearly secondary rather than merely unhighlighted. */
+.toolbar .tool:not(.active) {
+  opacity: 0.6;
+}
+
+#ppo-stats label,
+#ga-only-pop label {
+  font-size: 12px;
+}
+
+.section.mode-hidden {
+  display: none;
+}
+
+/* --- Commentary feed --- */
+/* Sits above the transport strip at the bottom-left of the viewport, like race subtitles.
+   Never intercepts pointer events -- the editor needs the canvas underneath. */
+.hud-commentary {
+  align-self: flex-start;
+  max-width: 460px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.hud-comment {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #e8eeff;
+  background: rgba(6, 8, 14, 0.72);
+  border-left: 2px solid var(--cyan);
+  border-radius: 0 5px 5px 0;
+  padding: 5px 9px;
+  backdrop-filter: blur(4px);
+  animation: commentIn 0.22s ease-out;
+}
+
+.hud-comment-nearMiss { border-left-color: #ffb020; }
+.hud-comment-wallHit,
+.hud-comment-groundHit { border-left-color: var(--magenta); }
+.hud-comment-finish,
+.hud-comment-record { border-left-color: #2fd6a8; }
+
+@keyframes commentIn {
+  from { transform: translateX(-8px); opacity: 0; }
+}
+
+/* Commentary feed in the replay window sits just above the transport bar. */
+#replay-commentary {
+  position: absolute;
+  left: 18px;
+  bottom: 78px;
+  z-index: 10;
+  max-width: 460px;
+}

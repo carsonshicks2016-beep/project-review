@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vault Scribe</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css?v=2">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js?v=2"></script>
+</head>
+<body>
+    <div id="aquarium-bg"></div>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="css-i6dzq1"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+                    <span>Vault Scribe</span>
+                </div>
+            </div>
+            
+            <ul class="nav-links">
+                <li class="nav-item active" data-tab="intake">
+                    <span class="icon">📝</span> Intake
+                </li>
+                <li class="nav-item" data-tab="innervate">
+                    <span class="icon">🔗</span> Innervate
+                </li>
+                <li class="nav-item" data-tab="gaps">
+                    <span class="icon">🕳️</span> Gaps
+                </li>
+                <li class="nav-item" data-tab="url">
+                    <span class="icon">🌐</span> URL Import
+                </li>
+                <li class="nav-item" data-tab="chat">
+                    <span class="icon">💬</span> Chat
+                </li>
+                <li class="nav-item" data-tab="insights">
+                    <span class="icon">💡</span> Insights
+                </li>
+                <li class="nav-item" data-tab="experiments">
+                    <span class="icon">🧪</span> Experiments
+                </li>
+                <li class="nav-item" data-tab="librarian">
+                    <span class="icon">📚</span> Librarian
+                </li>
+                <li class="nav-item" data-tab="search">
+                    <span class="icon">🔍</span> Search
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="stats-card">
+                    <div class="stat-row"><span>Notes</span><span id="stat-notes">--</span></div>
+                    <div class="stat-row"><span>Links</span><span id="stat-links">--</span></div>
+                    <div class="stat-row"><span>Ghosts</span><span id="stat-ghosts">--</span></div>
+                    <div class="stat-row"><span>Orphans</span><span id="stat-orphans">--</span></div>
+                    <div class="stat-row"><span>Words</span><span id="stat-words">--</span></div>
+                    <div class="stat-row" style="font-size: 0.7rem; margin-top: 5px; color: var(--text-secondary);"><span>Last Indexed:</span><span id="stat-indexed">--</span></div>
+                    <button id="rebuild-btn" class="btn-sm btn-ghost" style="margin-top: 10px;">🔄 Rebuild Index</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <header class="topbar">
+                <h1 id="page-title">Smart Intake</h1>
+                <div class="topbar-actions">
+                    <div class="status-indicator" id="index-status">
+                        <span class="dot"></span> <span class="status-text">Indexing...</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Tab Content: Intake -->
+            <div id="tab-intake" class="tab-pane active">
+                <div class="split-view">
+                    <!-- Left Panel: Input -->
+                    <div class="panel-left">
+                        <div class="input-group">
+                            <label for="note-title">Suggested Title <span class="sub-label">(Editable)</span></label>
+                            <input type="text" id="note-title" placeholder="Title will auto-generate..." autocomplete="off">
+                        </div>
+                        
+                        <div class="input-group flex-grow">
+                            <textarea id="raw-content" placeholder="Paste or type your raw research, notes, or thoughts here..."></textarea>
+                        </div>
+                        
+                        <div class="action-bar">
+                            <div class="options">
+                                <select id="template-override">
+                                    <option value="">Auto-detect template</option>
+                                    <option value="snp">SNP Note</option>
+                                    <option value="biochemistry">Biochemistry Reference</option>
+                                    <option value="fitness">Fitness Session</option>
+                                    <option value="neuroacoustics">Neuroacoustics</option>
+                                    <option value="nutrition">Nutrition Database</option>
+                                    <option value="pharmacogenomics">Pharmacogenomics</option>
+                                    <option value="graph">Graph / Atomic</option>
+                                    <option value="hub">Hub / Index</option>
+                                </select>
+                            </div>
+                            <div class="buttons">
+                                <button id="btn-analyze" class="btn btn-secondary">🔍 Analyze</button>
+                                <button id="btn-preview" class="btn btn-secondary" disabled>👁️ Preview</button>
+                                <button id="btn-commit" class="btn btn-primary" disabled>✅ Commit to Vault</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Panel: Analysis -->
+                    <div class="panel-right">
+                        <div id="analysis-placeholder" class="placeholder-state">
+                            <div class="pulse-ring"></div>
+                            <p>Ready to analyze.</p>
+                            <span class="sub-text">Click Analyze to classify and map content.</span>
+                        </div>
+                        
+                        <div id="analysis-results" class="results-container hidden">
+                            <!-- Classification -->
+                            <div class="analysis-card success-card">
+                                <h3>📂 Classification</h3>
+                                <div class="card-content">
+                                    <div class="row">
+                                        <span class="label">Category</span>
+                                        <span class="value capitalize" id="res-category">--</span>
+                                        <span class="badge" id="res-confidence">--</span>
+                                    </div>
+                                    <div class="row">
+                                        <span class="label">Target</span>
+                                        <span class="value mono" id="res-folder">--</span>
+                                    </div>
+                                    <div class="row">
+                                        <span class="label">Template</span>
+                                        <span class="value capitalize" id="res-template">--</span>
+                                    </div>
+                                    <div class="reasoning" id="res-reasoning">--</div>
+                                </div>
+                            </div>
+
+                            <!-- Contradictions -->
+                            <div class="analysis-card error-card hidden" id="card-contradictions">
+                                <h3>🛑 Contradiction Radar</h3>
+                                <div class="card-content">
+                                    <div class="reasoning" id="res-contradiction" style="color: var(--error);">--</div>
+                                </div>
+                            </div>
+
+                            <!-- Duplicates -->
+                            <div class="analysis-card warning-card hidden" id="card-duplicates">
+                                <h3>⚠️ Potential Duplicates</h3>
+                                <div class="card-content">
+                                    <ul class="item-list" id="list-duplicates"></ul>
+                                </div>
+                            </div>
+
+                            <!-- Ghost Warnings -->
+                            <div class="analysis-card error-card hidden" id="card-ghosts">
+                                <h3>👻 Ghost Link Warnings</h3>
+                                <div class="card-content">
+                                    <p class="sub-text">These wikilinks don't point to existing notes.</p>
+                                    <ul class="item-list" id="list-ghosts"></ul>
+                                </div>
+                            </div>
+
+                            <!-- Auto-Links -->
+                            <div class="analysis-card info-card" id="card-links">
+                                <h3>🔗 Suggested Links</h3>
+                                <div class="card-content">
+                                    <ul class="item-list check-list" id="list-links"></ul>
+                                    <div class="empty-state hidden" id="empty-links">No wikilinks detected.</div>
+                                </div>
+                            </div>
+
+                            <!-- Retroactive -->
+                            <div class="analysis-card info-card hidden" id="card-retro">
+                                <h3>🔄 Retroactive Innervation</h3>
+                                <div class="card-content">
+                                    <p class="sub-text">These existing notes mention this topic but don't link to it. Inject links now?</p>
+                                    <ul class="item-list check-list" id="list-retro"></ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-innervate" class="tab-pane">
+                <div class="split-view" style="justify-content: center;">
+                    <div style="width: 100%; max-width: 800px; padding: 2rem; background: rgba(0,20,40,0.5); border: 1px solid var(--border); box-shadow: 0 0 20px rgba(0,255,255,0.1); margin-top: 2rem; align-self: flex-start; max-height: calc(100vh - 100px); overflow-y: auto;">
+                        <h2 style="margin-bottom: 1.5rem; text-align: center;">🔗 Global Retroactive Innervation</h2>
+                        <p class="sub-text" style="text-align: center; margin-bottom: 2rem;">Select an existing note in your vault. Vault Scribe will scan all other notes to find unlinked mentions of it, and bulk-inject wikilinks.</p>
+                        
+                        <div class="input-group">
+                            <label for="innervate-note-input">Target Note</label>
+                            <input type="text" id="innervate-note-input" list="vault-notes-list" placeholder="Search for a note..." autocomplete="off">
+                            <datalist id="vault-notes-list"></datalist>
+                        </div>
+                        
+                        <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
+                            <button id="btn-innervate-scan" class="btn btn-primary">🔍 Scan Vault</button>
+                        </div>
+
+                        <div style="text-align: center; margin-bottom: 2rem; border-top: 1px dashed var(--border); padding-top: 1.5rem;">
+                            <p class="sub-text" style="margin-bottom: 1rem;">Or scan all notes at once</p>
+                            <button id="btn-innervate-batch" class="btn btn-primary" style="width: 100%;">⚡ Scan Entire Vault</button>
+                        </div>
+
+                        <div id="innervate-results" class="hidden" style="margin-top: 2rem; border-top: 1px dashed var(--border); padding-top: 2rem;">
+                            <h3>Potential Connections</h3>
+                            <p class="sub-text" id="innervate-stats" style="margin-bottom: 1rem;">Found 0 mentions across 0 notes.</p>
+                            
+                            <ul class="item-list check-list" id="list-innervate-patches"></ul>
+                            
+                            <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                                <button id="btn-innervate-load-more" class="btn btn-secondary hidden">Load Next 50</button>
+                                <button id="btn-innervate-apply" class="btn btn-success" style="border-color: var(--success); color: var(--success);">⚡ Inject Links</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="tab-gaps" class="tab-pane">
+                <div class="split-view" style="justify-content: center;">
+                    <div style="width: 100%; max-width: 800px; padding: 2rem; background: rgba(0,20,40,0.5); border: 1px solid var(--border); box-shadow: 0 0 20px rgba(0,255,255,0.1); margin-top: 2rem; align-self: flex-start; max-height: calc(100vh - 100px); overflow-y: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h2>🕳️ Knowledge Gaps</h2>
+                            <button id="btn-extinct-ghosts" class="btn btn-error btn-sm">💀 Extinct All Ghosts</button>
+                        </div>
+                        <p class="sub-text" style="margin-bottom: 2rem;">"Ghost Hubs" are concepts that you have linked to multiple times across your vault, but the actual note does not exist yet. These represent gaps in your knowledge graph.</p>
+                        
+                        <div style="display: flex; justify-content: center; margin-bottom: 2rem;">
+                            <button id="btn-gaps-scan" class="btn btn-primary">🔍 Scan Graph for Gaps</button>
+                        </div>
+
+                        <div id="gaps-results" class="hidden">
+                            <h3>Missing Nodes (Sorted by Frequency)</h3>
+                            <ul class="item-list" id="list-gaps"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-url" class="tab-pane">
+                <div class="split-view" style="justify-content: center; align-items: center;">
+                    <div style="width: 100%; max-width: 600px; padding: 2rem; background: rgba(0,20,40,0.5); border: 1px solid var(--border); box-shadow: 0 0 20px rgba(0,255,255,0.1);">
+                        <h2 style="margin-bottom: 1.5rem; text-align: center;">🌐 URL / DOI Import</h2>
+                        <p class="sub-text" style="text-align: center; margin-bottom: 2rem;">Paste a link to an article, PubMed paper, or reference page. Vault Scribe will extract the main text and pipe it to the Intake Analyzer.</p>
+                        
+                        <div class="input-group">
+                            <label for="url-input">Target URL</label>
+                            <input type="text" id="url-input" placeholder="https://..." autocomplete="off">
+                        </div>
+                        
+                        <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
+                            <button id="btn-fetch-url" class="btn btn-primary">⚡ Fetch & Analyze</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-chat" class="tab-pane">
+                <div class="split-view" style="height: calc(100vh - 100px); justify-content: center;">
+                    <div style="width: 100%; max-width: 800px; padding: 2rem; background: rgba(0,20,40,0.5); border: 1px solid var(--border); box-shadow: 0 0 20px rgba(0,255,255,0.1); display: flex; flex-direction: column;">
+                        <h2 style="margin-bottom: 1.5rem; text-align: center; flex-shrink: 0;">💬 Conversational Intake</h2>
+                        <p class="sub-text" style="text-align: center; margin-bottom: 2rem; flex-shrink: 0;">Brain-dump your thoughts. Scribe will interview you to extract the core concepts and automatically draft a structured note.</p>
+                        
+                        <div id="chat-history" style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; padding: 1rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border); margin-bottom: 1rem;">
+                            <!-- Messages will appear here -->
+                            <div class="chat-message bot-message" style="align-self: flex-start; background: rgba(124, 58, 237, 0.2); border: 1px solid var(--primary); padding: 1rem; border-radius: 8px; max-width: 80%;">
+                                Hello! What are you thinking about right now? Paste a rough idea, a quote, or a whole paper, and we'll figure out how it fits into your vault.
+                            </div>
+                        </div>
+
+                        <div class="input-group" style="flex-shrink: 0; display: flex; gap: 1rem; align-items: stretch;">
+                            <textarea id="chat-input" rows="3" placeholder="I was just reading about..." style="flex-grow: 1; resize: none;"></textarea>
+                            <button id="btn-chat-send" class="btn btn-primary" style="white-space: nowrap;">Send ➔</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-insights" class="tab-pane">
+                <div class="split-view" style="justify-content: center;">
+                    <div style="width: 100%; max-width: 800px; padding: 2rem; background: rgba(0,20,40,0.5); border: 1px solid var(--border); box-shadow: 0 0 20px rgba(0,255,255,0.1); margin-top: 2rem; align-self: flex-start; max-height: calc(100vh - 100px); overflow-y: auto;">
+                        <h2 style="margin-bottom: 1.5rem; text-align: center;">💡 Cross-Domain Insights</h2>
+                        <p class="sub-text" style="text-align: center; margin-bottom: 2rem;">Vault Scribe will select random nodes from disparate domains in your graph and use LLM synthesis to find non-obvious mechanistic connections.</p>
+                        
+                        <div style="display: flex; justify-content: center; margin-bottom: 2rem;">
+                            <button id="btn-generate-insight" class="btn btn-primary">✨ Generate Insight</button>
+                        </div>
+
+                        <div id="insight-results" class="hidden" style="margin-top: 2rem; border-top: 1px dashed var(--border); padding-top: 2rem;">
+                            <h3>Synthesized Connection</h3>
+                            <div id="insight-content" style="white-space: pre-wrap; font-family: 'JetBrains Mono', monospace; background: rgba(0,0,0,0.3); padding: 1.5rem; border: 1px solid var(--border); border-radius: 8px; margin-top: 1rem; color: var(--text);"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-experiments" class="tab-pane">
+                <div class="split-view" style="justify-content: center;">
+                    <div style="width: 100%; max-width: 800px; padding: 2rem; background: rgba(0,20,40,0.5); border: 1px solid var(--border); box-shadow: 0 0 20px rgba(0,255,255,0.1); margin-top: 2rem; align-self: flex-start; max-height: calc(100vh - 100px); overflow-y: auto;">
+                        <h2 style="margin-bottom: 1.5rem; text-align: center;">🧪 N=1 Experiment Tracker</h2>
+                        <p class="sub-text" style="text-align: center; margin-bottom: 2rem;">Track active biological and fitness experiments. Log daily data seamlessly into your structured notes.</p>
+                        
+                        <div style="display: flex; justify-content: center; margin-bottom: 2rem;">
+                            <button id="btn-new-experiment" class="btn btn-primary">➕ Start New Experiment</button>
+                        </div>
+
+                        <h3>Active Experiments</h3>
+                        <ul class="item-list" id="list-active-experiments">
+                            <!-- Populated by JS -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content: Librarian -->
+            <div id="tab-librarian" class="tab-pane librarian-theme">
+                <div class="hero">
+                    <div class="hero-brand">CARSON BRAIN &bull; AI LIBRARIAN</div>
+                    <div class="hero-title">GraphRAG Semantic Research Engine</div>
+                </div>
+                
+                <div class="search-bar">
+                    <input type="text" id="librarian-query" class="search-input" placeholder="Ask the Librarian a complex biological question..." autocomplete="off" />
+                    <button id="btn-librarian-search" class="search-btn">Search Vault</button>
+                </div>
+                
+                <div id="librarian-loading" class="hidden" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                    <div class="pulse-ring" style="margin: 0 auto 15px auto; width: 40px; height: 40px;"></div>
+                    <p>Traversing graph and synthesizing report...</p>
+                </div>
+                
+                <div class="content" id="librarian-results">
+                    <p style="text-align: center; margin-top: 40px; color: var(--text-muted);">Enter a query above to generate a synthesized report.</p>
+                </div>
+                
+                <div id="librarian-actions" class="hidden" style="text-align: center; margin-top: 20px; margin-bottom: 40px;">
+                    <button id="btn-save-librarian" class="btn btn-primary" style="font-size: 1.1rem; padding: 12px 24px;">📥 Commit Report to Vault</button>
+                </div>
+            </div>
+
+            <!-- Tab Content: Search -->
+            <div id="tab-search" class="tab-pane">
+                <div class="split-view" style="justify-content: center;">
+                    <div style="width: 100%; max-width: 800px; padding: 2rem; background: rgba(0,20,40,0.5); border: 1px solid var(--border); box-shadow: 0 0 20px rgba(0,255,255,0.1); margin-top: 2rem; align-self: flex-start; max-height: calc(100vh - 100px); overflow-y: auto;">
+                        <h2 style="margin-bottom: 1.5rem; text-align: center;">🔍 Vault Search</h2>
+                        
+                        <div class="search-bar" style="max-width: 100%; margin-bottom: 2rem;">
+                            <input type="text" id="search-input" class="search-input" placeholder="Search titles and content..." autocomplete="off" />
+                            <button id="btn-search" class="search-btn">Search</button>
+                        </div>
+
+                        <ul class="item-list" id="list-search-results">
+                            <!-- Populated by JS -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Data Logging Modal -->
+    <div id="log-modal" class="modal-backdrop hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2 id="log-modal-title">Log Data</h2>
+                <button class="btn-icon" id="btn-close-log-modal">✖</button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 1rem;">
+                <input type="hidden" id="log-experiment-title">
+                
+                <div class="input-group">
+                    <label>Notes / Observations</label>
+                    <textarea id="log-notes" rows="3" placeholder="Feeling less brain fog today..."></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 1rem;">
+                    <div class="input-group" style="flex: 1;">
+                        <label>Objective Metric</label>
+                        <input type="text" id="log-metric" placeholder="e.g. HRV 65ms" autocomplete="off">
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>Subjective (1-10)</label>
+                        <input type="text" id="log-subjective" placeholder="e.g. 8/10" autocomplete="off">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="btn-cancel-log-modal">Cancel</button>
+                <button class="btn btn-success" id="btn-submit-log">Save Log Entry</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div class="modal-overlay" id="preview-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Note Preview</h2>
+                <button class="btn-close" id="btn-close-modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="markdown-preview" id="markdown-output"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btn-cancel-modal">Cancel</button>
+                <button class="btn btn-primary" id="btn-modal-commit">Commit to Vault</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script src="/static/app.js?v=2"></script>
+</body>
+</html>

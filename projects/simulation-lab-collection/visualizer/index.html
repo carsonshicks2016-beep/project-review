@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autonomous Satellite Rendezvous & Docking - AI Mission Control</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Three.js and OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+  <!-- 3D Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- Telemetry and Mission Control Overlay -->
+  <div class="hud-layer">
+    <!-- Header -->
+    <div class="hud-header">
+      <div class="mission-title clickable">
+        <h1>
+          <span>ORBITAL RENDEZVOUS & DOCKING</span>
+          <span class="badge">PPO AGENT</span>
+        </h1>
+        <p>Clohessy-Wiltshire Relative Dynamics | LEO 400km Orbit | V-bar Approach Corridor</p>
+      </div>
+
+      <div class="status-card clickable">
+        <div id="status-indicator" class="status-dot"></div>
+        <div class="status-text">
+          <h2 id="phase-title">MISSION IN PROGRESS</h2>
+          <span id="phase-desc">Approaching V-bar Corridor...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Telemetry Panel (Right) -->
+    <div class="telemetry-panel clickable">
+      <div class="panel-title">
+        <span>Flight Telemetry</span>
+        <span id="step-counter">STEP: 0</span>
+      </div>
+
+      <div class="metric-row">
+        <span class="metric-label">Range to Target:</span>
+        <span id="val-range" class="metric-value highlight">-- m</span>
+      </div>
+
+      <div class="metric-row">
+        <span class="metric-label">Closing Speed:</span>
+        <span id="val-speed" class="metric-value">-- m/s</span>
+      </div>
+
+      <div class="metric-row">
+        <span class="metric-label">Lateral Speed:</span>
+        <span id="val-lat-speed" class="metric-value">-- m/s</span>
+      </div>
+
+      <div class="metric-row">
+        <span class="metric-label">Corridor Status:</span>
+        <span id="val-corridor" class="metric-value good">INSIDE CONE</span>
+      </div>
+
+      <div class="metric-row">
+        <span class="metric-label">Delta-V Expended:</span>
+        <span id="val-deltav" class="metric-value">0.00 m/s</span>
+      </div>
+
+      <div class="metric-row">
+        <span class="metric-label">Propellant:</span>
+        <span id="val-fuel" class="metric-value">50.0 kg</span>
+      </div>
+      <div class="progress-bar-container">
+        <div id="fuel-bar" class="progress-bar-fill"></div>
+      </div>
+
+      <!-- Thruster Fire HUD -->
+      <div class="panel-title" style="margin-top: 6px;">
+        <span>Active RCS Actuation</span>
+      </div>
+      <div class="thruster-hud">
+        <div class="thruster-axis">
+          <div class="axis-label">X (RADIAL)</div>
+          <div class="axis-bar"><div id="thrust-x-bar" class="axis-bar-fill"></div></div>
+        </div>
+        <div class="thruster-axis">
+          <div class="axis-label">Y (V-BAR)</div>
+          <div class="axis-bar"><div id="thrust-y-bar" class="axis-bar-fill"></div></div>
+        </div>
+        <div class="thruster-axis">
+          <div class="axis-label">Z (CROSS)</div>
+          <div class="axis-bar"><div id="thrust-z-bar" class="axis-bar-fill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Manual Flight Hint Overlay -->
+    <div id="manual-hint" class="manual-hint">
+      [MANUAL FLIGHT]: W/S = Radial +/- | A/D = Cross-track +/- | R/F = V-bar Thrust/Brake | SPACE = Emergency Kill Drift
+    </div>
+
+    <!-- Footer Controls -->
+    <div class="hud-footer">
+      <div class="controls-panel clickable">
+        <button id="btn-play" class="btn">
+          <span id="play-icon">▶</span> <span id="play-text">Pause</span>
+        </button>
+
+        <button id="btn-restart" class="btn">↺ Restart</button>
+
+        <select id="episode-select">
+          <option value="0">Loading Trajectories...</option>
+        </select>
+
+        <div class="scrubber-container">
+          <input type="range" id="time-scrubber" min="0" max="100" value="0">
+        </div>
+
+        <select id="speed-select">
+          <option value="0.5">0.5x Speed</option>
+          <option value="1.0" selected>1.0x Speed</option>
+          <option value="2.0">2.0x Speed</option>
+          <option value="4.0">4.0x Speed</option>
+        </select>
+
+        <button id="btn-mode" class="btn">
+          Mode: <strong id="mode-text">AI Autopilot</strong>
+        </button>
+      </div>
+
+      <div class="camera-controls clickable">
+        <button id="cam-chase" class="btn active">Chase Cam</button>
+        <button id="cam-dock" class="btn">Docking Cam</button>
+        <button id="cam-orbit" class="btn">Free Cam</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="viewer.js"></script>
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SoonerGrid — Game Day Demand & Parking Surge Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090b10;
+      --card-bg: rgba(16, 20, 30, 0.85);
+      --border: rgba(255, 255, 255, 0.1);
+      --crimson: #a8192d;
+      --crimson-glow: #e0243d;
+      --cyan: #00f0ff;
+      --amber: #ffb703;
+      --emerald: #06d6a0;
+      --text: #f0f4fc;
+      --text-muted: #8b9bb4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      padding: 16px 24px;
+      border-radius: 14px;
+    }
+    .logo-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-icon { font-size: 28px; }
+    .logo-text { font-size: 18px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; }
+    .logo-text span { color: var(--crimson-glow); }
+    .badge {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      background: rgba(0, 240, 255, 0.12);
+      border: 1px solid rgba(0, 240, 255, 0.4);
+      color: var(--cyan);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    /* Summary Bar */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .metric-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+    .metric-val { font-family: 'Space Mono', monospace; font-size: 24px; font-weight: 700; color: #fff; }
+
+    /* Timeline Scrubber Card */
+    .timeline-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .time-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .phase-badge {
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      color: var(--amber);
+      background: rgba(255, 183, 3, 0.12);
+      border: 1px solid rgba(255, 183, 3, 0.3);
+      padding: 6px 14px;
+      border-radius: 8px;
+    }
+    input[type=range] {
+      width: 100%;
+      height: 8px;
+      accent-color: var(--crimson-glow);
+      cursor: pointer;
+    }
+
+    /* Main Grid */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 20px;
+    }
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Parking Gauges */
+    .gauge-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 480px;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+    .gauge-item {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .gauge-top {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+    .gauge-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .gauge-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 4px;
+      transition: width 0.15s ease, background 0.15s ease;
+    }
+
+    /* Gateway Inflow Bars */
+    .gw-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .gw-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo-box">
+        <span class="logo-icon">🏈</span>
+        <div class="logo-text">SOONER<span>GRID</span> &bull; DEMAND ENGINE</div>
+      </div>
+      <div class="badge">GAME DAY SURGE TIMELINE</div>
+    </header>
+
+    <div class="summary-grid">
+      <div class="metric-card">
+        <div class="metric-label">Total Game-Day Fleet</div>
+        <div class="metric-val" id="val-fleet">--</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">I-35 North Share</div>
+        <div class="metric-val" id="val-i35" style="color:var(--cyan)">--</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Shuttle Passengers</div>
+        <div class="metric-val" id="val-shuttle" style="color:var(--emerald)">--</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Private Car Trips Saved</div>
+        <div class="metric-val" id="val-saved" style="color:var(--amber)">--</div>
+      </div>
+    </div>
+
+    <div class="timeline-card">
+      <div class="time-header">
+        <div>
+          <span style="font-size:13px; color:var(--text-muted); text-transform:uppercase;">Simulation Time:</span>
+          <span id="label-time" style="font-family:'Space Mono'; font-size:22px; font-weight:700; color:#fff; margin-left:8px;">T - 4.0h</span>
+        </div>
+        <div class="phase-badge" id="label-phase">Phase I: Early Tailgate Arrival</div>
+      </div>
+      <input type="range" id="time-slider" min="0" max="31" value="0" step="1">
+      <div style="display:flex; justify-content:space-between; font-size:11px; font-family:'Space Mono'; color:var(--text-muted);">
+        <span>T - 4.0h (08:00 AM)</span>
+        <span>T - 2.0h (Ingress Peak)</span>
+        <span>T = 0 (12:00 PM Kickoff)</span>
+        <span>T + 3.2h (Final Whistle)</span>
+        <span>T + 4.0h (Post-Game Egress)</span>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <!-- Left Panel: Flow Rates & Gateways -->
+      <div class="panel">
+        <div class="panel-title">
+          <span>Regional Gateway Influx (Vehicles / Hour)</span>
+          <span id="label-flow" style="color:var(--cyan); font-family:'Space Mono';">-- veh/hr</span>
+        </div>
+        <div class="gw-list" id="gw-container">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div class="panel-title" style="margin-top:10px;">
+          <span>Pedestrian Conflict & Crosswalk Capacity Derating</span>
+        </div>
+        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; padding:12px; font-size:12px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-weight:600;">W Lindsey St & S Jenkins Ave (Stadium SE Corner)</div>
+            <div style="color:var(--text-muted); font-size:11px;">Crosswalk foot traffic choking vehicular turning movements</div>
+          </div>
+          <div id="label-ped" style="font-family:'Space Mono'; font-weight:700; font-size:16px; color:var(--emerald);">100% Flow</div>
+        </div>
+      </div>
+
+      <!-- Right Panel: Parking Lot Occupancy Gauges -->
+      <div class="panel">
+        <div class="panel-title">
+          <span>Parking Sink Occupancy (MNL Choice Model)</span>
+          <span style="color:var(--emerald)">13 Sinks</span>
+        </div>
+        <div class="gauge-list" id="sink-container">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DATA = {"summary": {"total_vehicles_generated": 52558, "total_vehicles_discharged": 21943, "gateway_breakdown": {"GW_I35_NORTH": {"name": "I-35 North Gateway (Indian Hills Rd)", "total_trips": 25229, "pct_share": 48.0}, "GW_CLASSEN_NORTH": {"name": "US-77 / Classen Blvd North (S 19th St)", "total_trips": 8410, "pct_share": 16.0}, "GW_SOONER_NORTH": {"name": "12th Ave NE / Sooner Rd (Indian Hills Rd)", "total_trips": 4201, "pct_share": 8.0}, "GW_US77_SOUTH": {"name": "US-77 South Gateway (Post Oak Rd)", "total_trips": 5258, "pct_share": 10.0}, "GW_SH9_WEST": {"name": "SH-9 West Gateway (Canadian River Bridge)", "total_trips": 6307, "pct_share": 12.0}, "GW_SH9_EAST": {"name": "SH-9 East Gateway (36th Ave SE)", "total_trips": 3153, "pct_share": 6.0}}, "parking_sink_stats": {"SINK_LLOYD_NOBLE_MAIN": {"name": "Lloyd Noble Center (LNC Main Paved Lot)", "capacity": 4500, "peak_occupied": 4500.0, "peak_occupancy_pct": 100.0}, "SINK_LLOYD_NOBLE_GRASS": {"name": "Lloyd Noble Center Overflow Grass Fields", "capacity": 2500, "peak_occupied": 2500.0, "peak_occupancy_pct": 100.0}, "SINK_STADIUM_HEISMAN": {"name": "Owen Field Heisman / Santee Donor Lots", "capacity": 2200, "peak_occupied": 2200.0, "peak_occupancy_pct": 100.0}, "SINK_JENKINS_FIELDHOUSE": {"name": "McCasland Field House & Jenkins Surface Lots", "capacity": 1300, "peak_occupied": 1300.0, "peak_occupancy_pct": 100.0}, "SINK_ELM_GARAGE": {"name": "Elm Avenue Parking Garage", "capacity": 1400, "peak_occupied": 1400.0, "peak_occupancy_pct": 100.0}, "SINK_ASP_GARAGE": {"name": "Asp Avenue Parking Garage", "capacity": 900, "peak_occupied": 900.0, "peak_occupancy_pct": 100.0}, "SINK_JENKINS_GARAGE": {"name": "Jenkins Avenue Parking Deck", "capacity": 1100, "peak_occupied": 1100.0, "peak_occupancy_pct": 100.0}, "SINK_DUCK_POND": {"name": "Duck Pond & East Campus Recreation Lots", "capacity": 2000, "peak_occupied": 2000.0, "peak_occupancy_pct": 100.0}, "SINK_TRADITIONS_EAST": {"name": "Traditions Square & Research Campus Lots", "capacity": 2200, "peak_occupied": 2200.0, "peak_occupancy_pct": 100.0}, "SINK_CAMPUS_CORNER": {"name": "Campus Corner & North Historic District", "capacity": 2800, "peak_occupied": 2800.0, "peak_occupancy_pct": 100.0}, "SINK_SOUTH_RESIDENTIAL": {"name": "South Campus Residential Lawns (Chautauqua / Elm / Pickard)", "capacity": 3200, "peak_occupied": 3200.0, "peak_occupancy_pct": 100.0}, "SINK_LINDSEY_COMMERCIAL": {"name": "Lindsey Street Commercial Corridor Plazas", "capacity": 2500, "peak_occupied": 2500.0, "peak_occupancy_pct": 100.0}, "SINK_MILLER_DISTRICT": {"name": "Miller Historic District (East of Campus)", "capacity": 1800, "peak_occupied": 1800.0, "peak_occupancy_pct": 100.0}}, "shuttle_impact": {"total_passengers_carried": 56400, "private_car_trips_avoided": 22560}}, "timeline": [{"step": 0, "time_sec": 0.0, "time_hr": 0.0, "phase": "Phase I: Early Tailgate Arrival", "ingress_rate_vph": 4600.0, "egress_rate_vph": 0.0, "gateway_inflows": {"GW_I35_NORTH": 552, "GW_CLASSEN_NORTH": 184, "GW_SOONER_NORTH": 92, "GW_US77_SOUTH": 115, "GW_SH9_WEST": 138, "GW_SH9_EAST": 69}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 205, "SINK_LLOYD_NOBLE_GRASS": 201, "SINK_STADIUM_HEISMAN": 4, "SINK_JENKINS_FIELDHOUSE": 5, "SINK_ELM_GARAGE": 10, "SINK_ASP_GARAGE": 22, "SINK_JENKINS_GARAGE": 9, "SINK_DUCK_POND": 409, "SINK_TRADITIONS_EAST": 204, "SINK_CAMPUS_CORNER": 23, "SINK_SOUTH_RESIDENTIAL": 11, "SINK_LINDSEY_COMMERCIAL": 24, "SINK_MILLER_DISTRICT": 23}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 4.6, "SINK_LLOYD_NOBLE_GRASS": 8.0, "SINK_STADIUM_HEISMAN": 0.2, "SINK_JENKINS_FIELDHOUSE": 0.4, "SINK_ELM_GARAGE": 0.7, "SINK_ASP_GARAGE": 2.4, "SINK_JENKINS_GARAGE": 0.8, "SINK_DUCK_POND": 20.4, "SINK_TRADITIONS_EAST": 9.3, "SINK_CAMPUS_CORNER": 0.8, "SINK_SOUTH_RESIDENTIAL": 0.3, "SINK_LINDSEY_COMMERCIAL": 1.0, "SINK_MILLER_DISTRICT": 1.3}, "pedestrian_capacity_derating": 0.96, "shuttle_pax_rate_hr": 2100.0}, {"step": 1, "time_sec": 900.0, "time_hr": 0.25, "phase": "Phase I: Early Tailgate Arrival", "ingress_rate_vph": 5076.0, "egress_rate_vph": 0.0, "gateway_inflows": {"GW_I35_NORTH": 609, "GW_CLASSEN_NORTH": 203, "GW_SOONER_NORTH": 101, "GW_US77_SOUTH": 127, "GW_SH9_WEST": 153, "GW_SH9_EAST": 76}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 243, "SINK_LLOYD_NOBLE_GRASS": 206, "SINK_STADIUM_HEISMAN": 6, "SINK_JENKINS_FIELDHOUSE": 2, "SINK_ELM_GARAGE": 19, "SINK_ASP_GARAGE": 26, "SINK_JENKINS_GARAGE": 10, "SINK_DUCK_POND": 442, "SINK_TRADITIONS_EAST": 231, "SINK_CAMPUS_CORNER": 24, "SINK_SOUTH_RESIDENTIAL": 15, "SINK_LINDSEY_COMMERCIAL": 28, "SINK_MILLER_DISTRICT": 17}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 10.0, "SINK_LLOYD_NOBLE_GRASS": 16.3, "SINK_STADIUM_HEISMAN": 0.5, "SINK_JENKINS_FIELDHOUSE": 0.5, "SINK_ELM_GARAGE": 2.1, "SINK_ASP_GARAGE": 5.3, "SINK_JENKINS_GARAGE": 1.7, "SINK_DUCK_POND": 42.5, "SINK_TRADITIONS_EAST": 19.8, "SINK_CAMPUS_CORNER": 1.7, "SINK_SOUTH_RESIDENTIAL": 0.8, "SINK_LINDSEY_COMMERCIAL": 2.1, "SINK_MILLER_DISTRICT": 2.2}, "pedestrian_capacity_derating": 0.96, "shuttle_pax_rate_hr": 2100.0}, {"step": 2, "time_sec": 1800.0, "time_hr": 0.5, "phase": "Phase I: Early Tailgate Arrival", "ingress_rate_vph": 5836.0, "egress_rate_vph": 0.0, "gateway_inflows": {"GW_I35_NORTH": 700, "GW_CLASSEN_NORTH": 234, "GW_SOONER_NORTH": 116, "GW_US77_SOUTH": 146, "GW_SH9_WEST": 175, "GW_SH9_EAST": 88}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 316, "SINK_LLOYD_NOBLE_GRASS": 274, "SINK_STADIUM_HEISMAN": 9, "SINK_JENKINS_FIELDHOUSE": 6, "SINK_ELM_GARAGE": 19, "SINK_ASP_GARAGE": 30, "SINK_JENKINS_GARAGE": 14, "SINK_DUCK_POND": 391, "SINK_TRADITIONS_EAST": 293, "SINK_CAMPUS_CORNER": 26, "SINK_SOUTH_RESIDENTIAL": 17, "SINK_LINDSEY_COMMERCIAL": 34, "SINK_MILLER_DISTRICT": 30}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 17.0, "SINK_LLOYD_NOBLE_GRASS": 27.2, "SINK_STADIUM_HEISMAN": 0.9, "SINK_JENKINS_FIELDHOUSE": 1.0, "SINK_ELM_GARAGE": 3.4, "SINK_ASP_GARAGE": 8.7, "SINK_JENKINS_GARAGE": 3.0, "SINK_DUCK_POND": 62.1, "SINK_TRADITIONS_EAST": 33.1, "SINK_CAMPUS_CORNER": 2.6, "SINK_SOUTH_RESIDENTIAL": 1.3, "SINK_LINDSEY_COMMERCIAL": 3.4, "SINK_MILLER_DISTRICT": 3.9}, "pedestrian_capacity_derating": 0.96, "shuttle_pax_rate_hr": 2100.0}, {"step": 3, "time_sec": 2700.0, "time_hr": 0.75, "phase": "Phase I: Early Tailgate Arrival", "ingress_rate_vph": 6956.0, "egress_rate_vph": 0.0, "gateway_inflows": {"GW_I35_NORTH": 835, "GW_CLASSEN_NORTH": 278, "GW_SOONER_NORTH": 139, "GW_US77_SOUTH": 174, "GW_SH9_WEST": 209, "GW_SH9_EAST": 104}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 424, "SINK_LLOYD_NOBLE_GRASS": 379, "SINK_STADIUM_HEISMAN": 14, "SINK_JENKINS_FIELDHOUSE": 10, "SINK_ELM_GARAGE": 29, "SINK_ASP_GARAGE": 50, "SINK_JENKINS_GARAGE": 17, "SINK_DUCK_POND": 330, "SINK_TRADITIONS_EAST": 356, "SINK_CAMPUS_CORNER": 32, "SINK_SOUTH_RESIDENTIAL": 22, "SINK_LINDSEY_COMMERCIAL": 40, "SINK_MILLER_DISTRICT": 36}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 26.4, "SINK_LLOYD_NOBLE_GRASS": 42.4, "SINK_STADIUM_HEISMAN": 1.5, "SINK_JENKINS_FIELDHOUSE": 1.8, "SINK_ELM_GARAGE": 5.5, "SINK_ASP_GARAGE": 14.2, "SINK_JENKINS_GARAGE": 4.5, "SINK_DUCK_POND": 78.6, "SINK_TRADITIONS_EAST": 49.3, "SINK_CAMPUS_CORNER": 3.8, "SINK_SOUTH_RESIDENTIAL": 2.0, "SINK_LINDSEY_COMMERCIAL": 5.0, "SINK_MILLER_DISTRICT": 5.9}, "pedestrian_capacity_derating": 0.96, "shuttle_pax_rate_hr": 2100.0}, {"step": 4, "time_sec": 3600.0, "time_hr": 1.0, "phase": "Phase I: Early Tailgate Arrival", "ingress_rate_vph": 8500.0, "egress_rate_vph": 0.0, "gateway_inflows": {"GW_I35_NORTH": 1020, "GW_CLASSEN_NORTH": 340, "GW_SOONER_NORTH": 170, "GW_US77_SOUTH": 212, "GW_SH9_WEST": 255, "GW_SH9_EAST": 128}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 682, "SINK_LLOYD_NOBLE_GRASS": 461, "SINK_STADIUM_HEISMAN": 13, "SINK_JENKINS_FIELDHOUSE": 14, "SINK_ELM_GARAGE": 30, "SINK_ASP_GARAGE": 76, "SINK_JENKINS_GARAGE": 31, "SINK_DUCK_POND": 170, "SINK_TRADITIONS_EAST": 410, "SINK_CAMPUS_CORNER": 75, "SINK_SOUTH_RESIDENTIAL": 26, "SINK_LINDSEY_COMMERCIAL": 77, "SINK_MILLER_DISTRICT": 60}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 41.6, "SINK_LLOYD_NOBLE_GRASS": 60.8, "SINK_STADIUM_HEISMAN": 2.1, "SINK_JENKINS_FIELDHOUSE": 2.8, "SINK_ELM_GARAGE": 7.6, "SINK_ASP_GARAGE": 22.7, "SINK_JENKINS_GARAGE": 7.4, "SINK_DUCK_POND": 87.1, "SINK_TRADITIONS_EAST": 67.9, "SINK_CAMPUS_CORNER": 6.4, "SINK_SOUTH_RESIDENTIAL": 2.8, "SINK_LINDSEY_COMMERCIAL": 8.1, "SINK_MILLER_DISTRICT": 9.2}, "pedestrian_capacity_derating": 0.96, "shuttle_pax_rate_hr": 2100.0}, {"step": 5, "time_sec": 4500.0, "time_hr": 1.25, "phase": "Phase I: Early Tailgate Arrival", "ingress_rate_vph": 10492.0, "egress_rate_vph": 0.0, "gateway_inflows": {"GW_I35_NORTH": 1258, "GW_CLASSEN_NORTH": 420, "GW_SOONER_NORTH": 210, "GW_US77_SOUTH": 263, "GW_SH9_WEST": 315, "GW_SH9_EAST": 157}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 1002, "SINK_LLOYD_NOBLE_GRASS": 420, "SINK_STADIUM_HEISMAN": 22, "SINK_JENKINS_FIELDHOUSE": 18, "SINK_ELM_GARAGE": 70, "SINK_ASP_GARAGE": 116, "SINK_JENKINS_GARAGE": 56, "SINK_DUCK_POND": 140, "SINK_TRADITIONS_EAST": 320, "SINK_CAMPUS_CORNER": 148, "SINK_SOUTH_RESIDENTIAL": 70, "SINK_LINDSEY_COMMERCIAL": 124, "SINK_MILLER_DISTRICT": 117}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 63.8, "SINK_LLOYD_NOBLE_GRASS": 77.6, "SINK_STADIUM_HEISMAN": 3.1, "SINK_JENKINS_FIELDHOUSE": 4.2, "SINK_ELM_GARAGE": 12.6, "SINK_ASP_GARAGE": 35.6, "SINK_JENKINS_GARAGE": 12.5, "SINK_DUCK_POND": 94.1, "SINK_TRADITIONS_EAST": 82.5, "SINK_CAMPUS_CORNER": 11.7, "SINK_SOUTH_RESIDENTIAL": 5.0, "SINK_LINDSEY_COMMERCIAL": 13.1, "SINK_MILLER_DISTRICT": 15.7}, "pedestrian_capacity_derating": 0.96, "shuttle_pax_rate_hr": 2100.0}, {"step": 6, "time_sec": 5400.0, "time_hr": 1.5, "phase": "Phase II: Peak Ingress Surge", "ingress_rate_vph": 12828.0, "egress_rate_vph": 0.0, "gateway_inflows": {"GW_I35_NORTH": 1540, "GW_CLASSEN_NORTH": 513, "GW_SOONER_NORTH": 256, "GW_US77_SOUTH": 321, "GW_SH9_WEST": 385, "GW_SH9_EAST": 192}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 898, "SINK_LLOYD_NOBLE_GRASS": 321, "SINK_STADIUM_HEISMAN": 85, "SINK_JENKINS_FIELDHOUSE": 60, "SINK_ELM_GARAGE": 163, "SINK_ASP_GARAGE": 217, "SINK_JENKINS_GARAGE": 157, "SINK_DUCK_POND": 99, "SINK_TRADITIONS_EAST": 227, "SINK_CAMPUS_CORNER": 290, "SINK_SOUTH_RESIDENTIAL": 148, "SINK_LINDSEY_COMMERCIAL": 289, "SINK_MILLER_DISTRICT": 253}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 83.8, "SINK_LLOYD_NOBLE_GRASS": 90.5, "SINK_STADIUM_HEISMAN": 7.0, "SINK_JENKINS_FIELDHOUSE": 8.8, "SINK_ELM_GARAGE": 24.3, "SINK_ASP_GARAGE": 59.7, "SINK_JENKINS_GARAGE": 26.7, "SINK_DUCK_POND": 99.1, "SINK_TRADITIONS_EAST": 92.8, "SINK_CAMPUS_CORNER": 22.1, "SINK_SOUTH_RESIDENTIAL": 9.7, "SINK_LINDSEY_COMMERCIAL": 24.6, "SINK_MILLER_DISTRICT": 29.8}, "pedestrian_capacity_derating": 0.96, "shuttle_pax_rate_hr": 12000.0}, {"step": 7, "time_sec": 6300.0, "time_hr": 1.75, "phase": "Phase II: Peak Ingress Surge", "ingress_rate_vph": 15364.0, "egress_rate_vph": 0.0, "gateway_inflows": {"GW_I35_NORTH": 1844, "GW_CLASSEN_NORTH": 615, "GW_SOONER_NORTH": 307, "GW_US77_SOUTH": 384, "GW_SH9_WEST": 461, "GW_SH9_EAST": 230}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 453, "SINK_LLOYD_NOBLE_GRASS": 189, "SINK_STADIUM_HEISMAN": 173, "SINK_JENKINS_FIELDHOUSE": 98, "SINK_ELM_GARAGE": 325, "SINK_ASP_GARAGE": 199, "SINK_JENKINS_GARAGE": 282, "SINK_DUCK_POND": 72, "SINK_TRADITIONS_EAST": 147, "SINK_CAMPUS_CORNER": 578, "SINK_SOUTH_RESIDENTIAL": 317, "SINK_LINDSEY_COMMERCIAL": 565, "SINK_MILLER_DISTRICT": 443}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 95.0, "SINK_LLOYD_NOBLE_GRASS": 98.0, "SINK_STADIUM_HEISMAN": 14.8, "SINK_JENKINS_FIELDHOUSE": 16.4, "SINK_ELM_GARAGE": 47.5, "SINK_ASP_GARAGE": 81.8, "SINK_JENKINS_GARAGE": 52.4, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 99.5, "SINK_CAMPUS_CORNER": 42.7, "SINK_SOUTH_RESIDENTIAL": 19.6, "SINK_LINDSEY_COMMERCIAL": 47.2, "SINK_MILLER_DISTRICT": 54.4}, "pedestrian_capacity_derating": 0.96, "shuttle_pax_rate_hr": 12000.0}, {"step": 8, "time_sec": 7200.0, "time_hr": 2.0, "phase": "Phase II: Peak Ingress Surge", "ingress_rate_vph": 17840.0, "egress_rate_vph": 0.0, "gateway_inflows": {"GW_I35_NORTH": 2141, "GW_CLASSEN_NORTH": 713, "GW_SOONER_NORTH": 357, "GW_US77_SOUTH": 446, "GW_SH9_WEST": 535, "GW_SH9_EAST": 268}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 198, "SINK_LLOYD_NOBLE_GRASS": 56, "SINK_STADIUM_HEISMAN": 344, "SINK_JENKINS_FIELDHOUSE": 282, "SINK_ELM_GARAGE": 419, "SINK_ASP_GARAGE": 90, "SINK_JENKINS_GARAGE": 317, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 43, "SINK_CAMPUS_CORNER": 792, "SINK_SOUTH_RESIDENTIAL": 737, "SINK_LINDSEY_COMMERCIAL": 727, "SINK_MILLER_DISTRICT": 455}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 31.0, "SINK_JENKINS_FIELDHOUSE": 38.1, "SINK_ELM_GARAGE": 77.4, "SINK_ASP_GARAGE": 91.8, "SINK_JENKINS_GARAGE": 81.2, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 71.0, "SINK_SOUTH_RESIDENTIAL": 42.6, "SINK_LINDSEY_COMMERCIAL": 76.3, "SINK_MILLER_DISTRICT": 79.7}, "pedestrian_capacity_derating": 0.96, "shuttle_pax_rate_hr": 12000.0}, {"step": 9, "time_sec": 8100.0, "time_hr": 2.25, "phase": "Phase II: Peak Ingress Surge", "ingress_rate_vph": 19920.0, "egress_rate_vph": 0.0, "gateway_inflows": {"GW_I35_NORTH": 2391, "GW_CLASSEN_NORTH": 797, "GW_SOONER_NORTH": 398, "GW_US77_SOUTH": 498, "GW_SH9_WEST": 597, "GW_SH9_EAST": 299}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 937, "SINK_JENKINS_FIELDHOUSE": 608, "SINK_ELM_GARAGE": 280, "SINK_ASP_GARAGE": 78, "SINK_JENKINS_GARAGE": 203, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 672, "SINK_SOUTH_RESIDENTIAL": 1377, "SINK_LINDSEY_COMMERCIAL": 521, "SINK_MILLER_DISTRICT": 304}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 73.8, "SINK_JENKINS_FIELDHOUSE": 84.8, "SINK_ELM_GARAGE": 97.4, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 99.6, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 95.0, "SINK_SOUTH_RESIDENTIAL": 85.6, "SINK_LINDSEY_COMMERCIAL": 97.2, "SINK_MILLER_DISTRICT": 96.6}, "pedestrian_capacity_derating": 0.89, "shuttle_pax_rate_hr": 12000.0}, {"step": 10, "time_sec": 9000.0, "time_hr": 2.5, "phase": "Phase II: Peak Ingress Surge", "ingress_rate_vph": 21316.0, "egress_rate_vph": 0.0, "gateway_inflows": {"GW_I35_NORTH": 2558, "GW_CLASSEN_NORTH": 853, "GW_SOONER_NORTH": 426, "GW_US77_SOUTH": 533, "GW_SH9_WEST": 639, "GW_SH9_EAST": 320}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 939, "SINK_JENKINS_FIELDHOUSE": 141, "SINK_ELM_GARAGE": 92, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 59, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 1053, "SINK_SOUTH_RESIDENTIAL": 1216, "SINK_LINDSEY_COMMERCIAL": 945, "SINK_MILLER_DISTRICT": 884}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.73, "shuttle_pax_rate_hr": 12000.0}, {"step": 11, "time_sec": 9900.0, "time_hr": 2.75, "phase": "Phase II: Peak Ingress Surge", "ingress_rate_vph": 21808.0, "egress_rate_vph": 0.0, "gateway_inflows": {"GW_I35_NORTH": 2617, "GW_CLASSEN_NORTH": 872, "GW_SOONER_NORTH": 436, "GW_US77_SOUTH": 546, "GW_SH9_WEST": 654, "GW_SH9_EAST": 327}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 1337, "SINK_SOUTH_RESIDENTIAL": 1432, "SINK_LINDSEY_COMMERCIAL": 1354, "SINK_MILLER_DISTRICT": 1329}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.5, "shuttle_pax_rate_hr": 12000.0}, {"step": 12, "time_sec": 10800.0, "time_hr": 3.0, "phase": "Phase II: Peak Ingress Surge", "ingress_rate_vph": 19724.0, "egress_rate_vph": 0.0, "gateway_inflows": {"GW_I35_NORTH": 2366, "GW_CLASSEN_NORTH": 789, "GW_SOONER_NORTH": 395, "GW_US77_SOUTH": 493, "GW_SH9_WEST": 592, "GW_SH9_EAST": 296}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 1212, "SINK_SOUTH_RESIDENTIAL": 1250, "SINK_LINDSEY_COMMERCIAL": 1185, "SINK_MILLER_DISTRICT": 1284}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.28, "shuttle_pax_rate_hr": 12000.0}, {"step": 13, "time_sec": 11700.0, "time_hr": 3.25, "phase": "Phase II: Peak Ingress Surge", "ingress_rate_vph": 14804.0, "egress_rate_vph": 0.0, "gateway_inflows": {"GW_I35_NORTH": 1777, "GW_CLASSEN_NORTH": 592, "GW_SOONER_NORTH": 296, "GW_US77_SOUTH": 370, "GW_SH9_WEST": 444, "GW_SH9_EAST": 222}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 939, "SINK_SOUTH_RESIDENTIAL": 936, "SINK_LINDSEY_COMMERCIAL": 959, "SINK_MILLER_DISTRICT": 867}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.18, "shuttle_pax_rate_hr": 12000.0}, {"step": 14, "time_sec": 12600.0, "time_hr": 3.5, "phase": "Phase III: Kickoff & Late Push", "ingress_rate_vph": 9784.0, "egress_rate_vph": 0.0, "gateway_inflows": {"GW_I35_NORTH": 1174, "GW_CLASSEN_NORTH": 391, "GW_SOONER_NORTH": 196, "GW_US77_SOUTH": 245, "GW_SH9_WEST": 294, "GW_SH9_EAST": 146}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 599, "SINK_SOUTH_RESIDENTIAL": 634, "SINK_LINDSEY_COMMERCIAL": 599, "SINK_MILLER_DISTRICT": 614}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.28, "shuttle_pax_rate_hr": 12000.0}, {"step": 15, "time_sec": 13500.0, "time_hr": 3.75, "phase": "Phase III: Kickoff & Late Push", "ingress_rate_vph": 6412.0, "egress_rate_vph": 0.0, "gateway_inflows": {"GW_I35_NORTH": 769, "GW_CLASSEN_NORTH": 257, "GW_SOONER_NORTH": 128, "GW_US77_SOUTH": 161, "GW_SH9_WEST": 192, "GW_SH9_EAST": 96}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 400, "SINK_SOUTH_RESIDENTIAL": 391, "SINK_LINDSEY_COMMERCIAL": 402, "SINK_MILLER_DISTRICT": 410}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.5, "shuttle_pax_rate_hr": 12000.0}, {"step": 16, "time_sec": 14400.0, "time_hr": 4.0, "phase": "Phase III: Kickoff & Late Push", "ingress_rate_vph": 4780.0, "egress_rate_vph": 0.0, "gateway_inflows": {"GW_I35_NORTH": 574, "GW_CLASSEN_NORTH": 192, "GW_SOONER_NORTH": 95, "GW_US77_SOUTH": 119, "GW_SH9_WEST": 143, "GW_SH9_EAST": 72}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 316, "SINK_SOUTH_RESIDENTIAL": 279, "SINK_LINDSEY_COMMERCIAL": 317, "SINK_MILLER_DISTRICT": 283}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.73, "shuttle_pax_rate_hr": 12000.0}, {"step": 17, "time_sec": 15300.0, "time_hr": 4.25, "phase": "Phase III: Kickoff & Late Push", "ingress_rate_vph": 4192.0, "egress_rate_vph": 0.0, "gateway_inflows": {"GW_I35_NORTH": 504, "GW_CLASSEN_NORTH": 167, "GW_SOONER_NORTH": 83, "GW_US77_SOUTH": 105, "GW_SH9_WEST": 126, "GW_SH9_EAST": 63}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 277, "SINK_SOUTH_RESIDENTIAL": 236, "SINK_LINDSEY_COMMERCIAL": 260, "SINK_MILLER_DISTRICT": 275}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.89, "shuttle_pax_rate_hr": 12000.0}, {"step": 18, "time_sec": 16200.0, "time_hr": 4.5, "phase": "Phase IV: In-Game Quiescence", "ingress_rate_vph": 0.0, "egress_rate_vph": 0.0, "gateway_inflows": {}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 0, "SINK_SOUTH_RESIDENTIAL": 0, "SINK_LINDSEY_COMMERCIAL": 0, "SINK_MILLER_DISTRICT": 0}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.96, "shuttle_pax_rate_hr": 2100.0}, {"step": 19, "time_sec": 17100.0, "time_hr": 4.75, "phase": "Phase IV: In-Game Quiescence", "ingress_rate_vph": 0.0, "egress_rate_vph": 0.0, "gateway_inflows": {}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 0, "SINK_SOUTH_RESIDENTIAL": 0, "SINK_LINDSEY_COMMERCIAL": 0, "SINK_MILLER_DISTRICT": 0}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.96, "shuttle_pax_rate_hr": 2100.0}, {"step": 20, "time_sec": 18000.0, "time_hr": 5.0, "phase": "Phase IV: In-Game Quiescence", "ingress_rate_vph": 0.0, "egress_rate_vph": 0.0, "gateway_inflows": {}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 0, "SINK_SOUTH_RESIDENTIAL": 0, "SINK_LINDSEY_COMMERCIAL": 0, "SINK_MILLER_DISTRICT": 0}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.96, "shuttle_pax_rate_hr": 2100.0}, {"step": 21, "time_sec": 18900.0, "time_hr": 5.25, "phase": "Phase IV: In-Game Quiescence", "ingress_rate_vph": 0.0, "egress_rate_vph": 0.0, "gateway_inflows": {}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 0, "SINK_SOUTH_RESIDENTIAL": 0, "SINK_LINDSEY_COMMERCIAL": 0, "SINK_MILLER_DISTRICT": 0}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.96, "shuttle_pax_rate_hr": 2100.0}, {"step": 22, "time_sec": 19800.0, "time_hr": 5.5, "phase": "Phase IV: In-Game Quiescence", "ingress_rate_vph": 0.0, "egress_rate_vph": 0.0, "gateway_inflows": {}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 0, "SINK_SOUTH_RESIDENTIAL": 0, "SINK_LINDSEY_COMMERCIAL": 0, "SINK_MILLER_DISTRICT": 0}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.96, "shuttle_pax_rate_hr": 2100.0}, {"step": 23, "time_sec": 20700.0, "time_hr": 5.75, "phase": "Phase IV: In-Game Quiescence", "ingress_rate_vph": 0.0, "egress_rate_vph": 0.0, "gateway_inflows": {}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 0, "SINK_SOUTH_RESIDENTIAL": 0, "SINK_LINDSEY_COMMERCIAL": 0, "SINK_MILLER_DISTRICT": 0}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.96, "shuttle_pax_rate_hr": 2100.0}, {"step": 24, "time_sec": 21600.0, "time_hr": 6.0, "phase": "Phase IV: In-Game Quiescence", "ingress_rate_vph": 0.0, "egress_rate_vph": 0.0, "gateway_inflows": {}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 0, "SINK_SOUTH_RESIDENTIAL": 0, "SINK_LINDSEY_COMMERCIAL": 0, "SINK_MILLER_DISTRICT": 0}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.96, "shuttle_pax_rate_hr": 2100.0}, {"step": 25, "time_sec": 22500.0, "time_hr": 6.25, "phase": "Phase IV: In-Game Quiescence", "ingress_rate_vph": 0.0, "egress_rate_vph": 0.0, "gateway_inflows": {}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 0, "SINK_SOUTH_RESIDENTIAL": 0, "SINK_LINDSEY_COMMERCIAL": 0, "SINK_MILLER_DISTRICT": 0}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.96, "shuttle_pax_rate_hr": 2100.0}, {"step": 26, "time_sec": 23400.0, "time_hr": 6.5, "phase": "Phase IV: In-Game Quiescence", "ingress_rate_vph": 0.0, "egress_rate_vph": 0.0, "gateway_inflows": {}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 0, "SINK_SOUTH_RESIDENTIAL": 0, "SINK_LINDSEY_COMMERCIAL": 0, "SINK_MILLER_DISTRICT": 0}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.96, "shuttle_pax_rate_hr": 2100.0}, {"step": 27, "time_sec": 24300.0, "time_hr": 6.75, "phase": "Phase IV: In-Game Quiescence", "ingress_rate_vph": 0.0, "egress_rate_vph": 0.0, "gateway_inflows": {}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 0, "SINK_SOUTH_RESIDENTIAL": 0, "SINK_LINDSEY_COMMERCIAL": 0, "SINK_MILLER_DISTRICT": 0}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.85, "shuttle_pax_rate_hr": 2100.0}, {"step": 28, "time_sec": 25200.0, "time_hr": 7.0, "phase": "Phase V: Peak Post-Game Egress", "ingress_rate_vph": 0.0, "egress_rate_vph": 0.0, "gateway_inflows": {}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 0, "SINK_SOUTH_RESIDENTIAL": 0, "SINK_LINDSEY_COMMERCIAL": 0, "SINK_MILLER_DISTRICT": 0}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 100.0, "SINK_LLOYD_NOBLE_GRASS": 100.0, "SINK_STADIUM_HEISMAN": 100.0, "SINK_JENKINS_FIELDHOUSE": 100.0, "SINK_ELM_GARAGE": 100.0, "SINK_ASP_GARAGE": 100.0, "SINK_JENKINS_GARAGE": 100.0, "SINK_DUCK_POND": 100.0, "SINK_TRADITIONS_EAST": 100.0, "SINK_CAMPUS_CORNER": 100.0, "SINK_SOUTH_RESIDENTIAL": 100.0, "SINK_LINDSEY_COMMERCIAL": 100.0, "SINK_MILLER_DISTRICT": 100.0}, "pedestrian_capacity_derating": 0.55, "shuttle_pax_rate_hr": 12000.0}, {"step": 29, "time_sec": 26100.0, "time_hr": 7.25, "phase": "Phase V: Peak Post-Game Egress", "ingress_rate_vph": 0.0, "egress_rate_vph": 18980.0, "gateway_inflows": {}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 0, "SINK_SOUTH_RESIDENTIAL": 0, "SINK_LINDSEY_COMMERCIAL": 0, "SINK_MILLER_DISTRICT": 0}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 83.3, "SINK_LLOYD_NOBLE_GRASS": 83.3, "SINK_STADIUM_HEISMAN": 83.3, "SINK_JENKINS_FIELDHOUSE": 83.3, "SINK_ELM_GARAGE": 83.3, "SINK_ASP_GARAGE": 83.2, "SINK_JENKINS_GARAGE": 83.3, "SINK_DUCK_POND": 83.3, "SINK_TRADITIONS_EAST": 83.3, "SINK_CAMPUS_CORNER": 83.3, "SINK_SOUTH_RESIDENTIAL": 83.3, "SINK_LINDSEY_COMMERCIAL": 83.3, "SINK_MILLER_DISTRICT": 83.3}, "pedestrian_capacity_derating": 0.23, "shuttle_pax_rate_hr": 12000.0}, {"step": 30, "time_sec": 27000.0, "time_hr": 7.5, "phase": "Phase V: Peak Post-Game Egress", "ingress_rate_vph": 0.0, "egress_rate_vph": 38704.0, "gateway_inflows": {}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 0, "SINK_SOUTH_RESIDENTIAL": 0, "SINK_LINDSEY_COMMERCIAL": 0, "SINK_MILLER_DISTRICT": 0}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 49.2, "SINK_LLOYD_NOBLE_GRASS": 49.2, "SINK_STADIUM_HEISMAN": 49.3, "SINK_JENKINS_FIELDHOUSE": 49.2, "SINK_ELM_GARAGE": 49.2, "SINK_ASP_GARAGE": 49.2, "SINK_JENKINS_GARAGE": 49.2, "SINK_DUCK_POND": 49.2, "SINK_TRADITIONS_EAST": 49.2, "SINK_CAMPUS_CORNER": 49.2, "SINK_SOUTH_RESIDENTIAL": 49.2, "SINK_LINDSEY_COMMERCIAL": 49.2, "SINK_MILLER_DISTRICT": 49.2}, "pedestrian_capacity_derating": 0.24, "shuttle_pax_rate_hr": 12000.0}, {"step": 31, "time_sec": 27900.0, "time_hr": 7.75, "phase": "Phase V: Peak Post-Game Egress", "ingress_rate_vph": 0.0, "egress_rate_vph": 30088.0, "gateway_inflows": {}, "sink_arrivals": {"SINK_LLOYD_NOBLE_MAIN": 0, "SINK_LLOYD_NOBLE_GRASS": 0, "SINK_STADIUM_HEISMAN": 0, "SINK_JENKINS_FIELDHOUSE": 0, "SINK_ELM_GARAGE": 0, "SINK_ASP_GARAGE": 0, "SINK_JENKINS_GARAGE": 0, "SINK_DUCK_POND": 0, "SINK_TRADITIONS_EAST": 0, "SINK_CAMPUS_CORNER": 0, "SINK_SOUTH_RESIDENTIAL": 0, "SINK_LINDSEY_COMMERCIAL": 0, "SINK_MILLER_DISTRICT": 0}, "occupancy_percentages": {"SINK_LLOYD_NOBLE_MAIN": 22.7, "SINK_LLOYD_NOBLE_GRASS": 22.7, "SINK_STADIUM_HEISMAN": 22.8, "SINK_JENKINS_FIELDHOUSE": 22.8, "SINK_ELM_GARAGE": 22.7, "SINK_ASP_GARAGE": 22.7, "SINK_JENKINS_GARAGE": 22.7, "SINK_DUCK_POND": 22.8, "SINK_TRADITIONS_EAST": 22.7, "SINK_CAMPUS_CORNER": 22.7, "SINK_SOUTH_RESIDENTIAL": 22.8, "SINK_LINDSEY_COMMERCIAL": 22.8, "SINK_MILLER_DISTRICT": 22.7}, "pedestrian_capacity_derating": 0.58, "shuttle_pax_rate_hr": 12000.0}]};
+    const timeline = DATA.timeline;
+
+    // Fill Summary Cards
+    document.getElementById('val-fleet').textContent = DATA.summary.total_vehicles_generated.toLocaleString() + ' veh';
+    document.getElementById('val-i35').textContent = DATA.summary.gateway_breakdown['GW_I35_NORTH'].pct_share + '%';
+    document.getElementById('val-shuttle').textContent = DATA.summary.shuttle_impact.total_passengers_carried.toLocaleString() + ' pax';
+    document.getElementById('val-saved').textContent = DATA.summary.shuttle_impact.private_car_trips_avoided.toLocaleString() + ' cars';
+
+    const slider = document.getElementById('time-slider');
+    slider.max = timeline.length - 1;
+
+    const gwContainer = document.getElementById('gw-container');
+    const sinkContainer = document.getElementById('sink-container');
+
+    function updateUI(stepIdx) {
+      const slice = timeline[stepIdx];
+      const relHours = (slice.time_hr - 4.0).toFixed(1);
+      const sign = relHours >= 0 ? '+' : '';
+      document.getElementById('label-time').textContent = `T ${sign}${relHours}h (${slice.time_hr.toFixed(2)} hrs)`;
+      document.getElementById('label-phase').textContent = slice.phase;
+      document.getElementById('label-flow').textContent = slice.ingress_rate_vph.toLocaleString() + ' veh/hr';
+
+      // Pedestrian derating
+      const pedCap = Math.round(slice.pedestrian_capacity_derating * 100);
+      const pedEl = document.getElementById('label-ped');
+      pedEl.textContent = pedCap + '% Flow';
+      pedEl.style.color = pedCap < 50 ? 'var(--crimson-glow)' : (pedCap < 80 ? 'var(--amber)' : 'var(--emerald)');
+
+      // Gateways
+      gwContainer.innerHTML = '';
+      for (let [gwId, count] of Object.entries(slice.gateway_inflows || {})) {
+        const gwMeta = DATA.summary.gateway_breakdown[gwId] || { name: gwId };
+        const rateVph = count * 4; // 15-min slice -> vph
+        const pct = Math.min(100, Math.round((rateVph / 7000) * 100));
+
+        const item = document.createElement('div');
+        item.className = 'gw-item';
+        item.innerHTML = `
+          <div style="display:flex; justify-content:space-between; font-size:12px;">
+            <span>${gwMeta.name.split('(')[0]}</span>
+            <span style="font-family:'Space Mono'; color:var(--cyan)">${rateVph.toLocaleString()} vph</span>
+          </div>
+          <div class="gauge-bar-bg">
+            <div class="gauge-fill" style="width:${pct}%; background:var(--cyan);"></div>
+          </div>
+        `;
+        gwContainer.appendChild(item);
+      }
+
+      // Sinks
+      sinkContainer.innerHTML = '';
+      for (let [sinkId, pct] of Object.entries(slice.occupancy_percentages || {})) {
+        const meta = DATA.summary.parking_sink_stats[sinkId] || { name: sinkId, capacity: 1000 };
+        const occupied = Math.round((pct / 100) * meta.capacity);
+        let color = 'var(--emerald)';
+        if (pct >= 85) color = 'var(--crimson-glow)';
+        else if (pct >= 60) color = 'var(--amber)';
+
+        const item = document.createElement('div');
+        item.className = 'gauge-item';
+        item.innerHTML = `
+          <div class="gauge-top">
+            <span style="font-weight:600;">${meta.name.split('(')[0]}</span>
+            <span style="font-family:'Space Mono'; color:${color}">${occupied.toLocaleString()} / ${meta.capacity.toLocaleString()} (${pct}%)</span>
+          </div>
+          <div class="gauge-bar-bg">
+            <div class="gauge-fill" style="width:${pct}%; background:${color};"></div>
+          </div>
+        `;
+        sinkContainer.appendChild(item);
+      }
+    }
+
+    slider.addEventListener('input', (e) => {
+      updateUI(parseInt(e.target.value));
+    });
+
+    // Initialize at peak ingress slice (slice 11 = T - 1.25h)
+    slider.value = 11;
+    updateUI(11);
+  </script>
+<div id="legacy-evidence-banner" style="position:fixed;bottom:0;left:0;right:0;z-index:999999;background:#f5e8cb;color:#352f24;padding:10px 20px;font:13px system-ui;text-align:center">Legacy viewer · unverified historical results · <a href="index.html" style="color:#174c48">Open research workspace →</a></div>
+</body>
+</html>

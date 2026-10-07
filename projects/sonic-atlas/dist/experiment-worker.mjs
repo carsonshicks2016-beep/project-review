@@ -1,0 +1,2 @@
+import {renderExperiment} from './experiment-physics.mjs';
+self.onmessage=({data})=>{try{const result=renderExperiment(data.kind,data.config),transfer=[result.samples.buffer];for(const key of ['samplesL','samplesR'])if(result[key]?.buffer&&!transfer.includes(result[key].buffer))transfer.push(result[key].buffer);self.postMessage({id:data.id,...result},transfer)}catch(error){self.postMessage({id:data.id,error:error.message})}};

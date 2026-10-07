@@ -1,0 +1,26 @@
+{
+  "schema": "smw-bowser-ai-brain-v1",
+  "policy_file": "policy.zip",
+  "route_file": "route.yaml",
+  "memory_map_file": "memory_map.yaml",
+  "action_space_file": "action_space.yaml",
+  "rom_hash": "",
+  "emulator_version": "",
+  "lua_bridge_sha256": "",
+  "created_at_utc": "",
+  "training": {
+    "method": "ppo-with-ga-seeds",
+    "seed": 0,
+    "curriculum": []
+  },
+  "acceptance": {
+    "clean_boot_successes": 0,
+    "required_clean_boot_successes": 3,
+    "deaths": 0,
+    "starworld_entries": 0,
+    "savestates_used": false,
+    "memory_writes_used": false,
+    "bowser_defeated": false
+  }
+}
+
