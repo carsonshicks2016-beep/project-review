@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hydraulic Jump Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0b1217; color: #f8fafc; font-family: ui-sans-serif, system-ui, sans-serif; }
+        .glass-panel { background: rgba(17, 26, 34, 0.7); backdrop-filter: blur(10px); border: 1px solid #1d2b38; }
+        input[type=range] { accent-color: #00f0ff; }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; }
+        .scrollable-y { overflow-y: auto; max-height: calc(100vh - 40px); }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(17, 26, 34, 0.5); }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="text-slate-200">
+    
+    <div id="canvas-container">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+    <!-- HUD Overlay -->
+    <div class="absolute top-4 left-4 flex flex-col gap-4 pointer-events-none w-80">
+        <div class="glass-panel rounded-2xl p-4 pointer-events-auto shadow-lg shadow-black/50">
+            <h1 class="text-xl font-bold text-sky-400 mb-2">Hydraulic Jump</h1>
+            <p class="text-xs text-slate-400 mb-4">Physics Simulation & Sonification</p>
+            
+            <div class="grid grid-cols-2 gap-2 text-sm mono">
+                <div class="bg-slate-900/80 p-2 rounded border border-slate-800">
+                    <span class="text-slate-500 text-xs block">Fr₁ (Supercritical)</span>
+                    <span id="out-fr1" class="text-emerald-400 font-bold text-lg">0.00</span>
+                </div>
+                <div class="bg-slate-900/80 p-2 rounded border border-slate-800">
+                    <span class="text-slate-500 text-xs block">Fr₂ (Subcritical)</span>
+                    <span id="out-fr2" class="text-amber-400 font-bold text-lg">0.00</span>
+                </div>
+                <div class="bg-slate-900/80 p-2 rounded border border-slate-800">
+                    <span class="text-slate-500 text-xs block">Jump Ratio y₂/y₁</span>
+                    <span id="out-ratio" class="text-sky-300">0.0</span>
+                </div>
+                <div class="bg-slate-900/80 p-2 rounded border border-slate-800">
+                    <span class="text-slate-500 text-xs block">Energy Dissipated</span>
+                    <span id="out-energy" class="text-rose-400">0 W</span>
+                </div>
+                <div class="bg-slate-900/80 p-2 rounded border border-slate-800 col-span-2">
+                    <span class="text-slate-500 text-xs block">Jump Radius / Position</span>
+                    <span id="out-pos" class="text-slate-300">0.00 cm</span>
+                </div>
+            </div>
+            
+            <button id="audio-btn" class="mt-4 w-full bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.9M6.5 9L3 9v6h3.5l5 5V4l-5 5z"></path></svg>
+                Enable Audio
+            </button>
+        </div>
+    </div>
+
+    <!-- Controls Sidebar -->
+    <div class="absolute top-4 right-4 w-80 glass-panel rounded-2xl p-5 shadow-lg shadow-black/50 scrollable-y">
+        <h2 class="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+            Simulation Parameters
+        </h2>
+        
+        <div class="space-y-5">
+            <!-- Mode Toggle -->
+            <div>
+                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">View Mode</label>
+                <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-800">
+                    <button id="mode-sink" class="flex-1 py-1.5 text-sm font-medium rounded-md bg-sky-900 text-sky-100 shadow-sm transition-all">Kitchen Sink</button>
+                    <button id="mode-channel" class="flex-1 py-1.5 text-sm font-medium rounded-md text-slate-400 hover:text-slate-200 transition-all">Dam Spillway</button>
+                </div>
+            </div>
+
+            <!-- Flow Rate -->
+            <div>
+                <div class="flex justify-between mb-1">
+                    <label class="text-sm font-medium text-slate-300">Flow Rate (Q)</label>
+                    <span id="val-q" class="text-xs text-sky-400 mono bg-sky-400/10 px-2 py-0.5 rounded">2.0 L/min</span>
+                </div>
+                <input type="range" id="slider-q" min="0.5" max="20" step="0.1" value="2.0" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+            </div>
+
+            <!-- Inlet Velocity -->
+            <div>
+                <div class="flex justify-between mb-1">
+                    <label class="text-sm font-medium text-slate-300">Inlet Velocity (v)</label>
+                    <span id="val-v" class="text-xs text-sky-400 mono bg-sky-400/10 px-2 py-0.5 rounded">1.5 m/s</span>
+                </div>
+                <input type="range" id="slider-v" min="0.5" max="10" step="0.1" value="1.5" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+            </div>
+
+            <!-- Viscosity -->
+            <div>
+                <div class="flex justify-between mb-1">
+                    <label class="text-sm font-medium text-slate-300">Fluid Viscosity</label>
+                    <span id="val-visc" class="text-xs text-sky-400 mono bg-sky-400/10 px-2 py-0.5 rounded">Water</span>
+                </div>
+                <input type="range" id="slider-visc" min="0.1" max="10" step="0.1" value="1.0" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                <div class="flex justify-between text-[10px] text-slate-500 mt-1 px-1">
+                    <span>Water</span>
+                    <span>Glycerin</span>
+                </div>
+            </div>
+
+            <!-- Presets -->
+            <div class="pt-2 border-t border-slate-800">
+                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">Presets</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 transition-colors" data-q="0.8" data-v="1.0" data-mode="sink">Tap Drizzle</button>
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 transition-colors" data-q="15" data-v="4.0" data-mode="sink">Sink Blast</button>
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 transition-colors" data-q="18" data-v="8.0" data-mode="channel">Dam Spillway</button>
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 transition-colors" data-q="12" data-v="2.0" data-mode="channel">Tidal Bore</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Explainer Cards (Bottom) -->
+    <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-full max-w-6xl px-4 flex gap-4 pointer-events-none">
+        <!-- Card 1 -->
+        <div class="flex-1 glass-panel rounded-2xl p-4 pointer-events-auto">
+            <h3 class="text-sm font-bold text-sky-400 mb-1">1. The Sonic Boom Analogy</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+                A hydraulic jump is the exact fluid equivalent of a <strong>supersonic shock wave</strong>. When flow speed exceeds the speed of surface gravity waves (Fr > 1), information cannot travel upstream. The fluid "crashes" into the slower downstream water, forcing a sudden, turbulent increase in depth to balance momentum.
+            </p>
+        </div>
+        <!-- Card 2 -->
+        <div class="flex-1 glass-panel rounded-2xl p-4 pointer-events-auto border-emerald-900/50">
+            <h3 class="text-sm font-bold text-emerald-400 mb-1">2. Froude Number (Fr)</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+                <code class="text-emerald-300 bg-emerald-900/30 px-1 rounded">Fr = v / √(g·y)</code><br>
+                It compares flow inertia (velocity <em>v</em>) to gravitational restoring forces (wave speed <em>√(g·y)</em>).
+                <br>• <strong>Fr > 1</strong>: Supercritical (fast/thin).
+                <br>• <strong>Fr < 1</strong>: Subcritical (slow/deep).
+            </p>
+        </div>
+        <!-- Card 3 -->
+        <div class="flex-1 glass-panel rounded-2xl p-4 pointer-events-auto border-rose-900/50">
+            <h3 class="text-sm font-bold text-rose-400 mb-1">3. Civil Engineering</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Dam spillways use <strong>stilling basins</strong> to intentionally trigger a hydraulic jump. The intense turbulence acts as a massive brake, dissipating huge amounts of destructive kinetic energy (<span class="text-rose-300">ΔE</span>) so the water doesn't scour and destroy the downstream riverbed.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // --- Constants & Globals ---
+        const g = 9.81; // Gravity m/s^2
+        const rho = 1000; // Density kg/m^3
+        
+        let state = {
+            Q: 2.0, // L/min
+            v: 1.5, // m/s
+            viscosity: 1.0, // multiplier
+            mode: 'sink', // 'sink' or 'channel'
+            audioEnabled: false
+        };
+
+        let derived = {
+            y1: 0,
+            Fr1: 0,
+            y2: 0,
+            Fr2: 0,
+            deltaE: 0,
+            jumpPos: 0
+        };
+
+        // DOM Elements
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        
+        const ui = {
+            fr1: document.getElementById('out-fr1'),
+            fr2: document.getElementById('out-fr2'),
+            ratio: document.getElementById('out-ratio'),
+            energy: document.getElementById('out-energy'),
+            pos: document.getElementById('out-pos'),
+            valQ: document.getElementById('val-q'),
+            valV: document.getElementById('val-v'),
+            valVisc: document.getElementById('val-visc'),
+            sliderQ: document.getElementById('slider-q'),
+            sliderV: document.getElementById('slider-v'),
+            sliderVisc: document.getElementById('slider-visc'),
+            btnSink: document.getElementById('mode-sink'),
+            btnChannel: document.getElementById('mode-channel'),
+            btnAudio: document.getElementById('audio-btn')
+        };
+
+        // --- Audio System ---
+        let audioCtx, masterGain;
+        let smoothNoise, roarNoise;
+        let smoothGain, roarGain, roarFilter;
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            masterGain = audioCtx.createGain();
+            masterGain.connect(audioCtx.destination);
+            masterGain.gain.value = 0.5;
+
+            // Generate White Noise Buffer
+            const bufferSize = audioCtx.sampleRate * 2;
+            const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+
+            // Smooth Hiss (Supercritical sheet)
+            smoothNoise = audioCtx.createBufferSource();
+            smoothNoise.buffer = noiseBuffer;
+            smoothNoise.loop = true;
+            
+            const smoothFilter = audioCtx.createBiquadFilter();
+            smoothFilter.type = 'lowpass';
+            smoothFilter.frequency.value = 2000;
+            
+            smoothGain = audioCtx.createGain();
+            smoothGain.gain.value = 0;
+
+            smoothNoise.connect(smoothFilter).connect(smoothGain).connect(masterGain);
+            smoothNoise.start();
+
+            // Roar/Turbulence (Jump)
+            roarNoise = audioCtx.createBufferSource();
+            roarNoise.buffer = noiseBuffer;
+            roarNoise.loop = true;
+
+            roarFilter = audioCtx.createBiquadFilter();
+            roarFilter.type = 'lowshelf';
+            roarFilter.frequency.value = 800;
+            roarFilter.gain.value = 10;
+
+            const roarHp = audioCtx.createBiquadFilter();
+            roarHp.type = 'highpass';
+            roarHp.frequency.value = 100;
+
+            roarGain = audioCtx.createGain();
+            roarGain.gain.value = 0;
+
+            roarNoise.connect(roarFilter).connect(roarHp).connect(roarGain).connect(masterGain);
+            roarNoise.start();
+
+            state.audioEnabled = true;
+            ui.btnAudio.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.9M6.5 9L3 9v6h3.5l5 5V4l-5 5z"></path></svg> Audio Playing`;
+            ui.btnAudio.classList.remove('text-sky-400');
+            ui.btnAudio.classList.add('text-emerald-400', 'border-emerald-700');
+        }
+
+        function updateAudio() {
+            if (!state.audioEnabled) return;
+            
+            // Map physics to audio
+            // Hiss based on flow velocity and Q
+            const hissVol = Math.min(1.0, (state.Q / 20) * 0.5 + (state.v / 10) * 0.5);
+            smoothGain.gain.setTargetAtTime(hissVol * 0.3, audioCtx.currentTime, 0.1);
+
+            // Roar based on energy dissipated
+            // Max deltaE in this sim range is roughly 5-10 Watts (scaled)
+            let rawE = derived.deltaE;
+            if (isNaN(rawE)) rawE = 0;
+            const roarVol = Math.min(1.0, rawE / 500); 
+            roarGain.gain.setTargetAtTime(roarVol * 0.6, audioCtx.currentTime, 0.1);
+
+            // Adjust roar filter frequency based on jump intensity
+            const cutoff = 200 + (derived.Fr1 * 100);
+            roarFilter.frequency.setTargetAtTime(Math.min(2000, cutoff), audioCtx.currentTime, 0.1);
+        }
+
+        // --- Physics Logic ---
+        function calculatePhysics() {
+            // Convert Q (L/min) to m^3/s for a standard arbitrary width or radial segment
+            // We'll use a unit width b = 0.05m (5cm) for channel, or 2*pi*r for sink.
+            // To make sliders feel good, we use pseudo-realistic scales.
+            
+            const q_m3s = (state.Q / 60) * 0.001; // m^3/s
+            
+            if (state.mode === 'channel') {
+                const b = 0.1; // 10cm channel width
+                const q_unit = q_m3s / b; // m^2/s
+                
+                // y1 from Continuity: q = v * y1 => y1 = q / v
+                derived.y1 = q_unit / state.v;
+                
+                // Fr1 = v / sqrt(g * y1)
+                derived.Fr1 = state.v / Math.sqrt(g * derived.y1);
+                
+                if (derived.Fr1 > 1) {
+                    // Belanger Equation for y2
+                    derived.y2 = 0.5 * derived.y1 * (Math.sqrt(1 + 8 * derived.Fr1 * derived.Fr1) - 1);
+                    
+                    // Fr2
+                    const v2 = q_unit / derived.y2;
+                    derived.Fr2 = v2 / Math.sqrt(g * derived.y2);
+                    
+                    // Head loss Delta E = (y2-y1)^3 / (4*y1*y2)  (in meters of head)
+                    const headLoss = Math.pow(derived.y2 - derived.y1, 3) / (4 * derived.y1 * derived.y2);
+                    // Power dissipated = rho * g * Q * headLoss (Watts)
+                    derived.deltaE = rho * g * q_m3s * headLoss;
+                    
+                    // Jump position visually maps to Froude and Viscosity
+                    derived.jumpPos = (derived.Fr1 * 0.1) / state.viscosity; // fake relation for visual
+                } else {
+                    derived.y2 = derived.y1;
+                    derived.Fr2 = derived.Fr1;
+                    derived.deltaE = 0;
+                    derived.jumpPos = 0;
+                }
+            } else {
+                // Radial Kitchen Sink Mode
+                // Source radius = 5mm (0.005m)
+                const r0 = 0.005;
+                // v is vertical inlet speed. Thin film speed v1 ~ v
+                derived.y1 = q_m3s / (2 * Math.PI * r0 * state.v);
+                derived.Fr1 = state.v / Math.sqrt(g * derived.y1);
+                
+                if (derived.Fr1 > 1) {
+                    // Approximate radial jump radius (Bohr formula adaptation or empirical)
+                    // r_j ~ (Q^2 / (g * y_sub^3) ) ... simplified visual heuristic
+                    // Higher V -> larger jump. Higher viscosity -> smaller jump.
+                    const r_j = 0.02 * Math.pow(derived.Fr1, 0.7) * Math.pow(state.Q, 0.3) / Math.sqrt(state.viscosity);
+                    derived.jumpPos = r_j; // meters
+                    
+                    // Local conditions AT the jump
+                    const v_j = state.v * (r0 / r_j); // speed drops radially
+                    const y1_j = q_m3s / (2 * Math.PI * r_j * v_j);
+                    const Fr_j = v_j / Math.sqrt(g * y1_j);
+                    
+                    // Belanger at the jump ring
+                    derived.y2 = 0.5 * y1_j * (Math.sqrt(1 + 8 * Fr_j * Fr_j) - 1);
+                    const v2_j = q_m3s / (2 * Math.PI * r_j * derived.y2);
+                    derived.Fr2 = v2_j / Math.sqrt(g * derived.y2);
+                    
+                    const headLoss = Math.pow(derived.y2 - y1_j, 3) / (4 * y1_j * derived.y2);
+                    derived.deltaE = rho * g * q_m3s * headLoss;
+                    
+                } else {
+                    derived.y2 = derived.y1;
+                    derived.Fr2 = derived.Fr1;
+                    derived.deltaE = 0;
+                    derived.jumpPos = 0;
+                }
+            }
+        }
+
+        function updateUI() {
+            ui.valQ.textContent = state.Q.toFixed(1) + ' L/min';
+            ui.valV.textContent = state.v.toFixed(1) + ' m/s';
+            ui.valVisc.textContent = state.viscosity === 1.0 ? 'Water' : state.viscosity > 5 ? 'Glycerin' : state.viscosity.toFixed(1) + 'x';
+            
+            ui.fr1.textContent = derived.Fr1.toFixed(2);
+            ui.fr2.textContent = derived.Fr2.toFixed(2);
+            
+            // Colors for Fr
+            ui.fr1.className = `font-bold text-lg ${derived.Fr1 > 1 ? 'text-emerald-400' : 'text-slate-500'}`;
+            ui.fr2.className = `font-bold text-lg ${derived.Fr2 < 1 ? 'text-amber-400' : 'text-slate-500'}`;
+            
+            const ratio = derived.y1 > 0 ? (derived.y2 / derived.y1) : 1;
+            ui.ratio.textContent = ratio.toFixed(1) + 'x';
+            
+            ui.energy.textContent = derived.deltaE.toFixed(1) + ' W';
+            
+            const posUnit = state.mode === 'sink' ? 'Radius: ' : 'Pos: ';
+            ui.pos.textContent = posUnit + (derived.jumpPos * 100).toFixed(1) + ' cm';
+        }
+
+        // --- Rendering ---
+        let particles = [];
+        
+        function spawnParticle() {
+            if (state.mode === 'sink') {
+                const angle = Math.random() * Math.PI * 2;
+                const r0 = 10; // start near center
+                particles.push({
+                    x: Math.cos(angle) * r0,
+                    y: Math.sin(angle) * r0,
+                    vx: Math.cos(angle) * state.v * 5,
+                    vy: Math.sin(angle) * state.v * 5,
+                    life: 1.0,
+                    isTurbulent: false
+                });
+            } else {
+                particles.push({
+                    x: -200,
+                    y: 0,
+                    vx: state.v * 15,
+                    vy: 0,
+                    life: 1.0,
+                    isTurbulent: false
+                });
+            }
+        }
+
+        function render() {
+            // Resize canvas to full screen
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            if (canvas.width !== width || canvas.height !== height) {
+                canvas.width = width * window.devicePixelRatio;
+                canvas.height = height * window.devicePixelRatio;
+                canvas.style.width = width + 'px';
+                canvas.style.height = height + 'px';
+                ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            }
+            
+            const cx = width / 2;
+            const cy = height / 2;
+
+            // Clear Background
+            ctx.fillStyle = '#0b1217';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Draw Grid
+            ctx.strokeStyle = 'rgba(29, 43, 56, 0.5)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < width; i += 50) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke();
+            }
+            for (let i = 0; i < height; i += 50) {
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(width, i); ctx.stroke();
+            }
+
+            if (state.mode === 'sink') {
+                renderSink(cx, cy);
+            } else {
+                renderChannel(cx, cy, width, height);
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        function renderSink(cx, cy) {
+            const scale = 1500; // pixels per meter
+            const jumpR_px = derived.jumpPos * scale;
+            
+            ctx.save();
+            ctx.translate(cx, cy);
+            
+            // Subcritical deep zone (outer)
+            ctx.beginPath();
+            ctx.arc(0, 0, Math.max(jumpR_px, 1000), 0, Math.PI * 2);
+            const outerGrad = ctx.createRadialGradient(0, 0, jumpR_px, 0, 0, jumpR_px + 200);
+            outerGrad.addColorStop(0, 'rgba(0, 212, 224, 0.3)'); // sky-500
+            outerGrad.addColorStop(1, 'rgba(2, 6, 23, 0)');
+            ctx.fillStyle = outerGrad;
+            ctx.fill();
+
+            // Supercritical smooth zone (inner)
+            if (derived.Fr1 > 1) {
+                ctx.beginPath();
+                ctx.arc(0, 0, jumpR_px, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0, 240, 255, 0.8)'; // sky-400
+                ctx.fill();
+                
+                // Jump Ring (Turbulence)
+                ctx.beginPath();
+                ctx.arc(0, 0, jumpR_px, 0, Math.PI * 2);
+                ctx.lineWidth = Math.min(20, derived.deltaE * 2 + 2);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; // white froth
+                // Add some jitter to the ring for turbulence
+                ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
+                ctx.shadowBlur = 10;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            } else {
+                // No jump, just deep water spreading
+                ctx.beginPath();
+                ctx.arc(0, 0, 100, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0, 212, 224, 0.5)';
+                ctx.fill();
+            }
+            
+            // Central tap column hitting
+            ctx.beginPath();
+            ctx.arc(0, 0, 10, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(240, 248, 255, 0.9)';
+            ctx.fill();
+
+            // Particles
+            for(let i=0; i<3; i++) spawnParticle();
+            updateAndDrawParticles(scale, jumpR_px);
+            
+            ctx.restore();
+        }
+
+        function renderChannel(cx, cy, width, height) {
+            const scaleX = 800; // px per meter
+            const scaleY = 3000; // px per meter (vertical exaggeration)
+            
+            const startX = -300;
+            const jumpX = startX + derived.jumpPos * scaleX;
+            const floorY = 150;
+            
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            // Channel Floor
+            ctx.fillStyle = '#1d2b38'; // slate-800
+            ctx.fillRect(-cx, floorY, width, 100);
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(-cx, floorY);
+            ctx.lineTo(width-cx, floorY);
+            ctx.stroke();
+
+            const y1_px = derived.y1 * scaleY;
+            const y2_px = derived.y2 * scaleY;
+
+            if (derived.Fr1 > 1) {
+                // Supercritical flow
+                ctx.fillStyle = 'rgba(0, 240, 255, 0.8)';
+                ctx.fillRect(startX, floorY - y1_px, jumpX - startX, y1_px);
+                
+                // Subcritical flow
+                ctx.fillStyle = 'rgba(0, 212, 224, 0.5)';
+                ctx.fillRect(jumpX, floorY - y2_px, width - cx - jumpX, y2_px);
+                
+                // Turbulent Jump face (roller)
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.beginPath();
+                ctx.moveTo(jumpX, floorY - y1_px);
+                ctx.quadraticCurveTo(jumpX + 40, floorY - y2_px, jumpX + (y2_px-y1_px), floorY - y2_px);
+                ctx.lineTo(jumpX, floorY - y2_px);
+                ctx.fill();
+                
+                // Froth
+                for(let i=0; i<10; i++) {
+                    ctx.beginPath();
+                    ctx.arc(jumpX + Math.random() * 50, floorY - y2_px + Math.random() * (y2_px-y1_px), Math.random() * 8 + 2, 0, Math.PI*2);
+                    ctx.fillStyle = 'rgba(255,255,255,'+ (Math.random()*0.5+0.2) +')';
+                    ctx.fill();
+                }
+            } else {
+                // Subcritical only
+                ctx.fillStyle = 'rgba(0, 212, 224, 0.5)';
+                ctx.fillRect(-cx, floorY - y1_px, width, y1_px);
+            }
+
+            // Particles
+            for(let i=0; i<2; i++) spawnParticle();
+            updateAndDrawParticlesChannel(jumpX, floorY, y1_px, y2_px);
+
+            ctx.restore();
+        }
+
+        function updateAndDrawParticles(scale, jumpR_px) {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.01;
+                
+                const r = Math.sqrt(p.x*p.x + p.y*p.y);
+                
+                // Hit jump boundary
+                if (!p.isTurbulent && r >= jumpR_px && derived.Fr1 > 1) {
+                    p.isTurbulent = true;
+                    // Slow down drastically and randomize direction slightly
+                    const speed = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
+                    const newSpeed = speed * (derived.y1 / derived.y2); // continuity roughly
+                    const angle = Math.atan2(p.y, p.x) + (Math.random()-0.5)*1.5;
+                    p.vx = Math.cos(angle) * newSpeed;
+                    p.vy = Math.sin(angle) * newSpeed;
+                    p.life = 0.5; // die faster in turbulence
+                }
+
+                if (p.life <= 0 || r > 1000) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.isTurbulent ? 3 : 1.5, 0, Math.PI * 2);
+                ctx.fillStyle = p.isTurbulent ? `rgba(255, 255, 255, ${p.life})` : `rgba(224, 242, 254, ${p.life})`;
+                ctx.fill();
+            }
+        }
+
+        function updateAndDrawParticlesChannel(jumpX, floorY, y1_px, y2_px) {
+             for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.005;
+                
+                // Gravity / bottom constraint
+                if (!p.isTurbulent) {
+                     p.y = floorY - y1_px/2; 
+                }
+                
+                // Hit jump boundary
+                if (!p.isTurbulent && p.x >= jumpX && derived.Fr1 > 1) {
+                    p.isTurbulent = true;
+                    p.vx *= (derived.y1 / derived.y2);
+                    p.vy = -Math.random() * 5; // boil up
+                }
+
+                if (p.isTurbulent) {
+                    p.vy += 0.2; // gravity in roller
+                    if (p.y > floorY - 5) p.y = floorY - 5;
+                    if (p.y < floorY - y2_px + 10) p.vy += 1;
+                }
+
+                if (p.life <= 0 || p.x > window.innerWidth/2) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.isTurbulent ? 4 : 2, 0, Math.PI * 2);
+                ctx.fillStyle = p.isTurbulent ? `rgba(255, 255, 255, ${p.life})` : `rgba(224, 242, 254, ${p.life})`;
+                ctx.fill();
+            }
+        }
+
+        // --- Event Listeners ---
+        function attachListeners() {
+            ui.sliderQ.addEventListener('input', (e) => { state.Q = parseFloat(e.target.value); loop(); });
+            ui.sliderV.addEventListener('input', (e) => { state.v = parseFloat(e.target.value); loop(); });
+            ui.sliderVisc.addEventListener('input', (e) => { state.viscosity = parseFloat(e.target.value); loop(); });
+            
+            ui.btnSink.addEventListener('click', () => setMode('sink'));
+            ui.btnChannel.addEventListener('click', () => setMode('channel'));
+            
+            ui.btnAudio.addEventListener('click', () => {
+                initAudio();
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+            });
+
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const d = e.target.dataset;
+                    state.Q = parseFloat(d.q);
+                    state.v = parseFloat(d.v);
+                    
+                    ui.sliderQ.value = state.Q;
+                    ui.sliderV.value = state.v;
+                    
+                    setMode(d.mode);
+                    loop();
+                });
+            });
+            
+            window.addEventListener('resize', () => {
+                 canvas.width = window.innerWidth * window.devicePixelRatio;
+                 canvas.height = window.innerHeight * window.devicePixelRatio;
+            });
+        }
+
+        function setMode(mode) {
+            state.mode = mode;
+            particles = []; // clear particles
+            if (mode === 'sink') {
+                ui.btnSink.classList.replace('bg-slate-900', 'bg-sky-900');
+                ui.btnSink.classList.replace('text-slate-400', 'text-sky-100');
+                ui.btnChannel.classList.replace('bg-sky-900', 'bg-transparent');
+                ui.btnChannel.classList.replace('text-sky-100', 'text-slate-400');
+            } else {
+                ui.btnChannel.classList.replace('bg-transparent', 'bg-sky-900');
+                ui.btnChannel.classList.replace('text-slate-400', 'text-sky-100');
+                ui.btnSink.classList.replace('bg-sky-900', 'bg-transparent');
+                ui.btnSink.classList.replace('text-sky-100', 'text-slate-400');
+            }
+            loop();
+        }
+
+        function loop() {
+            calculatePhysics();
+            updateUI();
+            updateAudio();
+        }
+
+        // Init
+        attachListeners();
+        setMode('sink');
+        loop();
+        requestAnimationFrame(render);
+    </script>
+</body>
+</html>

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ocean Tides & Tidal Bulges Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0b1217; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+        .hud-panel { position: absolute; z-index: 10; background: rgba(17, 26, 34, 0.8); backdrop-filter: blur(8px); border: 1px solid #1d2b38; border-radius: 1rem; padding: 1.25rem; }
+        .control-panel { top: 1.5rem; right: 1.5rem; width: 24rem; max-height: calc(100vh - 12rem); overflow-y: auto; }
+        .info-panel { top: 1.5rem; left: 1.5rem; width: 22rem; }
+        .cards-container { position: absolute; bottom: 1.5rem; left: 1.5rem; right: 1.5rem; z-index: 10; display: flex; gap: 1rem; }
+        .card { flex: 1; background: rgba(17, 26, 34, 0.8); backdrop-filter: blur(8px); border: 1px solid #1d2b38; border-radius: 1rem; padding: 1rem; }
+        .slider-container { margin-bottom: 1rem; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 0.25rem; color: #94a3b8; }
+        input[type=range] { width: 100%; accent-color: #00f0ff; }
+        button { background: #00d4e0; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; font-weight: 500; transition: background 0.2s; margin-bottom: 0.5rem; width: 100%; }
+        button:hover { background: #0284c7; }
+        .btn-preset { background: #1d2b38; border: 1px solid #334155; }
+        .btn-preset:hover { background: #334155; }
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-family: monospace; font-size: 0.875rem; }
+        .data-label { color: #94a3b8; }
+        .data-value { color: #00f0ff; font-weight: bold; }
+        
+        /* Custom scrollbar for control panel */
+        .control-panel::-webkit-scrollbar { width: 6px; }
+        .control-panel::-webkit-scrollbar-track { background: rgba(17, 26, 34, 0.5); }
+        .control-panel::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <canvas id="sim-canvas"></canvas>
+    </div>
+
+    <!-- Info Panel -->
+    <div class="hud-panel info-panel">
+        <h2 class="text-xl font-bold mb-4 text-sky-400">Live Telemetry</h2>
+        <div class="data-row"><span class="data-label">Lunar Phase:</span><span class="data-value" id="val-phase">New Moon</span></div>
+        <div class="data-row"><span class="data-label">Regime:</span><span class="data-value text-emerald-400" id="val-regime">Spring Tide</span></div>
+        <div class="data-row"><span class="data-label">Moon Dist:</span><span class="data-value" id="val-dist">384,400 km</span></div>
+        <div class="data-row"><span class="data-label">Lunar/Solar Ratio:</span><span class="data-value" id="val-ratio">2.18x</span></div>
+        
+        <h3 class="text-lg font-bold mt-4 mb-2 text-sky-400">Observer Station</h3>
+        <div class="data-row"><span class="data-label">Tide State:</span><span class="data-value text-rose-400" id="val-tide-state">High Tide</span></div>
+        <div class="data-row"><span class="data-label">Water Level:</span><span class="data-value" id="val-water-level">+1.24 m</span></div>
+        <div class="data-row"><span class="data-label">Location:</span><span class="data-value" id="val-obs-loc">0° (Equator)</span></div>
+        
+        <button id="btn-audio" class="mt-4 bg-emerald-600 hover:bg-emerald-700">Enable Sonification</button>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="hud-panel control-panel">
+        <h2 class="text-xl font-bold mb-4 text-sky-400">Simulation Controls</h2>
+        
+        <div class="slider-container">
+            <div class="slider-label"><span>Moon Orbital Position</span><span id="lbl-moon-angle">0°</span></div>
+            <input type="range" id="sl-moon-angle" min="0" max="360" value="0">
+        </div>
+        
+        <div class="slider-container">
+            <div class="slider-label"><span>Earth Rotation Speed</span><span id="lbl-earth-speed">1x</span></div>
+            <input type="range" id="sl-earth-speed" min="0" max="100" value="10">
+        </div>
+
+        <div class="slider-container">
+            <div class="slider-label"><span>Moon Distance (Perigee/Apogee)</span><span id="lbl-moon-dist">1.0x</span></div>
+            <input type="range" id="sl-moon-dist" min="0.85" max="1.15" step="0.01" value="1.0">
+        </div>
+
+        <div class="slider-container">
+            <div class="slider-label"><span>Exaggerate Tidal Bulge</span><span id="lbl-bulge">100x</span></div>
+            <input type="range" id="sl-bulge" min="1" max="500" value="100">
+        </div>
+
+        <div class="slider-container">
+            <div class="slider-label"><span>Observer Longitude</span><span id="lbl-obs">0°</span></div>
+            <input type="range" id="sl-obs" min="0" max="360" value="0">
+        </div>
+
+        <div class="slider-container">
+            <div class="slider-label"><span>Resonance Multiplier (e.g. Fundy)</span><span id="lbl-res">1x</span></div>
+            <input type="range" id="sl-res" min="1" max="15" step="0.1" value="1">
+        </div>
+
+        <h3 class="text-sm font-bold mt-6 mb-2 text-slate-400 uppercase tracking-wider">Presets</h3>
+        <div class="grid grid-cols-2 gap-2">
+            <button class="btn-preset" onclick="setPreset('spring')">Spring Tide</button>
+            <button class="btn-preset" onclick="setPreset('neap')">Neap Tide</button>
+            <button class="btn-preset" onclick="setPreset('perigean')">Perigean King</button>
+            <button class="btn-preset" onclick="setPreset('fundy')">Bay of Fundy</button>
+        </div>
+    </div>
+
+    <!-- Explainer Cards -->
+    <div class="cards-container">
+        <div class="card">
+            <h3 class="font-bold text-sky-400 mb-2">1. The Two Bulges Paradox</h3>
+            <p class="text-sm text-slate-300">Why are there two high tides? Gravity pulls the near-side water harder than Earth's center, creating the front bulge. Earth's center is pulled harder than the far-side water, effectively pulling Earth away from the far ocean, creating the second, rear bulge!</p>
+        </div>
+        <div class="card">
+            <h3 class="font-bold text-sky-400 mb-2">2. The Inverse-Cube Law (1/r³)</h3>
+            <p class="text-sm text-slate-300">Tidal forces depend on the <em>difference</em> in gravity across a body, not absolute gravity. This differential force drops off as <strong>1/r³</strong>. Thus, the Moon's tidal pull is ~2.2x stronger than the Sun's, even though the Sun is 27M times more massive!</p>
+        </div>
+        <div class="card">
+            <h3 class="font-bold text-sky-400 mb-2">3. Spring vs Neap Tides</h3>
+            <p class="text-sm text-slate-300">When the Sun, Earth, and Moon align (New/Full Moon), their tidal bulges add constructively to create extreme <strong>Spring Tides</strong>. When at 90° (Quarter Moon), the Sun's bulge partially cancels the Moon's, creating weak <strong>Neap Tides</strong>.</p>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Data Outputs
+        const valPhase = document.getElementById('val-phase');
+        const valRegime = document.getElementById('val-regime');
+        const valDist = document.getElementById('val-dist');
+        const valRatio = document.getElementById('val-ratio');
+        const valTideState = document.getElementById('val-tide-state');
+        const valWaterLevel = document.getElementById('val-water-level');
+        const valObsLoc = document.getElementById('val-obs-loc');
+        
+        // Inputs
+        const slMoonAngle = document.getElementById('sl-moon-angle');
+        const slEarthSpeed = document.getElementById('sl-earth-speed');
+        const slMoonDist = document.getElementById('sl-moon-dist');
+        const slBulge = document.getElementById('sl-bulge');
+        const slObs = document.getElementById('sl-obs');
+        const slRes = document.getElementById('sl-res');
+        
+        const lblMoonAngle = document.getElementById('lbl-moon-angle');
+        const lblEarthSpeed = document.getElementById('lbl-earth-speed');
+        const lblMoonDist = document.getElementById('lbl-moon-dist');
+        const lblBulge = document.getElementById('lbl-bulge');
+        const lblObs = document.getElementById('lbl-obs');
+        const lblRes = document.getElementById('lbl-res');
+
+        // State
+        let earthRotation = 0; // radians
+        let time = 0;
+        
+        // Physics constants (abstracted for visualization)
+        const BASE_LUNAR_TIDE = 0.54; // meters
+        const BASE_SOLAR_TIDE = 0.25; // meters
+        const BASE_MOON_DIST = 384400; // km
+        
+        // Audio State
+        let audioCtx = null;
+        let oceanNoise = null;
+        let oceanGain = null;
+        let oceanFilter = null;
+        let humOsc = null;
+        let humGain = null;
+        let isAudioEnabled = false;
+
+        function resize() {
+            canvas.width = window.innerWidth * window.devicePixelRatio;
+            canvas.height = window.innerHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Audio Setup
+        document.getElementById('btn-audio').addEventListener('click', () => {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Ocean surf noise
+                const bufferSize = audioCtx.sampleRate * 2;
+                const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = Math.random() * 2 - 1;
+                }
+                
+                oceanNoise = audioCtx.createBufferSource();
+                oceanNoise.buffer = noiseBuffer;
+                oceanNoise.loop = true;
+                
+                oceanFilter = audioCtx.createBiquadFilter();
+                oceanFilter.type = 'lowpass';
+                oceanFilter.frequency.value = 400;
+                
+                oceanGain = audioCtx.createGain();
+                oceanGain.gain.value = 0;
+                
+                oceanNoise.connect(oceanFilter);
+                oceanFilter.connect(oceanGain);
+                oceanGain.connect(audioCtx.destination);
+                oceanNoise.start();
+
+                // Spring/Neap Tone
+                humOsc = audioCtx.createOscillator();
+                humOsc.type = 'sine';
+                humOsc.frequency.value = 220; // Base freq
+                
+                humGain = audioCtx.createGain();
+                humGain.gain.value = 0;
+                
+                humOsc.connect(humGain);
+                humGain.connect(audioCtx.destination);
+                humOsc.start();
+                
+                isAudioEnabled = true;
+                document.getElementById('btn-audio').textContent = "Sonification Active";
+                document.getElementById('btn-audio').classList.replace('bg-emerald-600', 'bg-slate-700');
+            } else if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        });
+
+        window.setPreset = function(preset) {
+            switch(preset) {
+                case 'spring':
+                    slMoonAngle.value = 0;
+                    slMoonDist.value = 1.0;
+                    slRes.value = 1;
+                    break;
+                case 'neap':
+                    slMoonAngle.value = 90;
+                    slMoonDist.value = 1.0;
+                    slRes.value = 1;
+                    break;
+                case 'perigean':
+                    slMoonAngle.value = 0;
+                    slMoonDist.value = 0.85; // Closest
+                    slRes.value = 1;
+                    break;
+                case 'fundy':
+                    slMoonAngle.value = 0;
+                    slMoonDist.value = 0.9;
+                    slRes.value = 12.5;
+                    break;
+            }
+            updateLabels();
+        };
+
+        function updateLabels() {
+            lblMoonAngle.textContent = slMoonAngle.value + '°';
+            lblEarthSpeed.textContent = slEarthSpeed.value + 'x';
+            lblMoonDist.textContent = parseFloat(slMoonDist.value).toFixed(2) + 'x';
+            lblBulge.textContent = slBulge.value + 'x';
+            lblObs.textContent = slObs.value + '°';
+            lblRes.textContent = parseFloat(slRes.value).toFixed(1) + 'x';
+        }
+
+        // Add event listeners for sliders
+        [slMoonAngle, slEarthSpeed, slMoonDist, slBulge, slObs, slRes].forEach(el => {
+            el.addEventListener('input', updateLabels);
+        });
+
+        function draw() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const cx = width / 2;
+            const cy = height / 2;
+
+            // Clear
+            ctx.fillStyle = '#0b1217'; // bg-slate-950
+            ctx.fillRect(0, 0, width, height);
+
+            // Read Inputs
+            const moonAngleDeg = parseFloat(slMoonAngle.value);
+            const moonAngleRad = moonAngleDeg * Math.PI / 180;
+            const speed = parseFloat(slEarthSpeed.value) * 0.005;
+            const moonDistFactor = parseFloat(slMoonDist.value);
+            const bulgeExaggeration = parseFloat(slBulge.value);
+            const obsLongitudeDeg = parseFloat(slObs.value);
+            const obsLongitudeRad = obsLongitudeDeg * Math.PI / 180;
+            const resonance = parseFloat(slRes.value);
+
+            // Time step
+            earthRotation = (earthRotation + speed) % (Math.PI * 2);
+            
+            // Physics Calculations
+            // Moon distance affects tide by 1/r^3
+            const lunarTideAmp = BASE_LUNAR_TIDE * Math.pow(1 / moonDistFactor, 3);
+            const solarTideAmp = BASE_SOLAR_TIDE; // Assuming Sun distance constant for this sim
+            
+            // Draw Sun (fixed on right side, far away)
+            const sunX = cx + width * 0.4;
+            const sunY = cy;
+            
+            // Sun rays
+            ctx.save();
+            ctx.translate(sunX, sunY);
+            ctx.beginPath();
+            ctx.arc(0, 0, 40, 0, Math.PI * 2);
+            ctx.fillStyle = '#fef08a';
+            ctx.shadowColor = '#eab308';
+            ctx.shadowBlur = 50;
+            ctx.fill();
+            ctx.restore();
+
+            // Solar gravitational field lines (subtle)
+            ctx.beginPath();
+            for(let i=0; i<10; i++) {
+                ctx.moveTo(cx - 200, cy - 150 + i*30);
+                ctx.lineTo(sunX - 100, cy - 150 + i*30);
+            }
+            ctx.strokeStyle = 'rgba(234, 179, 8, 0.1)';
+            ctx.stroke();
+
+            // Draw Moon
+            const moonOrbitRadius = 250 * moonDistFactor;
+            const moonX = cx + Math.cos(moonAngleRad) * moonOrbitRadius;
+            const moonY = cy + Math.sin(moonAngleRad) * moonOrbitRadius;
+            
+            // Moon orbit path
+            ctx.beginPath();
+            ctx.arc(cx, cy, moonOrbitRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Moon body
+            ctx.beginPath();
+            ctx.arc(moonX, moonY, 15, 0, Math.PI * 2);
+            ctx.fillStyle = '#cbd5e1';
+            ctx.shadowColor = '#94a3b8';
+            ctx.shadowBlur = 20;
+            ctx.fill();
+
+            // Lunar gravitational field lines
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(moonX, moonY);
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Earth
+            const earthRadius = 60;
+            
+            // Calculate Water Bulge
+            // Water level at a given angle theta (from center of earth)
+            // Solar bulge peaks at 0 and PI
+            // Lunar bulge peaks at moonAngleRad and moonAngleRad + PI
+            
+            ctx.beginPath();
+            for (let a = 0; a <= Math.PI * 2 + 0.1; a += 0.05) {
+                // Angle relative to Sun (0 is towards Sun)
+                const solarCos = Math.cos(a);
+                const solarEffect = solarTideAmp * (1.5 * solarCos * solarCos - 0.5); // simplified P2 legendre
+                
+                // Angle relative to Moon
+                const lunarCos = Math.cos(a - moonAngleRad);
+                const lunarEffect = lunarTideAmp * (1.5 * lunarCos * lunarCos - 0.5);
+                
+                const totalTide = (solarEffect + lunarEffect) * resonance;
+                const waterRadius = earthRadius + totalTide * bulgeExaggeration * 0.1; // scale for visualization
+                
+                const px = cx + Math.cos(a) * waterRadius;
+                const py = cy + Math.sin(a) * waterRadius;
+                
+                if (a === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.fillStyle = 'rgba(0, 212, 224, 0.5)';
+            ctx.fill();
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw Earth Solid Body
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(earthRotation);
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, earthRadius, 0, Math.PI * 2);
+            ctx.fillStyle = '#111a22';
+            ctx.fill();
+            
+            // Earth continents (stylized)
+            ctx.fillStyle = '#22c55e'; // emerald
+            ctx.beginPath(); ctx.arc(-20, -10, 15, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(10, 20, 20, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(25, -15, 10, 0, Math.PI*2); ctx.fill();
+            
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+            ctx.stroke(); // Earth outline
+
+            // Draw Observer
+            const obsGlobalAngle = (earthRotation + obsLongitudeRad) % (Math.PI * 2);
+            const obsX = Math.cos(obsLongitudeRad) * earthRadius;
+            const obsY = Math.sin(obsLongitudeRad) * earthRadius;
+            
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(obsX * 1.2, obsY * 1.2);
+            ctx.strokeStyle = '#e6004c'; // rose-500
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.arc(obsX, obsY, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#e6004c';
+            ctx.fill();
+            
+            ctx.restore();
+
+            // Calculate exact tide at observer location
+            // Observer global angle relative to space
+            const oCosSun = Math.cos(obsGlobalAngle);
+            const oSolarTide = solarTideAmp * (1.5 * oCosSun * oCosSun - 0.5);
+            
+            const oCosMoon = Math.cos(obsGlobalAngle - moonAngleRad);
+            const oLunarTide = lunarTideAmp * (1.5 * oCosMoon * oCosMoon - 0.5);
+            
+            const totalObsTide = (oSolarTide + oLunarTide) * resonance;
+
+            // HUD Updates
+            // Phase determination
+            let phaseStr = "Unknown";
+            let regimeStr = "Normal";
+            let regimeColor = "text-slate-300";
+            
+            const normMoonA = moonAngleDeg % 360;
+            if (normMoonA < 15 || normMoonA > 345) { phaseStr = "New Moon"; regimeStr = "Spring Tide"; regimeColor = "text-rose-400"; }
+            else if (normMoonA >= 15 && normMoonA < 75) { phaseStr = "Waxing Crescent"; }
+            else if (normMoonA >= 75 && normMoonA < 105) { phaseStr = "First Quarter"; regimeStr = "Neap Tide"; regimeColor = "text-sky-400"; }
+            else if (normMoonA >= 105 && normMoonA < 165) { phaseStr = "Waxing Gibbous"; }
+            else if (normMoonA >= 165 && normMoonA < 195) { phaseStr = "Full Moon"; regimeStr = "Spring Tide"; regimeColor = "text-rose-400"; }
+            else if (normMoonA >= 195 && normMoonA < 255) { phaseStr = "Waning Gibbous"; }
+            else if (normMoonA >= 255 && normMoonA < 285) { phaseStr = "Third Quarter"; regimeStr = "Neap Tide"; regimeColor = "text-sky-400"; }
+            else { phaseStr = "Waning Crescent"; }
+
+            valPhase.textContent = phaseStr;
+            valRegime.textContent = regimeStr;
+            valRegime.className = `data-value ${regimeColor}`;
+            valDist.textContent = (BASE_MOON_DIST * moonDistFactor).toLocaleString('en-US', {maximumFractionDigits: 0}) + " km";
+            valRatio.textContent = (lunarTideAmp / solarTideAmp).toFixed(2) + "x";
+            
+            valWaterLevel.textContent = (totalObsTide > 0 ? "+" : "") + totalObsTide.toFixed(2) + " m";
+            valObsLoc.textContent = obsLongitudeDeg + "°";
+
+            // Determine if flooding, ebbing, high, or low based on derivative (approx)
+            // Next small time step rotation:
+            const nextRot = obsGlobalAngle + 0.05;
+            const nCosSun = Math.cos(nextRot);
+            const nCosMoon = Math.cos(nextRot - moonAngleRad);
+            const nextTide = (solarTideAmp*(1.5*nCosSun*nCosSun-0.5) + lunarTideAmp*(1.5*nCosMoon*nCosMoon-0.5)) * resonance;
+            const diff = nextTide - totalObsTide;
+            
+            let tideStateStr = "Ebbing";
+            let tideStateCol = "text-amber-400";
+            if (diff > 0.01) { tideStateStr = "Flooding"; tideStateCol = "text-emerald-400"; }
+            else if (diff < -0.01) { tideStateStr = "Ebbing"; tideStateCol = "text-amber-400"; }
+            else if (totalObsTide > 0) { tideStateStr = "HIGH TIDE"; tideStateCol = "text-rose-400"; }
+            else { tideStateStr = "LOW TIDE"; tideStateCol = "text-sky-400"; }
+            
+            valTideState.textContent = tideStateStr;
+            valTideState.className = `data-value ${tideStateCol}`;
+
+            // Sonification update
+            if (isAudioEnabled && oceanGain && oceanFilter) {
+                // Ocean noise volume mapped to tide height
+                // Normalize totalObsTide roughly between -1 and 1 (or max resonance)
+                const maxExpected = (BASE_LUNAR_TIDE + BASE_SOLAR_TIDE) * resonance * 1.5;
+                const normalizedTide = Math.max(0, Math.min(1, (totalObsTide + maxExpected) / (2 * maxExpected)));
+                
+                // Sweep filter and volume
+                oceanFilter.frequency.setTargetAtTime(300 + normalizedTide * 1500, audioCtx.currentTime, 0.1);
+                oceanGain.gain.setTargetAtTime(0.05 + normalizedTide * 0.3, audioCtx.currentTime, 0.1);
+
+                // Spring/Neap Tone
+                // Alignment factor: cos(2 * moonAngle)
+                // 1 = Spring, -1 = Neap
+                const alignment = Math.cos(2 * moonAngleRad);
+                const isSpring = alignment > 0.8;
+                const isNeap = alignment < -0.8;
+                
+                if (isSpring) {
+                    humOsc.frequency.setTargetAtTime(440, audioCtx.currentTime, 0.5); // A4
+                    humGain.gain.setTargetAtTime(0.05, audioCtx.currentTime, 0.5);
+                } else if (isNeap) {
+                    humOsc.frequency.setTargetAtTime(220, audioCtx.currentTime, 0.5); // A3
+                    humGain.gain.setTargetAtTime(0.02, audioCtx.currentTime, 0.5);
+                } else {
+                    humGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+                }
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        // Init
+        updateLabels();
+        draw();
+    </script>
+</body>
+</html>

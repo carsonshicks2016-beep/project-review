@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Why Is the Sky Blue? Rayleigh Scattering Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { font-family: ui-sans-serif, system-ui, sans-serif; overflow-x: hidden; }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        .glass-panel { background: rgba(17, 26, 34, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 0.5); }
+        canvas { display: block; width: 100%; height: 100%; }
+        input[type=range] { accent-color: #00f0ff; }
+        .card-container { max-height: 250px; overflow-y: auto; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #111a22; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 h-screen w-screen flex flex-col m-0 p-0">
+
+    <!-- Top Canvas Area -->
+    <div class="relative flex-grow w-full overflow-hidden" id="canvas-container">
+        <canvas id="sim-canvas"></canvas>
+        
+        <!-- HUD Overlay -->
+        <div class="absolute top-4 left-4 p-4 rounded-2xl glass-panel flex flex-col gap-2 w-80 pointer-events-none">
+            <h2 class="text-xl font-bold text-sky-400 mb-2">Atmospheric Data</h2>
+            <div class="flex justify-between items-center mono text-sm">
+                <span class="text-slate-400">Sun Elevation:</span>
+                <span id="hud-elevation" class="text-emerald-400">90.0°</span>
+            </div>
+            <div class="flex justify-between items-center mono text-sm">
+                <span class="text-slate-400">Airmass (m):</span>
+                <span id="hud-airmass" class="text-amber-400">1.00</span>
+            </div>
+            <div class="flex justify-between items-center mono text-sm">
+                <span class="text-slate-400">Blue/Red Scat Ratio:</span>
+                <span id="hud-ratio" class="text-sky-300">9.4x</span>
+            </div>
+            <div class="flex justify-between items-center mono text-sm">
+                <span class="text-slate-400">Dominant Sky Color:</span>
+                <div class="flex items-center gap-2">
+                    <div id="hud-color-swatch" class="w-4 h-4 rounded shadow-sm border border-slate-700"></div>
+                    <span id="hud-hex">#000000</span>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <div class="text-xs text-slate-400 mb-1">Spectral Intensity</div>
+                <canvas id="graph-canvas" class="w-full h-24 rounded bg-slate-900 border border-slate-700 pointer-events-none" style="display:block;"></canvas>
+            </div>
+        </div>
+
+        <!-- Controls Sidebar -->
+        <div class="absolute top-4 right-4 w-80 glass-panel rounded-2xl p-4 flex flex-col gap-4">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold text-slate-100">Controls</h2>
+                <button id="btn-audio" class="px-3 py-1 bg-rose-900/50 hover:bg-rose-800/80 text-rose-300 border border-rose-700/50 rounded-lg text-sm transition-colors">
+                    Enable Audio
+                </button>
+            </div>
+            
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <label class="text-slate-300">Sun Elevation (°)</label>
+                    <span id="val-elevation" class="mono text-sky-400">90°</span>
+                </div>
+                <input type="range" id="ctrl-elevation" min="-5" max="90" step="0.5" value="90" class="w-full">
+            </div>
+            
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <label class="text-slate-300">Atmospheric Density</label>
+                    <span id="val-density" class="mono text-sky-400">1.0x</span>
+                </div>
+                <input type="range" id="ctrl-density" min="0.1" max="10" step="0.1" value="1" class="w-full">
+            </div>
+
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <label class="text-slate-300">Observer Altitude</label>
+                    <span id="val-altitude" class="mono text-sky-400">0 km</span>
+                </div>
+                <input type="range" id="ctrl-altitude" min="0" max="50" step="1" value="0" class="w-full">
+            </div>
+
+            <div class="flex flex-col gap-2 mt-2">
+                <label class="text-xs uppercase tracking-wider text-slate-500 font-bold">Presets</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="preset-btn px-2 py-1.5 bg-slate-800 hover:bg-slate-700 rounded text-sm text-slate-300 transition-colors" data-preset="midday">Midday Sun</button>
+                    <button class="preset-btn px-2 py-1.5 bg-slate-800 hover:bg-slate-700 rounded text-sm text-slate-300 transition-colors" data-preset="golden">Golden Hour</button>
+                    <button class="preset-btn px-2 py-1.5 bg-slate-800 hover:bg-slate-700 rounded text-sm text-slate-300 transition-colors" data-preset="sunset">Sunset</button>
+                    <button class="preset-btn px-2 py-1.5 bg-slate-800 hover:bg-slate-700 rounded text-sm text-slate-300 transition-colors" data-preset="mars">Martian Sky</button>
+                </div>
+            </div>
+
+            <div class="mt-2">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="ctrl-particles" checked class="rounded bg-slate-800 border-slate-700 text-sky-500 focus:ring-sky-500">
+                    <span class="text-sm text-slate-300">Show Photon Particles</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Explainer Cards -->
+    <div class="h-64 border-t border-slate-800 bg-slate-900 flex-shrink-0 p-4 overflow-hidden">
+        <h3 class="text-lg font-bold text-slate-400 mb-4 px-2 uppercase tracking-widest text-center">Physics Explained</h3>
+        <div class="flex gap-4 h-full px-2 max-w-7xl mx-auto">
+            
+            <!-- Card 1 -->
+            <div class="flex-1 bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 flex flex-col">
+                <h4 class="font-bold text-sky-400 mb-2">1. The 1/λ⁴ Power Law</h4>
+                <p class="text-sm text-slate-300 leading-relaxed overflow-y-auto">
+                    Lord Rayleigh discovered that scattering intensity is inversely proportional to the fourth power of the wavelength (<strong>I ∝ 1/λ⁴</strong>). 
+                    Because blue light has a shorter wavelength (~400 nm) than red light (~700 nm), it scatters roughly 
+                    <span class="text-sky-300 font-mono bg-slate-900 px-1 rounded">(700/400)⁴ ≈ 9.4</span> times more efficiently. 
+                    This floods the sky with scattered blue photons while allowing red ones to pass through.
+                </p>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="flex-1 bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 flex flex-col">
+                <h4 class="font-bold text-rose-400 mb-2">2. Why Sunsets Are Red</h4>
+                <p class="text-sm text-slate-300 leading-relaxed overflow-y-auto">
+                    At sunset, sunlight passes tangentially through the atmosphere, increasing the optical path length (<strong>airmass</strong>) up to 40x. 
+                    Almost all blue and green photons are scattered away out of the beam. The unscattered direct light reaching your eyes is heavily depleted of short wavelengths, 
+                    leaving brilliant, direct red and orange rays.
+                </p>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="flex-1 bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 flex flex-col">
+                <h4 class="font-bold text-amber-500 mb-2">3. The Martian Paradox</h4>
+                <p class="text-sm text-slate-300 leading-relaxed overflow-y-auto">
+                    Earth's atmosphere is dominated by tiny gas molecules (Rayleigh scattering). Mars has a thin CO₂ atmosphere laden with larger, iron-rich dust particles. 
+                    These cause <strong>Mie scattering</strong> and absorb blue light, making the Martian daytime sky a butterscotch-red. 
+                    Paradoxically, at sunset, the forward scattering of these particles creates a beautiful blue halo around the sun!
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- Physics & Math Simulation ---
+
+        const STATE = {
+            elevation: 90, // degrees
+            density: 1.0,
+            altitude: 0, // km
+            particles: true,
+            audioEnabled: false,
+            marsMode: false
+        };
+
+        // Wavelengths from 380nm to 750nm
+        const WAVELENGTHS = [];
+        for(let w = 380; w <= 750; w += 5) {
+            WAVELENGTHS.push(w);
+        }
+
+        // Standard approximation for solar spectrum (blackbody ~5778K) - normalized
+        function blackbody(lambda_nm, T = 5778) {
+            const h = 6.626e-34;
+            const c = 3.0e8;
+            const k = 1.38e-23;
+            const lambda = lambda_nm * 1e-9;
+            const term1 = (2 * h * c * c) / Math.pow(lambda, 5);
+            const term2 = Math.exp((h * c) / (lambda * k * T)) - 1;
+            return term1 / term2;
+        }
+
+        let baseSolarSpectrum = WAVELENGTHS.map(w => blackbody(w));
+        const maxSpectral = Math.max(...baseSolarSpectrum);
+        baseSolarSpectrum = baseSolarSpectrum.map(v => v / maxSpectral);
+
+        // Convert Wavelength (nm) to RGB (simplified)
+        function wavelengthToRGB(Wavelength) {
+            let factor;
+            let Red, Green, Blue;
+
+            if((Wavelength >= 380) && (Wavelength<440)){
+                Red = -(Wavelength - 440) / (440 - 380); Green = 0.0; Blue = 1.0;
+            }else if((Wavelength >= 440) && (Wavelength<490)){
+                Red = 0.0; Green = (Wavelength - 440) / (490 - 440); Blue = 1.0;
+            }else if((Wavelength >= 490) && (Wavelength<510)){
+                Red = 0.0; Green = 1.0; Blue = -(Wavelength - 510) / (510 - 490);
+            }else if((Wavelength >= 510) && (Wavelength<580)){
+                Red = (Wavelength - 510) / (580 - 510); Green = 1.0; Blue = 0.0;
+            }else if((Wavelength >= 580) && (Wavelength<645)){
+                Red = 1.0; Green = -(Wavelength - 645) / (645 - 580); Blue = 0.0;
+            }else if((Wavelength >= 645) && (Wavelength<781)){
+                Red = 1.0; Green = 0.0; Blue = 0.0;
+            }else{
+                Red = 0.0; Green = 0.0; Blue = 0.0;
+            }
+
+            if((Wavelength >= 380) && (Wavelength<420)){
+                factor = 0.3 + 0.7*(Wavelength - 380) / (420 - 380);
+            }else if((Wavelength >= 420) && (Wavelength<701)){
+                factor = 1.0;
+            }else if((Wavelength >= 701) && (Wavelength<781)){
+                factor = 0.3 + 0.7*(780 - Wavelength) / (780 - 700);
+            }else{
+                factor = 0.0;
+            }
+
+            const gamma = 0.80;
+            const R = (Red==0.0) ? 0 : Math.round(255 * Math.pow(Red * factor, gamma));
+            const G = (Green==0.0) ? 0 : Math.round(255 * Math.pow(Green * factor, gamma));
+            const B = (Blue==0.0) ? 0 : Math.round(255 * Math.pow(Blue * factor, gamma));
+
+            return [R, G, B];
+        }
+
+        function calculateColors() {
+            // Airmass calculation using a simple spherical atmosphere approximation (Rozenberg 1966)
+            const theta = (90 - Math.max(-5, STATE.elevation)) * Math.PI / 180;
+            const cosTheta = Math.cos(theta);
+            let airmass = 1.0 / (cosTheta + 0.025 * Math.exp(-11 * cosTheta));
+            if (STATE.elevation < -5) airmass = 40; // Max out
+
+            // Adjust for altitude (exponential decay, scale height ~8km)
+            const altitudeFactor = Math.exp(-STATE.altitude / 8.0);
+            const effectiveAirmass = airmass * altitudeFactor * STATE.density;
+
+            let skyR = 0, skyG = 0, skyB = 0;
+            let sunR = 0, sunG = 0, sunB = 0;
+            
+            let currentSkySpectrum = [];
+            let currentSunSpectrum = [];
+
+            let totalSkyPower = 0;
+
+            for(let i=0; i<WAVELENGTHS.length; i++) {
+                const w = WAVELENGTHS[i];
+                const i0 = baseSolarSpectrum[i];
+                
+                // Cross section ~ 1/lambda^4 for Rayleigh.
+                // Normalize so that roughly at 550nm cross section is 1 unit.
+                let crossSection = Math.pow(550 / w, 4);
+
+                // Martian override (Mie-like, higher scattering for blue, but also strong absorption, forward scattering)
+                if (STATE.marsMode) {
+                    crossSection = Math.pow(w / 550, 1.5); // Very rough fake inversion for reddish sky
+                }
+
+                const tau = crossSection * 0.1 * effectiveAirmass; // Base optical depth
+                
+                // Transmitted (Sun)
+                const transmitted = i0 * Math.exp(-tau);
+                currentSunSpectrum.push(transmitted);
+
+                // Scattered (Sky) - very simplified single scattering
+                // Intensity proportional to cross section * source * some geometric factor
+                const scattered = i0 * (1 - Math.exp(-tau)) * (crossSection / 10);
+                // Reduce scattered heavily if sun is below horizon
+                const horizonFade = Math.max(0, (STATE.elevation + 5) / 5);
+                const actualScattered = scattered * (STATE.elevation > 0 ? 1 : horizonFade);
+                
+                currentSkySpectrum.push(actualScattered);
+                totalSkyPower += actualScattered;
+
+                const [r, g, b] = wavelengthToRGB(w);
+                
+                sunR += r * transmitted;
+                sunG += g * transmitted;
+                sunB += b * transmitted;
+
+                skyR += r * actualScattered;
+                skyG += g * actualScattered;
+                skyB += b * actualScattered;
+            }
+
+            // Normalize
+            const normColor = (r, g, b, factor) => {
+                const max = Math.max(r, g, b, 1); // prevent div by zero
+                // Non-linear scaling to look good
+                const scale = factor / max * 255; 
+                return [
+                    Math.min(255, Math.max(0, Math.floor(r * scale))),
+                    Math.min(255, Math.max(0, Math.floor(g * scale))),
+                    Math.min(255, Math.max(0, Math.floor(b * scale)))
+                ];
+            };
+
+            // Calculate overall brightness multiplier based on elevation
+            const brightness = Math.max(0.05, Math.sin(Math.max(0, STATE.elevation) * Math.PI / 180));
+            const skyBrightness = brightness * altitudeFactor * (STATE.marsMode ? 0.7 : 1.0);
+
+            const skyColor = normColor(skyR, skyG, skyB, skyBrightness * 0.8);
+            
+            // Direct sun gets redder and dimmer near horizon
+            const sunBrightness = Math.max(0.1, Math.exp(-effectiveAirmass * 0.05));
+            const sunColor = normColor(sunR, sunG, sunB, sunBrightness);
+
+            return { skyColor, sunColor, currentSkySpectrum, currentSunSpectrum, effectiveAirmass };
+        }
+
+        // --- Visual Rendering (Canvas) ---
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        
+        const graphCanvas = document.getElementById('graph-canvas');
+        const graphCtx = graphCanvas.getContext('2d');
+
+        let width, height;
+        
+        function resize() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            width = rect.width;
+            height = rect.height;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+
+            const grect = graphCanvas.getBoundingClientRect();
+            graphCanvas.width = grect.width * dpr;
+            graphCanvas.height = grect.height * dpr;
+            graphCtx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resize);
+        
+        class Particle {
+            constructor() {
+                this.reset();
+                // Random start y
+                this.y = Math.random() * height;
+            }
+            reset() {
+                this.x = width / 2;
+                this.y = -20;
+                
+                // Pick a wavelength (bias towards middle)
+                const wIdx = Math.floor(Math.random() * WAVELENGTHS.length);
+                this.w = WAVELENGTHS[wIdx];
+                this.color = wavelengthToRGB(this.w);
+                
+                // Speed down
+                this.vx = 0;
+                this.vy = 2 + Math.random() * 3;
+                this.scattered = false;
+                this.scatterDecay = 1.0;
+                
+                // Cross section logic
+                let cross = Math.pow(550 / this.w, 4);
+                if (STATE.marsMode) cross = Math.pow(this.w / 550, 1.5);
+                this.scatterProb = cross * 0.01 * STATE.density * Math.exp(-STATE.altitude / 8);
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                if (!this.scattered && this.y > 0) {
+                    if (Math.random() < this.scatterProb) {
+                        this.scattered = true;
+                        const angle = Math.random() * Math.PI * 2;
+                        const speed = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+                        this.vx = Math.cos(angle) * speed;
+                        this.vy = Math.sin(angle) * speed;
+                    }
+                }
+
+                if (this.scattered) {
+                    this.scatterDecay -= 0.02;
+                }
+
+                if (this.y > height || this.x < 0 || this.x > width || this.scatterDecay <= 0) {
+                    this.reset();
+                }
+            }
+            draw(ctx) {
+                if (this.scatterDecay <= 0) return;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${this.color[0]}, ${this.color[1]}, ${this.color[2]}, ${this.scattered ? this.scatterDecay * 0.8 : 0.9})`;
+                ctx.fill();
+            }
+        }
+
+        const particles = Array.from({length: 200}, () => new Particle());
+
+        function drawGraph(skySpec, sunSpec) {
+            graphCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+            const w = graphCanvas.width / window.devicePixelRatio;
+            const h = graphCanvas.height / window.devicePixelRatio;
+
+            // Draw sky spectrum
+            graphCtx.beginPath();
+            graphCtx.moveTo(0, h);
+            for(let i=0; i<WAVELENGTHS.length; i++) {
+                const x = (i / WAVELENGTHS.length) * w;
+                const val = skySpec[i] * 50; // scale up for viz
+                const y = h - Math.min(h, val * h);
+                graphCtx.lineTo(x, y);
+            }
+            graphCtx.lineTo(w, h);
+            graphCtx.fillStyle = 'rgba(0, 240, 255, 0.3)';
+            graphCtx.fill();
+            graphCtx.strokeStyle = 'rgba(0, 240, 255, 0.8)';
+            graphCtx.stroke();
+
+            // Direct sun spec
+            graphCtx.beginPath();
+            graphCtx.moveTo(0, h);
+            for(let i=0; i<WAVELENGTHS.length; i++) {
+                const x = (i / WAVELENGTHS.length) * w;
+                const val = sunSpec[i]; 
+                const y = h - Math.min(h, val * h);
+                graphCtx.lineTo(x, y);
+            }
+            graphCtx.strokeStyle = 'rgba(251, 191, 36, 0.8)';
+            graphCtx.stroke();
+        }
+
+        // --- Audio Sonification ---
+        let audioCtx;
+        let blueOsc, redOsc, blueGain, redGain, masterGain;
+
+        function initAudio() {
+            if(audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.3;
+            masterGain.connect(audioCtx.destination);
+
+            // Blue light = high chime (multiple harmonic oscillators)
+            blueOsc = audioCtx.createOscillator();
+            blueOsc.type = 'sine';
+            blueOsc.frequency.value = 880; // A5
+            
+            blueGain = audioCtx.createGain();
+            blueGain.gain.value = 0;
+            blueOsc.connect(blueGain);
+            blueGain.connect(masterGain);
+            blueOsc.start();
+
+            // Red light = warm cello (triangle/saw blend, low pass filtered)
+            redOsc = audioCtx.createOscillator();
+            redOsc.type = 'triangle';
+            redOsc.frequency.value = 110; // A2
+            
+            const redFilter = audioCtx.createBiquadFilter();
+            redFilter.type = 'lowpass';
+            redFilter.frequency.value = 400;
+            
+            redGain = audioCtx.createGain();
+            redGain.gain.value = 0;
+            
+            redOsc.connect(redFilter);
+            redFilter.connect(redGain);
+            redGain.connect(masterGain);
+            redOsc.start();
+
+            document.getElementById('btn-audio').textContent = 'Audio Enabled';
+            document.getElementById('btn-audio').classList.replace('bg-rose-900/50', 'bg-emerald-900/50');
+            document.getElementById('btn-audio').classList.replace('text-rose-300', 'text-emerald-300');
+            document.getElementById('btn-audio').classList.replace('border-rose-700/50', 'border-emerald-700/50');
+            STATE.audioEnabled = true;
+        }
+
+        function updateAudio(skySpec, sunSpec) {
+            if(!STATE.audioEnabled || !audioCtx) return;
+            
+            // Energy in blue band (380-500) vs red band (600-750)
+            let blueEnergy = 0;
+            let redEnergy = 0;
+            
+            // Use sky spectrum for blue (scattered) and sun spectrum for red (transmitted)
+            for(let i=0; i<WAVELENGTHS.length; i++) {
+                if(WAVELENGTHS[i] < 500) blueEnergy += skySpec[i];
+                if(WAVELENGTHS[i] > 600) redEnergy += sunSpec[i];
+            }
+
+            // Smoothly interpolate gains
+            const now = audioCtx.currentTime;
+            
+            // Normalize mapping
+            const bVol = Math.min(1, blueEnergy * 0.2);
+            const rVol = Math.min(1, redEnergy * 0.1);
+
+            blueGain.gain.setTargetAtTime(bVol, now, 0.1);
+            redGain.gain.setTargetAtTime(rVol, now, 0.1);
+        }
+
+
+        // --- Main Loop ---
+        function rgbToHex(r, g, b) {
+            return "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1).toUpperCase();
+        }
+
+        function render() {
+            const { skyColor, sunColor, currentSkySpectrum, currentSunSpectrum, effectiveAirmass } = calculateColors();
+
+            // Background fill (Sky)
+            // Create a vertical gradient for realism
+            const grad = ctx.createLinearGradient(0, 0, 0, height);
+            const r = skyColor[0], g = skyColor[1], b = skyColor[2];
+            grad.addColorStop(0, `rgb(${Math.max(0, r-30)}, ${Math.max(0, g-30)}, ${Math.max(0, b-10)})`);
+            grad.addColorStop(1, `rgb(${Math.min(255, r+30)}, ${Math.min(255, g+30)}, ${Math.min(255, b+30)})`);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw Sun
+            // Convert elevation to y position on canvas
+            const sunY = height - (STATE.elevation / 90) * (height - 100);
+            const sunX = width / 2;
+            
+            if (STATE.elevation > -10) {
+                // Sun glow
+                const glow = ctx.createRadialGradient(sunX, sunY, 10, sunX, sunY, 100);
+                glow.addColorStop(0, `rgba(${sunColor[0]}, ${sunColor[1]}, ${sunColor[2]}, 1)`);
+                glow.addColorStop(1, `rgba(${sunColor[0]}, ${sunColor[1]}, ${sunColor[2]}, 0)`);
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(sunX, sunY, 100, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Sun Core
+                ctx.fillStyle = `rgb(255, 255, 255)`; // Core is always white-ish but colored by transmission
+                ctx.beginPath();
+                ctx.arc(sunX, sunY, 20, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Draw Particles
+            if (STATE.particles) {
+                particles.forEach(p => {
+                    p.update();
+                    p.draw(ctx);
+                });
+            }
+
+            // Update HUD
+            document.getElementById('hud-elevation').innerText = STATE.elevation.toFixed(1) + '°';
+            document.getElementById('hud-airmass').innerText = effectiveAirmass.toFixed(2);
+            
+            const hex = rgbToHex(skyColor[0], skyColor[1], skyColor[2]);
+            document.getElementById('hud-hex').innerText = hex;
+            document.getElementById('hud-color-swatch').style.backgroundColor = hex;
+
+            const ratio = STATE.marsMode ? 0.8 : 9.4; // fake for mars mode text
+            document.getElementById('hud-ratio').innerText = ratio.toFixed(1) + 'x';
+
+            // Draw Graph
+            drawGraph(currentSkySpectrum, currentSunSpectrum);
+
+            // Update Audio
+            updateAudio(currentSkySpectrum, currentSunSpectrum);
+
+            requestAnimationFrame(render);
+        }
+
+        // --- Event Listeners ---
+        document.getElementById('ctrl-elevation').addEventListener('input', (e) => {
+            STATE.elevation = parseFloat(e.target.value);
+            document.getElementById('val-elevation').innerText = STATE.elevation.toFixed(1) + '°';
+        });
+
+        document.getElementById('ctrl-density').addEventListener('input', (e) => {
+            STATE.density = parseFloat(e.target.value);
+            document.getElementById('val-density').innerText = STATE.density.toFixed(1) + 'x';
+            STATE.marsMode = false; // Disable mars mode on manual change
+        });
+
+        document.getElementById('ctrl-altitude').addEventListener('input', (e) => {
+            STATE.altitude = parseFloat(e.target.value);
+            document.getElementById('val-altitude').innerText = STATE.altitude.toFixed(0) + ' km';
+        });
+
+        document.getElementById('ctrl-particles').addEventListener('change', (e) => {
+            STATE.particles = e.target.checked;
+        });
+
+        document.getElementById('btn-audio').addEventListener('click', () => {
+            if(!STATE.audioEnabled) initAudio();
+        });
+
+        // Presets
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const preset = e.target.dataset.preset;
+                STATE.marsMode = false;
+                if(preset === 'midday') {
+                    setControls(90, 1.0, 0);
+                } else if(preset === 'golden') {
+                    setControls(15, 1.0, 0);
+                } else if(preset === 'sunset') {
+                    setControls(1, 1.5, 0);
+                } else if(preset === 'mars') {
+                    setControls(20, 2.0, 0);
+                    STATE.marsMode = true;
+                }
+            });
+        });
+
+        function setControls(elv, den, alt) {
+            STATE.elevation = elv;
+            STATE.density = den;
+            STATE.altitude = alt;
+            
+            document.getElementById('ctrl-elevation').value = elv;
+            document.getElementById('val-elevation').innerText = elv.toFixed(1) + '°';
+            
+            document.getElementById('ctrl-density').value = den;
+            document.getElementById('val-density').innerText = den.toFixed(1) + 'x';
+            
+            document.getElementById('ctrl-altitude').value = alt;
+            document.getElementById('val-altitude').innerText = alt.toFixed(0) + ' km';
+        }
+
+        // Init
+        setTimeout(() => {
+            resize();
+            render();
+        }, 100);
+
+    </script>
+</body>
+</html>

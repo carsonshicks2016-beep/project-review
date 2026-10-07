@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coriolis Effect & Atmospheric Cyclones Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; }
+        canvas { display: block; }
+        .glass-panel { background: rgba(17, 26, 34, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(51, 65, 85, 0.8); }
+        input[type="range"] { accent-color: #00f0ff; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-300 h-screen flex flex-col select-none">
+    
+    <!-- Top Header -->
+    <header class="h-14 shrink-0 border-b border-slate-800 bg-slate-900/80 flex items-center justify-between px-6 z-20 absolute w-full pointer-events-none">
+        <div class="flex items-center space-x-3 pointer-events-auto">
+            <h1 class="text-xl font-bold text-slate-100 flex items-center">
+                <span class="text-sky-400 mr-2">Coriolis</span> Simulator
+            </h1>
+            <span class="px-2 py-0.5 rounded text-xs font-semibold bg-sky-900/50 text-sky-400 border border-sky-700/50">v1.0</span>
+        </div>
+        <div class="flex items-center space-x-4 pointer-events-auto">
+            <button id="btn-audio" class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center space-x-2 border border-slate-700">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5 10v4a2 2 0 002 2h2l4 4V4L9 8H7a2 2 0 00-2 2z"></path></svg>
+                <span>Enable Audio</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Canvas Area -->
+    <div class="relative flex-1 w-full h-full">
+        <canvas id="sim-canvas" class="w-full h-full"></canvas>
+        
+        <!-- Live HUD Readout -->
+        <div class="absolute top-16 left-6 w-72 glass-panel rounded-2xl p-4 flex flex-col space-y-3 shadow-xl pointer-events-none">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Live Telemetry</h3>
+            
+            <div class="flex justify-between items-end border-b border-slate-800 pb-2">
+                <span class="text-sm text-slate-400">Latitude (φ)</span>
+                <span id="out-lat" class="font-mono text-lg text-sky-400 font-semibold">45.0° N</span>
+            </div>
+            
+            <div class="flex justify-between items-end border-b border-slate-800 pb-2">
+                <span class="text-sm text-slate-400">Coriolis Param (f)</span>
+                <span id="out-f" class="font-mono text-sm text-slate-200">1.03e-4 s⁻¹</span>
+            </div>
+            
+            <div class="flex justify-between items-end border-b border-slate-800 pb-2">
+                <span class="text-sm text-slate-400">Max Accel (a_c)</span>
+                <span id="out-ac" class="font-mono text-sm text-emerald-400">0.02 m/s²</span>
+            </div>
+
+            <div class="flex justify-between items-end border-b border-slate-800 pb-2">
+                <span class="text-sm text-slate-400">Deflection</span>
+                <span id="out-defl" class="font-mono text-sm text-amber-400 font-bold">RIGHT</span>
+            </div>
+            
+            <div class="flex justify-between items-end pb-1">
+                <span class="text-sm text-slate-400">Rossby No (Ro)</span>
+                <span id="out-ro" class="font-mono text-sm text-slate-200">0.05</span>
+            </div>
+        </div>
+
+        <!-- Controls Sidebar -->
+        <div class="absolute top-16 right-6 w-80 glass-panel rounded-2xl flex flex-col shadow-xl z-10 max-h-[calc(100vh-140px)] overflow-y-auto">
+            <div class="p-5 flex flex-col space-y-6">
+                <!-- Modes -->
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Simulation Mode</h3>
+                    <div class="flex bg-slate-800/50 p-1 rounded-lg">
+                        <button id="mode-turntable" class="flex-1 text-sm py-1.5 rounded-md bg-sky-600 text-white font-medium shadow-sm transition-colors">Turntable</button>
+                        <button id="mode-cyclone" class="flex-1 text-sm py-1.5 rounded-md text-slate-400 hover:text-slate-200 transition-colors">Atmosphere</button>
+                    </div>
+                </div>
+
+                <!-- Sliders -->
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <div class="flex justify-between">
+                            <label class="text-sm text-slate-300">Latitude (φ)</label>
+                            <span id="val-lat" class="text-sm font-mono text-sky-400">45°</span>
+                        </div>
+                        <input type="range" id="slider-lat" min="-90" max="90" value="45" step="1" class="w-full">
+                        <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+                            <span>-90° (S)</span>
+                            <span>0° (Eq)</span>
+                            <span>+90° (N)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-1">
+                        <div class="flex justify-between">
+                            <label class="text-sm text-slate-300">Velocity (v)</label>
+                            <span id="val-vel" class="text-sm font-mono text-emerald-400">50 m/s</span>
+                        </div>
+                        <input type="range" id="slider-vel" min="10" max="200" value="50" step="1" class="w-full">
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between">
+                            <label class="text-sm text-slate-300">Sim Speed</label>
+                            <span id="val-speed" class="text-sm font-mono text-slate-300">100x</span>
+                        </div>
+                        <input type="range" id="slider-speed" min="1" max="1000" value="100" step="1" class="w-full">
+                    </div>
+                </div>
+
+                <!-- Presets -->
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Presets</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="preset-btn text-xs py-2 px-2 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 transition-colors" data-lat="0" data-vel="50" data-mode="cyclone">Equator (No Coriolis)</button>
+                        <button class="preset-btn text-xs py-2 px-2 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 transition-colors" data-lat="30" data-vel="40" data-mode="cyclone">N.H. Hurricane</button>
+                        <button class="preset-btn text-xs py-2 px-2 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 transition-colors" data-lat="-30" data-vel="40" data-mode="cyclone">S.H. Cyclone</button>
+                        <button class="preset-btn text-xs py-2 px-2 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 transition-colors" data-lat="80" data-vel="200" data-mode="turntable">Arctic Trajectory</button>
+                    </div>
+                </div>
+                
+                <div class="pt-2 border-t border-slate-800">
+                    <button id="btn-fire" class="w-full py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg shadow-lg shadow-rose-900/20 transition-colors hidden">Fire Projectile</button>
+                    <button id="btn-reset" class="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors mt-2">Reset View</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Explainer Cards (Bottom) -->
+    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-5xl flex gap-4 pointer-events-auto">
+        <div class="flex-1 glass-panel rounded-xl p-4 transition-transform hover:-translate-y-1">
+            <h4 class="text-sm font-bold text-sky-400 mb-2 flex items-center"><span class="w-2 h-2 rounded-full bg-sky-400 mr-2"></span>Fictitious Force</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">The Coriolis effect isn't a real push or pull. It's an apparent deflection caused by observing motion from a rotating frame of reference (like Earth). In an inertial frame (space), objects move straight!</p>
+        </div>
+        <div class="flex-1 glass-panel rounded-xl p-4 transition-transform hover:-translate-y-1">
+            <h4 class="text-sm font-bold text-emerald-400 mb-2 flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-400 mr-2"></span>Hurricane Rotation</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">Air rushes toward low pressure. In the Northern Hemisphere, it's deflected to the right, causing a counter-clockwise spin. In the South, it deflects left, causing a clockwise spin.</p>
+        </div>
+        <div class="flex-1 glass-panel rounded-xl p-4 transition-transform hover:-translate-y-1">
+            <h4 class="text-sm font-bold text-amber-400 mb-2 flex items-center"><span class="w-2 h-2 rounded-full bg-amber-400 mr-2"></span>The Equator Rule</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">At the equator (φ = 0°), the Coriolis parameter <code>f = 2Ω sin(0) = 0</code>. Without deflection, air flows straight into a low-pressure center, filling it before a hurricane can form. Hurricanes need |φ| > 5°.</p>
+        </div>
+    </div>
+
+    <!-- Simulation Scripts -->
+    <script>
+        // Constants & State
+        const EARTH_OMEGA = 7.2921e-5; // rad/s
+        const L_SCALE = 1e5; // length scale factor for visuals
+        
+        const state = {
+            mode: 'turntable', // turntable | cyclone
+            lat: 45, // degrees
+            vel: 50, // m/s
+            speed: 100, // sim speed multiplier
+            audioEnabled: false,
+            projectiles: [], // for turntable mode
+            particles: [], // for cyclone mode
+            time: 0,
+            canvasWidth: 0,
+            canvasHeight: 0
+        };
+
+        // DOM Elements
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const sliderLat = document.getElementById('slider-lat');
+        const sliderVel = document.getElementById('slider-vel');
+        const sliderSpeed = document.getElementById('slider-speed');
+        const modeTurntable = document.getElementById('mode-turntable');
+        const modeCyclone = document.getElementById('mode-cyclone');
+        const btnFire = document.getElementById('btn-fire');
+        const btnReset = document.getElementById('btn-reset');
+        const btnAudio = document.getElementById('btn-audio');
+
+        // Audio System
+        const audio = {
+            ctx: null,
+            windNode: null,
+            rumbleNode: null,
+            gainNode: null,
+            filterNode: null,
+            init() {
+                if (this.ctx) return;
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Master Gain
+                this.gainNode = this.ctx.createGain();
+                this.gainNode.gain.value = 0.5;
+                this.gainNode.connect(this.ctx.destination);
+
+                // Wind Noise (White noise filtered)
+                const bufferSize = this.ctx.sampleRate * 2;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                
+                const noiseSource = this.ctx.createBufferSource();
+                noiseSource.buffer = buffer;
+                noiseSource.loop = true;
+
+                this.filterNode = this.ctx.createBiquadFilter();
+                this.filterNode.type = 'lowpass';
+                this.filterNode.frequency.value = 400;
+
+                this.windGain = this.ctx.createGain();
+                this.windGain.gain.value = 0;
+
+                noiseSource.connect(this.filterNode);
+                this.filterNode.connect(this.windGain);
+                this.windGain.connect(this.gainNode);
+                noiseSource.start();
+
+                // Low freq rumble (Oscillator)
+                this.rumbleNode = this.ctx.createOscillator();
+                this.rumbleNode.type = 'triangle';
+                this.rumbleNode.frequency.value = 50;
+                
+                this.rumbleGain = this.ctx.createGain();
+                this.rumbleGain.gain.value = 0;
+                
+                this.rumbleNode.connect(this.rumbleGain);
+                this.rumbleGain.connect(this.gainNode);
+                this.rumbleNode.start();
+                
+                state.audioEnabled = true;
+                btnAudio.classList.replace('text-slate-300', 'text-sky-400');
+                btnAudio.innerHTML = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 3v14a1 1 0 01-1.707.707L4.586 14H2a1 1 0 01-1-1v-6a1 1 0 011-1h2.586l3.707-3.707A1 1 0 0110 3zM14 7a3 3 0 010 6v-6zm2-4a7 7 0 010 14v-14z"></path></svg><span>Audio On</span>`;
+            },
+            update(f, vel) {
+                if (!this.ctx || !state.audioEnabled) return;
+                const absLat = Math.abs(state.lat);
+                
+                if (state.mode === 'cyclone') {
+                    // Wind intensity and pitch based on Coriolis and velocity
+                    const windFreq = 200 + (absLat / 90) * vel * 5;
+                    this.filterNode.frequency.setTargetAtTime(windFreq, this.ctx.currentTime, 0.1);
+                    this.windGain.gain.setTargetAtTime(0.1 + (absLat/90)*0.2, this.ctx.currentTime, 0.1);
+                    
+                    // Rumble intensity increases near low pressure center (simulated by lat intensity)
+                    this.rumbleGain.gain.setTargetAtTime((absLat/90)*0.3, this.ctx.currentTime, 0.1);
+                    this.rumbleNode.frequency.setTargetAtTime(40 + absLat*0.5, this.ctx.currentTime, 0.1);
+                } else {
+                    this.windGain.gain.setTargetAtTime(0.05, this.ctx.currentTime, 0.2);
+                    this.rumbleGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.2);
+                    this.filterNode.frequency.setTargetAtTime(300, this.ctx.currentTime, 0.2);
+                }
+            },
+            playPing() {
+                if (!this.ctx || !state.audioEnabled) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                
+                // Sweep down or up based on hemisphere
+                if (state.lat >= 0) {
+                    osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.3);
+                } else {
+                    osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.3);
+                }
+                
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                
+                osc.connect(gain);
+                gain.connect(this.gainNode);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+        };
+
+        btnAudio.addEventListener('click', () => audio.init());
+
+        // Resize Canvas
+        function resize() {
+            canvas.width = canvas.parentElement.clientWidth * window.devicePixelRatio;
+            canvas.height = canvas.parentElement.clientHeight * window.devicePixelRatio;
+            state.canvasWidth = canvas.width;
+            state.canvasHeight = canvas.height;
+            initMode();
+        }
+        window.addEventListener('resize', resize);
+
+        // UI Updates
+        let lastLat = state.lat;
+        function updateUI() {
+            document.getElementById('val-lat').innerText = `${Math.abs(state.lat)}° ${state.lat >= 0 ? 'N' : 'S'}`;
+            document.getElementById('val-vel').innerText = `${state.vel} m/s`;
+            document.getElementById('val-speed').innerText = `${state.speed}x`;
+            
+            const f = 2 * EARTH_OMEGA * Math.sin(state.lat * Math.PI / 180);
+            const a_c = Math.abs(f * state.vel);
+            const r_c = state.vel / (Math.abs(f) || 1e-10); // radius
+            const ro = state.vel / (Math.abs(f) * L_SCALE * 10); // simplified Rossby number
+
+            document.getElementById('out-lat').innerText = `${Math.abs(state.lat).toFixed(1)}° ${state.lat >= 0 ? 'N' : 'S'}`;
+            document.getElementById('out-f').innerText = `${f.toExponential(2)} s⁻¹`;
+            document.getElementById('out-ac').innerText = `${a_c.toFixed(4)} m/s²`;
+            
+            const deflEl = document.getElementById('out-defl');
+            if (Math.abs(state.lat) < 0.5) {
+                deflEl.innerText = 'NONE';
+                deflEl.className = 'font-mono text-sm font-bold text-slate-400';
+            } else if (state.lat > 0) {
+                deflEl.innerText = 'RIGHT';
+                deflEl.className = 'font-mono text-sm font-bold text-sky-400';
+            } else {
+                deflEl.innerText = 'LEFT';
+                deflEl.className = 'font-mono text-sm font-bold text-rose-400';
+            }
+
+            document.getElementById('out-ro').innerText = ro > 10 ? "> 10 (Inertial)" : ro.toFixed(3);
+
+            if (Math.sign(state.lat) !== Math.sign(lastLat) && state.lat !== 0 && lastLat !== 0) {
+                audio.playPing();
+            }
+            lastLat = state.lat;
+            
+            audio.update(f, state.vel);
+        }
+
+        // Setup Event Listeners
+        sliderLat.addEventListener('input', e => { state.lat = parseInt(e.target.value); updateUI(); });
+        sliderVel.addEventListener('input', e => { state.vel = parseInt(e.target.value); updateUI(); });
+        sliderSpeed.addEventListener('input', e => { state.speed = parseInt(e.target.value); updateUI(); });
+        
+        modeTurntable.addEventListener('click', () => setMode('turntable'));
+        modeCyclone.addEventListener('click', () => setMode('cyclone'));
+        
+        btnFire.addEventListener('click', () => fireProjectile());
+        btnReset.addEventListener('click', () => initMode());
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const ds = e.target.dataset;
+                state.lat = parseInt(ds.lat);
+                state.vel = parseInt(ds.vel);
+                sliderLat.value = state.lat;
+                sliderVel.value = state.vel;
+                setMode(ds.mode);
+            });
+        });
+
+        function setMode(mode) {
+            state.mode = mode;
+            if (mode === 'turntable') {
+                modeTurntable.classList.replace('text-slate-400', 'text-white');
+                modeTurntable.classList.replace('hover:text-slate-200', 'bg-sky-600');
+                modeTurntable.classList.add('shadow-sm');
+                
+                modeCyclone.classList.replace('text-white', 'text-slate-400');
+                modeCyclone.classList.replace('bg-sky-600', 'hover:text-slate-200');
+                modeCyclone.classList.remove('shadow-sm');
+                btnFire.classList.remove('hidden');
+            } else {
+                modeCyclone.classList.replace('text-slate-400', 'text-white');
+                modeCyclone.classList.replace('hover:text-slate-200', 'bg-sky-600');
+                modeCyclone.classList.add('shadow-sm');
+                
+                modeTurntable.classList.replace('text-white', 'text-slate-400');
+                modeTurntable.classList.replace('bg-sky-600', 'hover:text-slate-200');
+                modeTurntable.classList.remove('shadow-sm');
+                btnFire.classList.add('hidden');
+            }
+            initMode();
+            updateUI();
+        }
+
+        // Simulation Logic
+        function initMode() {
+            state.time = 0;
+            state.projectiles = [];
+            state.particles = [];
+            
+            if (state.mode === 'cyclone') {
+                // Init air parcels
+                for(let i=0; i<400; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const r = 50 + Math.random() * 400; // Screen units
+                    state.particles.push({
+                        x: r * Math.cos(angle),
+                        y: r * Math.sin(angle),
+                        vx: 0,
+                        vy: 0,
+                        life: Math.random() * 100
+                    });
+                }
+            }
+        }
+
+        function fireProjectile() {
+            state.projectiles.push({
+                x: 0, y: 0, // Starts center of turntable
+                vx: 0, vy: -state.vel, // Fires 'Up' in rotating frame
+                pathInertial: [],
+                pathRotating: []
+            });
+        }
+
+        let lastTime = performance.now();
+        
+        function render() {
+            const now = performance.now();
+            const dt = ((now - lastTime) / 1000) * state.speed;
+            lastTime = now;
+            state.time += dt;
+
+            // Clear Background
+            ctx.fillStyle = '#0b1217'; // bg-slate-950
+            ctx.fillRect(0, 0, state.canvasWidth, state.canvasHeight);
+
+            const cx = state.canvasWidth / 2;
+            const cy = state.canvasHeight / 2;
+            const f = 2 * EARTH_OMEGA * Math.sin(state.lat * Math.PI / 180);
+            
+            // Effective rotation speed for visual
+            const visualOmega = f * 50; 
+
+            if (state.mode === 'turntable') {
+                // Split screen
+                const cx1 = state.canvasWidth * 0.3;
+                const cx2 = state.canvasWidth * 0.7;
+                const R = Math.min(state.canvasWidth * 0.15, cy * 0.8);
+
+                // Update projectiles
+                state.projectiles.forEach(p => {
+                    // Inertial physics (moves straight)
+                    // We map physical distance to screen distance
+                    const scale = R / 50000; // Arbitrary scale for visibility
+                    p.y += p.vy * dt; 
+                    p.x += p.vx * dt;
+
+                    if(p.pathInertial.length < 500) {
+                        p.pathInertial.push({x: p.x, y: p.y});
+                        
+                        // Calculate rotating path
+                        // x' = x cos(wt) + y sin(wt)
+                        // y' = -x sin(wt) + y cos(wt)
+                        const wt = visualOmega * state.time; 
+                        // The projectile launched at t0. We need time since launch.
+                        const pt = p.pathInertial.length * (dt || 0.1);
+                        const a = visualOmega * pt;
+                        const rx = p.x * Math.cos(a) + p.y * Math.sin(a);
+                        const ry = -p.x * Math.sin(a) + p.y * Math.cos(a);
+                        p.pathRotating.push({x: rx, y: ry});
+                    }
+                });
+
+                // Draw Inertial View
+                ctx.save();
+                ctx.translate(cx1, cy);
+                
+                // Turntable rotating
+                ctx.rotate(-visualOmega * state.time);
+                ctx.beginPath();
+                ctx.arc(0, 0, R, 0, Math.PI*2);
+                ctx.fillStyle = '#1d2b38';
+                ctx.fill();
+                ctx.strokeStyle = '#334155';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Grid lines rotating
+                ctx.beginPath();
+                ctx.moveTo(-R, 0); ctx.lineTo(R, 0);
+                ctx.moveTo(0, -R); ctx.lineTo(0, R);
+                ctx.stroke();
+                
+                ctx.restore();
+                
+                ctx.save();
+                ctx.translate(cx1, cy);
+                // Target rotating
+                const tgtAngle = -visualOmega * state.time - Math.PI/2;
+                const tx = R * 0.8 * Math.cos(tgtAngle);
+                const ty = R * 0.8 * Math.sin(tgtAngle);
+                ctx.beginPath(); ctx.arc(tx, ty, 6, 0, Math.PI*2); ctx.fillStyle = '#ef4444'; ctx.fill();
+
+                // Path Inertial
+                state.projectiles.forEach(p => {
+                    ctx.beginPath();
+                    p.pathInertial.forEach((pt, i) => {
+                        const px = pt.x * (R/50000);
+                        const py = pt.y * (R/50000);
+                        if(i===0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    });
+                    ctx.strokeStyle = '#00f0ff';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                });
+                
+                ctx.restore();
+
+                // Draw Rotating View
+                ctx.save();
+                ctx.translate(cx2, cy);
+                
+                // Turntable stationary
+                ctx.beginPath();
+                ctx.arc(0, 0, R, 0, Math.PI*2);
+                ctx.fillStyle = '#1d2b38';
+                ctx.fill();
+                ctx.strokeStyle = '#334155';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Grid lines stationary
+                ctx.beginPath();
+                ctx.moveTo(-R, 0); ctx.lineTo(R, 0);
+                ctx.moveTo(0, -R); ctx.lineTo(0, R);
+                ctx.stroke();
+
+                // Target stationary
+                ctx.beginPath(); ctx.arc(0, -R*0.8, 6, 0, Math.PI*2); ctx.fillStyle = '#ef4444'; ctx.fill();
+
+                // Path Rotating
+                state.projectiles.forEach(p => {
+                    ctx.beginPath();
+                    p.pathRotating.forEach((pt, i) => {
+                        const px = pt.x * (R/50000);
+                        const py = pt.y * (R/50000);
+                        if(i===0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    });
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                });
+
+                ctx.restore();
+                
+                // Labels
+                ctx.fillStyle = '#cbd5e1';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Inertial Frame (Space)', cx1, cy - R - 30);
+                ctx.fillText('Rotating Frame (Earth)', cx2, cy - R - 30);
+
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '14px sans-serif';
+                ctx.fillText('Target moves. Object travels straight.', cx1, cy + R + 40);
+                ctx.fillText('Target stationary. Object deflected.', cx2, cy + R + 40);
+
+            } else if (state.mode === 'cyclone') {
+                
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                // Draw Pressure Field bg
+                const maxR = Math.max(state.canvasWidth, state.canvasHeight);
+                const grd = ctx.createRadialGradient(0, 0, 0, 0, 0, maxR);
+                grd.addColorStop(0, '#111a22'); // Low pressure center
+                grd.addColorStop(1, '#0b1217');
+                ctx.fillStyle = grd;
+                ctx.fillRect(-cx, -cy, state.canvasWidth, state.canvasHeight);
+
+                // Isobars
+                ctx.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+                ctx.lineWidth = 1;
+                for(let r=50; r<maxR; r+=100) {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, r, 0, Math.PI*2);
+                    ctx.stroke();
+                    ctx.fillStyle = '#475569';
+                    ctx.font = '10px monospace';
+                    ctx.fillText(`${980 + r/10} mb`, 0, -r - 5);
+                }
+                
+                ctx.fillStyle = '#ef4444';
+                ctx.font = 'bold 24px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('L', 0, 0);
+
+                // Update & Draw Particles (Air Parcels)
+                // Pressure gradient force points to center.
+                // PGF = -k/r. Coriolis = -f * v
+                
+                ctx.fillStyle = '#00f0ff';
+                const f_visual = f * 500; // Scaled for screen effect
+
+                state.particles.forEach(p => {
+                    const r = Math.sqrt(p.x*p.x + p.y*p.y);
+                    const dx = -p.x/r;
+                    const dy = -p.y/r;
+                    
+                    // PGF
+                    const pgfMag = 1000 / (r + 10);
+                    let ax = dx * pgfMag;
+                    let ay = dy * pgfMag;
+                    
+                    // Coriolis: a = f * (v x k). 2D: ax_c = f * vy, ay_c = -f * vx
+                    ax += f_visual * p.vy;
+                    ay -= f_visual * p.vx;
+                    
+                    // Friction
+                    ax -= p.vx * 0.1;
+                    ay -= p.vy * 0.1;
+
+                    p.vx += ax * (dt/10);
+                    p.vy += ay * (dt/10);
+                    
+                    p.x += p.vx * (dt/10);
+                    p.y += p.vy * (dt/10);
+                    
+                    p.life -= dt;
+                    if(p.life <= 0 || r < 20 || r > maxR) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const newR = maxR * 0.8 + Math.random() * 200;
+                        p.x = newR * Math.cos(angle);
+                        p.y = newR * Math.sin(angle);
+                        p.vx = 0;
+                        p.vy = 0;
+                        p.life = 50 + Math.random() * 100;
+                    }
+
+                    ctx.globalAlpha = Math.min(1, p.life / 20);
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 2, 0, Math.PI*2);
+                    ctx.fill();
+                    
+                    // Trail
+                    ctx.strokeStyle = `rgba(0, 240, 255, ${0.5 * ctx.globalAlpha})`;
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(p.x - p.vx*0.5, p.y - p.vy*0.5);
+                    ctx.stroke();
+                });
+                
+                ctx.globalAlpha = 1.0;
+                ctx.restore();
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        // Init
+        resize();
+        updateUI();
+        requestAnimationFrame(render);
+
+    </script>
+</body>
+</html>

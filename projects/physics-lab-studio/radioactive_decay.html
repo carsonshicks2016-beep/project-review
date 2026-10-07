@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radioactive Decay & Carbon-14 Dating Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b1217; /* slate-950 */
+            color: #f8fafc; /* slate-50 */
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111a22; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 flex flex-col gap-6">
+
+    <!-- Header -->
+    <header class="text-center pb-4 border-b border-slate-800">
+        <h1 class="text-3xl font-extrabold tracking-tight text-sky-400">Radioactive Decay & C-14 Simulator</h1>
+        <p class="text-slate-400 mt-2">Stochastic quantum phenomena, exponential decay, and archeological dating</p>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-grow">
+        
+        <!-- Left Column: Canvas & HUD -->
+        <div class="lg:col-span-3 flex flex-col gap-4">
+            
+            <!-- Canvas Container -->
+            <div class="relative w-full aspect-video bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl">
+                <canvas id="simCanvas"></canvas>
+                
+                <!-- Overlay HUD -->
+                <div class="absolute top-4 left-4 p-4 bg-slate-950/80 backdrop-blur-md rounded-xl border border-slate-800 flex flex-col gap-2 pointer-events-none min-w-[250px]">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Parent Atoms N(t)</span>
+                        <span id="hud-n" class="font-mono text-emerald-400 font-bold">0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Decayed Atoms</span>
+                        <span id="hud-d" class="font-mono text-rose-400 font-bold">0</span>
+                    </div>
+                    <div id="hud-gd-row" class="flex justify-between items-center hidden">
+                        <span class="text-slate-400 text-sm">Stable Granddaughter</span>
+                        <span id="hud-gd" class="font-mono text-slate-300 font-bold">0</span>
+                    </div>
+                    <div class="w-full h-px bg-slate-700 my-1"></div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Elapsed Time</span>
+                        <span id="hud-time" class="font-mono text-sky-300 font-bold">0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Half-Lives</span>
+                        <span id="hud-halflives" class="font-mono text-sky-300 font-bold">0</span>
+                    </div>
+                    <div class="w-full h-px bg-slate-700 my-1"></div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Activity A (cps)</span>
+                        <span id="hud-activity" class="font-mono text-amber-400 font-bold">0</span>
+                    </div>
+                </div>
+
+                <div id="dating-hud" class="absolute bottom-4 right-4 p-4 bg-slate-950/80 backdrop-blur-md rounded-xl border border-indigo-500/50 hidden flex-col gap-2 pointer-events-none min-w-[280px]">
+                    <h3 class="text-indigo-400 text-sm font-bold uppercase tracking-wider mb-1">Carbon Dating Estimate</h3>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Remaining C-14</span>
+                        <span id="hud-c14-pct" class="font-mono text-slate-200">100%</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Estimated Age</span>
+                        <span id="hud-c14-age" class="font-mono text-indigo-300 font-bold">0 yrs</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Start / Stop / Audio Controls -->
+            <div class="flex items-center gap-4 bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                <button id="btn-toggle" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition-colors">Start Simulation</button>
+                <button id="btn-reset" class="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold transition-colors">Reset</button>
+                <div class="flex-grow"></div>
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-slate-400">Audio (Geiger)</label>
+                    <button id="btn-audio" class="w-12 h-6 rounded-full bg-slate-700 relative transition-colors focus:outline-none">
+                        <div id="audio-knob" class="absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform transform"></div>
+                    </button>
+                </div>
+                <div class="flex items-center gap-2 w-32">
+                    <label class="text-sm text-slate-400">Vol</label>
+                    <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.2" class="w-full accent-sky-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Controls -->
+        <div class="flex flex-col gap-4">
+            
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 flex flex-col gap-5">
+                <h2 class="text-lg font-bold text-slate-200">Simulation Settings</h2>
+                
+                <!-- Isotope Preset -->
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-semibold text-slate-400">Preset Scenario</label>
+                    <select id="preset-selector" class="bg-slate-800 text-slate-200 p-2 rounded-lg border border-slate-700 outline-none focus:border-sky-500">
+                        <option value="c14">Carbon-14 Dating (Tree of Life)</option>
+                        <option value="u238">Uranium-238 (Geological Time)</option>
+                        <option value="i131">Iodine-131 (Medical Tracer)</option>
+                        <option value="po214">Polonium-214 (Microseconds)</option>
+                        <option value="chain">Decay Chain (Parent -> Daughter)</option>
+                    </select>
+                </div>
+
+                <!-- Sample Size -->
+                <div class="flex flex-col gap-2">
+                    <div class="flex justify-between items-center">
+                        <label class="text-sm font-semibold text-slate-400">Initial Atoms (N₀)</label>
+                        <span id="lbl-sample" class="font-mono text-sm text-slate-200">2000</span>
+                    </div>
+                    <input type="range" id="sample-slider" min="100" max="5000" step="100" value="2000" class="w-full accent-sky-500">
+                </div>
+
+                <!-- Time Speed -->
+                <div class="flex flex-col gap-2">
+                    <div class="flex justify-between items-center">
+                        <label class="text-sm font-semibold text-slate-400">Simulation Speed</label>
+                        <span id="lbl-speed" class="font-mono text-sm text-slate-200">1x</span>
+                    </div>
+                    <input type="range" id="speed-slider" min="0" max="4" step="0.1" value="1" class="w-full accent-sky-500">
+                    <p class="text-xs text-slate-500">Logarithmic scale</p>
+                </div>
+
+                <!-- Carbon Dating Artifact Mode -->
+                <div id="dating-controls" class="flex flex-col gap-2 pt-4 border-t border-slate-800">
+                    <h3 class="text-sm font-bold text-indigo-400">Archeological Artifact</h3>
+                    <p class="text-xs text-slate-400 mb-1">Drag to simulate a sample of unknown age.</p>
+                    <input type="range" id="dating-slider" min="0.01" max="1" step="0.01" value="1" class="w-full accent-indigo-500">
+                    <button id="btn-test-dating" class="mt-2 w-full py-2 bg-indigo-600/20 border border-indigo-500/50 hover:bg-indigo-600/40 text-indigo-300 rounded-lg text-sm transition-colors">Test Artifact</button>
+                </div>
+            </div>
+
+            <!-- Math Readout panel -->
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 flex flex-col gap-3">
+                <h2 class="text-lg font-bold text-slate-200">Physics Data</h2>
+                <div class="text-sm text-slate-300 flex flex-col gap-2 font-mono bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <div>λ = <span id="math-lambda">0</span> <span id="math-lambda-unit">yr⁻¹</span></div>
+                    <div>t½ = <span id="math-thalf">0</span> <span id="math-thalf-unit">yrs</span></div>
+                    <div>τ  = <span id="math-tau">0</span> <span id="math-tau-unit">yrs</span></div>
+                    <div class="mt-2 text-sky-400">N(t) = N₀ e^(-λt)</div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Explainer Cards -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+            <h3 class="text-xl font-bold text-sky-400 mb-3">1. Randomness to Order</h3>
+            <p class="text-slate-300 text-sm leading-relaxed">
+                Radioactive decay is fundamentally stochastic. A single atom of C-14 has a 50% chance of decaying in 5,730 years. It has no "memory" of how long it has existed. Yet, when you have billions of atoms, this pure quantum randomness averages out to produce an incredibly smooth, perfectly predictable exponential decay curve described by <strong>N(t) = N₀e^(-λt)</strong>.
+            </p>
+        </div>
+        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+            <h3 class="text-xl font-bold text-emerald-400 mb-3">2. Radiocarbon Dating</h3>
+            <p class="text-slate-300 text-sm leading-relaxed">
+                Invented by Willard Libby in 1949, radiocarbon dating measures the ratio of unstable Carbon-14 to stable Carbon-12. Living things constantly exchange carbon with the atmosphere, maintaining a steady ratio. When they die, C-14 decays into Nitrogen-14. By measuring the remaining C-14, we can calculate the time elapsed since death using <strong>t = -t½ / ln(2) * ln(N/N₀)</strong>.
+            </p>
+        </div>
+        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+            <h3 class="text-xl font-bold text-amber-400 mb-3">3. Decay Chains & Equilibrium</h3>
+            <p class="text-slate-300 text-sm leading-relaxed">
+                Often, a radioactive "parent" nucleus decays into a "daughter" nucleus that is <i>also</i> radioactive. This forms a decay chain (e.g., Uranium-238 → Radium → Radon → Lead). Depending on the half-lives of the parent and daughter, they can reach <strong>Secular Equilibrium</strong> (where activities are equal) or <strong>Transient Equilibrium</strong>. The Bateman equations describe these complex overlapping dynamics.
+            </p>
+        </div>
+    </section>
+
+    <script>
+        // --- Web Audio API Geiger Counter ---
+        class GeigerAudio {
+            constructor() {
+                this.ctx = null;
+                this.enabled = false;
+                this.volume = 0.2;
+                this.masterGain = null;
+            }
+
+            init() {
+                if (this.ctx) return;
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.masterGain = this.ctx.createGain();
+                this.masterGain.connect(this.ctx.destination);
+                this.setVolume(this.volume);
+            }
+
+            setVolume(v) {
+                this.volume = v;
+                if (this.masterGain) this.masterGain.gain.value = v;
+            }
+
+            toggle(state) {
+                this.enabled = state;
+                if (state) this.init();
+            }
+
+            playClick(isDaughter = false) {
+                if (!this.enabled || !this.ctx) return;
+                
+                const t = this.ctx.currentTime;
+                
+                // High frequency short noise burst for geiger click
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'square';
+                // Daughter decay slightly different pitch
+                osc.frequency.setValueAtTime(isDaughter ? 6000 : 8000, t);
+                osc.frequency.exponentialRampToValueAtTime(100, t + 0.01);
+                
+                gain.gain.setValueAtTime(1, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.01);
+                
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                
+                osc.start(t);
+                osc.stop(t + 0.02);
+            }
+        }
+
+        const audio = new GeigerAudio();
+
+        // --- Isotope Data ---
+        const PRESETS = {
+            'c14': {
+                name: 'Carbon-14',
+                thalf: 5730,
+                unit: 'yrs',
+                lambda: Math.LN2 / 5730,
+                hasChain: false,
+                colorParent: '#b3e600', // emerald
+                colorDecayed: '#334155', // slate-700
+                datingMode: true
+            },
+            'u238': {
+                name: 'Uranium-238',
+                thalf: 4.468e9,
+                unit: 'yrs',
+                lambda: Math.LN2 / 4.468e9,
+                hasChain: false,
+                colorParent: '#00f0ff', // sky
+                colorDecayed: '#475569',
+                datingMode: false
+            },
+            'i131': {
+                name: 'Iodine-131',
+                thalf: 8.02,
+                unit: 'days',
+                lambda: Math.LN2 / 8.02,
+                hasChain: false,
+                colorParent: '#f59e0b', // amber
+                colorDecayed: '#334155',
+                datingMode: false
+            },
+            'po214': {
+                name: 'Polonium-214',
+                thalf: 164e-6,
+                unit: 'sec',
+                lambda: Math.LN2 / 164e-6,
+                hasChain: false,
+                colorParent: '#ef4444', // red
+                colorDecayed: '#1d2b38',
+                datingMode: false
+            },
+            'chain': {
+                name: 'Generic Chain (A -> B -> C)',
+                thalf: 10,
+                unit: 'sec',
+                lambda: Math.LN2 / 10,
+                hasChain: true,
+                lambdaB: Math.LN2 / 5, // Daughter half life is 5 seconds
+                colorParent: '#00f0ff', // sky
+                colorDaughter: '#e6004c', // rose
+                colorDecayed: '#94a3b8', // slate-400 (Stable C)
+                datingMode: false
+            }
+        };
+
+        // --- Simulation State & Engine ---
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        
+        // State
+        let isRunning = false;
+        let atoms = [];
+        let time = 0;
+        let currentPreset = PRESETS['c14'];
+        let initialN = 2000;
+        let speedMultiplier = 1;
+        let activity = 0;
+        
+        // Atom states: 0 = Parent, 1 = Daughter, 2 = Stable/Decayed
+        
+        function resize() {
+            // Retina support
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            width = rect.width;
+            height = rect.height;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resize);
+        
+        function initAtoms(N, startingRatio = 1) {
+            atoms = [];
+            const cols = Math.ceil(Math.sqrt(N * (width/height)));
+            const rows = Math.ceil(N / cols);
+            
+            const cellW = width / cols;
+            const cellH = height / rows;
+            
+            let count = 0;
+            for(let i=0; i<rows; i++) {
+                for(let j=0; j<cols; j++) {
+                    if(count >= N) break;
+                    
+                    const isParent = Math.random() < startingRatio;
+                    
+                    atoms.push({
+                        x: j * cellW + cellW/2 + (Math.random()-0.5)*cellW*0.4,
+                        y: i * cellH + cellH/2 + (Math.random()-0.5)*cellH*0.4,
+                        state: isParent ? 0 : 2,
+                        flashDelay: 0,
+                        r: Math.min(cellW, cellH) * 0.3 + 1
+                    });
+                    count++;
+                }
+            }
+        }
+
+        function resetSim() {
+            time = 0;
+            activity = 0;
+            initAtoms(initialN);
+            updateHUD();
+            draw();
+        }
+
+        function updateSim(dtReal) {
+            if (!isRunning) return;
+            
+            // dt is in preset units (yrs, days, sec)
+            let dt = (dtReal / 1000) * speedMultiplier;
+            
+            // For slow decay like U238, speed needs to be huge
+            if(currentPreset === PRESETS['u238']) dt *= 1e8;
+            if(currentPreset === PRESETS['c14']) dt *= 500;
+            
+            time += dt;
+            
+            const probParentDecay = 1 - Math.exp(-currentPreset.lambda * dt);
+            const probDaughterDecay = currentPreset.hasChain ? (1 - Math.exp(-currentPreset.lambdaB * dt)) : 0;
+            
+            let decaysThisFrame = 0;
+            
+            for(let i=0; i<atoms.length; i++) {
+                let a = atoms[i];
+                if (a.state === 0) {
+                    if (Math.random() < probParentDecay) {
+                        a.state = currentPreset.hasChain ? 1 : 2;
+                        a.flashDelay = 15; // frames
+                        decaysThisFrame++;
+                        if(Math.random() < 0.1) audio.playClick(false); // Cap audio events
+                    }
+                } else if (a.state === 1 && currentPreset.hasChain) {
+                    if (Math.random() < probDaughterDecay) {
+                        a.state = 2;
+                        a.flashDelay = 15;
+                        decaysThisFrame++;
+                        if(Math.random() < 0.1) audio.playClick(true);
+                    }
+                }
+                
+                if (a.flashDelay > 0) a.flashDelay--;
+            }
+            
+            // Exponential moving average for activity (counts per real second)
+            const instActivity = decaysThisFrame / (dtReal / 1000);
+            activity = activity * 0.9 + instActivity * 0.1;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw grid lines
+            ctx.strokeStyle = '#1d2b38';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let x=0; x<width; x+=50) { ctx.moveTo(x,0); ctx.lineTo(x,height); }
+            for(let y=0; y<height; y+=50) { ctx.moveTo(0,y); ctx.lineTo(width,y); }
+            ctx.stroke();
+
+            // Draw atoms
+            let nParent = 0;
+            let nDaughter = 0;
+            let nStable = 0;
+
+            for(let i=0; i<atoms.length; i++) {
+                const a = atoms[i];
+                ctx.beginPath();
+                ctx.arc(a.x, a.y, a.r, 0, Math.PI*2);
+                
+                if (a.state === 0) {
+                    ctx.fillStyle = currentPreset.colorParent;
+                    nParent++;
+                } else if (a.state === 1) {
+                    ctx.fillStyle = currentPreset.colorDaughter;
+                    nDaughter++;
+                } else {
+                    ctx.fillStyle = currentPreset.colorDecayed;
+                    nStable++;
+                }
+                
+                ctx.fill();
+                
+                if (a.flashDelay > 0) {
+                    ctx.beginPath();
+                    ctx.arc(a.x, a.y, a.r * (1 + (15-a.flashDelay)/2), 0, Math.PI*2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${a.flashDelay/15})`;
+                    ctx.fill();
+                }
+            }
+            
+            return {nParent, nDaughter, nStable};
+        }
+
+        function updateHUD(counts) {
+            if(!counts) {
+                counts = {nParent: initialN, nDaughter: 0, nStable: 0};
+            }
+            
+            document.getElementById('hud-n').textContent = counts.nParent;
+            document.getElementById('hud-d').textContent = counts.nStable + (currentPreset.hasChain ? counts.nDaughter : 0);
+            
+            const gdRow = document.getElementById('hud-gd-row');
+            if (currentPreset.hasChain) {
+                gdRow.classList.remove('hidden');
+                document.getElementById('hud-d').textContent = counts.nDaughter; // Remap
+                document.getElementById('hud-d').previousElementSibling.textContent = 'Active Daughter';
+                document.getElementById('hud-gd').textContent = counts.nStable;
+            } else {
+                gdRow.classList.add('hidden');
+                document.getElementById('hud-d').previousElementSibling.textContent = 'Decayed Atoms';
+            }
+
+            document.getElementById('hud-time').textContent = formatTime(time, currentPreset.unit);
+            document.getElementById('hud-halflives').textContent = (time / currentPreset.thalf).toFixed(2);
+            document.getElementById('hud-activity').textContent = Math.round(activity);
+            
+            // Math panel
+            document.getElementById('math-lambda').textContent = currentPreset.lambda.toExponential(3);
+            document.getElementById('math-lambda-unit').textContent = currentPreset.unit + '⁻¹';
+            document.getElementById('math-thalf').textContent = formatNumber(currentPreset.thalf);
+            document.getElementById('math-thalf-unit').textContent = currentPreset.unit;
+            document.getElementById('math-tau').textContent = formatNumber(1 / currentPreset.lambda);
+            document.getElementById('math-tau-unit').textContent = currentPreset.unit;
+            
+            // Dating HUD update
+            if (currentPreset.datingMode && !isRunning) {
+                const ratio = counts.nParent / initialN;
+                document.getElementById('hud-c14-pct').textContent = (ratio * 100).toFixed(1) + '%';
+                const age = -currentPreset.thalf / Math.LN2 * Math.log(ratio);
+                document.getElementById('hud-c14-age').textContent = formatTime(age, 'yrs');
+            }
+        }
+
+        function formatNumber(n) {
+            if (n >= 1e6) return n.toExponential(2);
+            if (n < 0.01) return n.toExponential(2);
+            return n.toLocaleString(undefined, {maximumFractionDigits: 2});
+        }
+
+        function formatTime(t, unit) {
+            if (t === 0) return `0 ${unit}`;
+            if (t >= 1e9) return (t/1e9).toFixed(2) + 'B ' + unit;
+            if (t >= 1e6) return (t/1e6).toFixed(2) + 'M ' + unit;
+            if (t < 0.001) return (t*1e6).toFixed(0) + ' µ' + unit.replace('sec','s');
+            return t.toLocaleString(undefined, {maximumFractionDigits: 1}) + ' ' + unit;
+        }
+
+        let lastTime = 0;
+        function loop(timestamp) {
+            const dtReal = timestamp - lastTime;
+            lastTime = timestamp;
+            
+            // Limit max dt to prevent spiral of death
+            if (dtReal < 100) {
+                updateSim(dtReal);
+                const counts = draw();
+                updateHUD(counts);
+            }
+            
+            requestAnimationFrame(loop);
+        }
+
+        // --- Event Listeners ---
+        
+        document.getElementById('btn-toggle').addEventListener('click', (e) => {
+            isRunning = !isRunning;
+            e.target.textContent = isRunning ? 'Pause Simulation' : 'Resume Simulation';
+            e.target.classList.toggle('bg-emerald-600', !isRunning);
+            e.target.classList.toggle('bg-amber-600', isRunning);
+            e.target.classList.toggle('hover:bg-emerald-500', !isRunning);
+            e.target.classList.toggle('hover:bg-amber-500', isRunning);
+            if(isRunning) audio.init();
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            isRunning = false;
+            const btn = document.getElementById('btn-toggle');
+            btn.textContent = 'Start Simulation';
+            btn.className = 'px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition-colors';
+            resetSim();
+        });
+
+        const audioBtn = document.getElementById('btn-audio');
+        const audioKnob = document.getElementById('audio-knob');
+        audioBtn.addEventListener('click', () => {
+            audio.toggle(!audio.enabled);
+            audioBtn.classList.toggle('bg-sky-500', audio.enabled);
+            audioBtn.classList.toggle('bg-slate-700', !audio.enabled);
+            audioKnob.classList.toggle('translate-x-6', audio.enabled);
+        });
+
+        document.getElementById('vol-slider').addEventListener('input', (e) => {
+            audio.setVolume(parseFloat(e.target.value));
+        });
+
+        document.getElementById('preset-selector').addEventListener('change', (e) => {
+            currentPreset = PRESETS[e.target.value];
+            
+            // Show/hide dating controls
+            const datingControls = document.getElementById('dating-controls');
+            const datingHud = document.getElementById('dating-hud');
+            if (currentPreset.datingMode) {
+                datingControls.classList.remove('hidden');
+            } else {
+                datingControls.classList.add('hidden');
+                datingHud.classList.add('hidden');
+            }
+            
+            document.getElementById('btn-reset').click();
+        });
+
+        document.getElementById('sample-slider').addEventListener('input', (e) => {
+            initialN = parseInt(e.target.value);
+            document.getElementById('lbl-sample').textContent = initialN;
+            if(!isRunning) resetSim();
+        });
+
+        document.getElementById('speed-slider').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            // Logarithmic mapping: 0 -> 0.1x, 1 -> 1x, 2 -> 10x, 3 -> 100x, 4 -> 1000x
+            speedMultiplier = Math.pow(10, val - 1);
+            if(val === 0) speedMultiplier = 0.1;
+            document.getElementById('lbl-speed').textContent = speedMultiplier < 1 ? speedMultiplier.toFixed(1) + 'x' : Math.round(speedMultiplier) + 'x';
+        });
+
+        // Carbon Dating Simulator logic
+        document.getElementById('btn-test-dating').addEventListener('click', () => {
+            const val = parseFloat(document.getElementById('dating-slider').value);
+            // Stop sim, set ratio directly
+            isRunning = false;
+            document.getElementById('btn-toggle').textContent = 'Start Simulation';
+            document.getElementById('btn-toggle').className = 'px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition-colors';
+            
+            initAtoms(initialN, val);
+            time = -currentPreset.thalf / Math.LN2 * Math.log(val);
+            
+            document.getElementById('dating-hud').classList.remove('hidden');
+            
+            const counts = draw();
+            updateHUD(counts);
+        });
+
+        document.getElementById('dating-slider').addEventListener('input', (e) => {
+            if(currentPreset.datingMode && !isRunning) {
+                const val = parseFloat(e.target.value);
+                initAtoms(initialN, val);
+                time = -currentPreset.thalf / Math.LN2 * Math.log(val);
+                document.getElementById('dating-hud').classList.remove('hidden');
+                const counts = draw();
+                updateHUD(counts);
+            }
+        });
+
+
+        // Init
+        setTimeout(() => {
+            resize();
+            resetSim();
+            requestAnimationFrame(loop);
+        }, 100);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+# Stage-0 scaffold needs only NumPy.
+numpy>=1.24
+
+# Morphogenesis -> physics (ROADMAP Stage 1.5+): the generative-encoding pipeline
+# compiles creatures to MuJoCo via mujoco.MjSpec.
+mujoco>=3.2
+
+# Evaluation (ROADMAP Stage 2): creatures are wrapped as Gymnasium RL envs.
+gymnasium>=1.0
+
+# Control (ROADMAP Stage 3): PPO policies in PyTorch (CleanRL-style).
+torch>=2.0
+
+# --- Future stages (see PLAN.md §14); uncomment as each stage is built ---
+# pytest                # nicer test runner (tests also run standalone)
+# pyribs                # scalable MAP-Elites / CVT archives
+# torch                 # PPO controller policies
+# cma                   # CMA-ES morphology search
+# opensim               # musculoskeletal modeling (conda-forge build recommended)
+# matplotlib            # archive / dashboard plots

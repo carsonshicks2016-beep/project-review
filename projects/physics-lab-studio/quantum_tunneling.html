@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Tunneling & Alpha Decay Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        canvas { display: block; width: 100%; height: 100%; }
+        input[type="range"] {
+            accent-color: #00f0ff;
+        }
+        .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 h-screen flex flex-col overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center z-10">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-100 flex items-center gap-2">
+                <span class="text-sky-400">ψ</span> Quantum Tunneling Simulator
+            </h1>
+            <p class="text-sm text-slate-400">Explore wave function penetration across classically forbidden regions</p>
+        </div>
+        <button id="btn-audio" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
+            <span id="audio-icon">🔇</span> Enable Audio
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+        
+        <!-- Canvas Container -->
+        <div class="flex-1 relative bg-slate-950 flex flex-col">
+            <!-- HUD -->
+            <div class="absolute top-4 left-4 right-4 flex justify-between pointer-events-none z-10">
+                <div class="bg-slate-900/80 backdrop-blur border border-slate-800 p-3 rounded-xl pointer-events-auto">
+                    <div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Transmission (T)</div>
+                    <div class="text-2xl font-bold text-emerald-400 mono" id="out-t">0.00%</div>
+                </div>
+                <div class="bg-slate-900/80 backdrop-blur border border-slate-800 p-3 rounded-xl pointer-events-auto text-right">
+                    <div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Reflection (R)</div>
+                    <div class="text-2xl font-bold text-rose-400 mono" id="out-r">100.00%</div>
+                </div>
+            </div>
+
+            <!-- View Toggles -->
+            <div class="absolute bottom-4 left-4 flex gap-2 z-10">
+                <button class="view-btn active bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border border-sky-500" data-view="packet">Wavepacket Animation</button>
+                <button class="view-btn bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border border-slate-700" data-view="prob">Probability Density |ψ|²</button>
+                <button class="view-btn bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border border-slate-700" data-view="wave">Real/Imag Wavefunction</button>
+            </div>
+
+            <div class="absolute bottom-4 right-4 z-10 bg-slate-900/80 backdrop-blur border border-slate-800 p-2 rounded-lg mono text-xs text-slate-300">
+                κ = <span id="out-kappa">0.00</span> nm⁻¹ | E/V₀ = <span id="out-ratio">0.00</span>
+            </div>
+
+            <canvas id="sim-canvas"></canvas>
+        </div>
+
+        <!-- Controls Sidebar -->
+        <aside class="w-full lg:w-80 bg-slate-900 border-l border-slate-800 overflow-y-auto flex flex-col z-20">
+            <div class="p-5 border-b border-slate-800">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4">Simulation Parameters</h2>
+                
+                <!-- Particle Energy -->
+                <div class="mb-5">
+                    <div class="flex justify-between text-sm mb-1">
+                        <label class="text-slate-300">Particle Energy (E)</label>
+                        <span class="text-sky-400 mono"><span id="val-e">5.0</span> eV</span>
+                    </div>
+                    <input type="range" id="slider-e" min="0.5" max="12.0" step="0.1" value="5.0" class="w-full">
+                </div>
+
+                <!-- Barrier Height -->
+                <div class="mb-5">
+                    <div class="flex justify-between text-sm mb-1">
+                        <label class="text-slate-300">Barrier Height (V₀)</label>
+                        <span class="text-amber-400 mono"><span id="val-v0">8.0</span> eV</span>
+                    </div>
+                    <input type="range" id="slider-v0" min="1.0" max="10.0" step="0.1" value="8.0" class="w-full">
+                </div>
+
+                <!-- Barrier Width -->
+                <div class="mb-5">
+                    <div class="flex justify-between text-sm mb-1">
+                        <label class="text-slate-300">Barrier Width (L)</label>
+                        <span class="text-purple-400 mono"><span id="val-l">0.5</span> nm</span>
+                    </div>
+                    <input type="range" id="slider-l" min="0.05" max="3.0" step="0.01" value="0.5" class="w-full">
+                </div>
+
+                <!-- Particle Mass -->
+                <div class="mb-2">
+                    <label class="text-sm text-slate-300 block mb-2">Particle Type</label>
+                    <select id="select-mass" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-slate-200 outline-none focus:border-sky-500">
+                        <option value="1">Electron (e⁻)</option>
+                        <option value="207">Muon (μ⁻)</option>
+                        <option value="1836">Proton (p⁺)</option>
+                        <option value="7294">Alpha Particle (He²⁺)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="p-5 flex-1">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4">Presets</h2>
+                <div class="space-y-2">
+                    <button class="preset-btn w-full text-left px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm transition-colors border border-slate-700" data-preset="stm">
+                        <div class="font-medium text-slate-200">STM Microscope</div>
+                        <div class="text-xs text-slate-400">e⁻ tunneling through vacuum gap</div>
+                    </button>
+                    <button class="preset-btn w-full text-left px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm transition-colors border border-slate-700" data-preset="flash">
+                        <div class="font-medium text-slate-200">Flash Memory</div>
+                        <div class="text-xs text-slate-400">Fowler-Nordheim tunneling</div>
+                    </button>
+                    <button class="preset-btn w-full text-left px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm transition-colors border border-slate-700" data-preset="alpha">
+                        <div class="font-medium text-slate-200">Alpha Decay</div>
+                        <div class="text-xs text-slate-400">He²⁺ escaping nucleus</div>
+                    </button>
+                    <button class="preset-btn w-full text-left px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm transition-colors border border-slate-700" data-preset="fusion">
+                        <div class="font-medium text-slate-200">Solar Fusion</div>
+                        <div class="text-xs text-slate-400">Protons beating Coulomb barrier</div>
+                    </button>
+                    <button class="preset-btn w-full text-left px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm transition-colors border border-slate-700" data-preset="classical">
+                        <div class="font-medium text-slate-200">Classical Limit</div>
+                        <div class="text-xs text-slate-400">Thick barrier, no tunneling</div>
+                    </button>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Explainer Cards -->
+    <div class="bg-slate-900 border-t border-slate-800 p-6 overflow-x-auto">
+        <div class="flex gap-6 w-max mx-auto md:w-auto md:grid md:grid-cols-3 max-w-7xl">
+            <div class="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 w-80 md:w-auto">
+                <h3 class="text-sky-400 font-semibold mb-2">1. The Evanescent Wave</h3>
+                <p class="text-sm text-slate-300 leading-relaxed">
+                    Classically, a particle bounces off a barrier if it lacks the energy to go over. Quantum mechanics treats particles as waves. When a probability wave hits a barrier, it doesn't stop instantly; it decays exponentially inside the forbidden region as an <em>evanescent wave</em>.
+                </p>
+            </div>
+            <div class="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 w-80 md:w-auto">
+                <h3 class="text-amber-400 font-semibold mb-2">2. Exponential Sensitivity</h3>
+                <p class="text-sm text-slate-300 leading-relaxed">
+                    The transmission probability $T \propto e^{-2\kappa L}$. Because it is exponential, tiny changes in barrier width ($L$) or height cause massive changes in tunneling rate. This explains why radioactive half-lives vary from nanoseconds to billions of years!
+                </p>
+            </div>
+            <div class="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 w-80 md:w-auto">
+                <h3 class="text-emerald-400 font-semibold mb-2">3. Real-World Tech (STM)</h3>
+                <p class="text-sm text-slate-300 leading-relaxed">
+                    Scanning Tunneling Microscopes use this effect. By bringing a sharp tip close to a surface, electrons tunnel across the vacuum gap. The extreme sensitivity of the tunneling current to distance allows mapping surfaces atom-by-atom.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Constants & Physics Setup ---
+        const hbar = 1; // Natural units for visualization
+        const me = 1;   // Electron mass reference
+        
+        let E = 5.0;
+        let V0 = 8.0;
+        let L = 0.5;
+        let massRatio = 1; // relative to electron
+        
+        let currentView = 'packet'; // 'packet', 'prob', 'wave'
+        
+        // Derived values
+        let k1 = 1, k2 = 1, T = 0, R = 1, kappa = 0;
+        
+        // UI Elements
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        const sliderE = document.getElementById('slider-e');
+        const sliderV0 = document.getElementById('slider-v0');
+        const sliderL = document.getElementById('slider-l');
+        const selectMass = document.getElementById('select-mass');
+        
+        const valE = document.getElementById('val-e');
+        const valV0 = document.getElementById('val-v0');
+        const valL = document.getElementById('val-l');
+        const outT = document.getElementById('out-t');
+        const outR = document.getElementById('out-r');
+        const outKappa = document.getElementById('out-kappa');
+        const outRatio = document.getElementById('out-ratio');
+
+        // Animation State
+        let time = 0;
+        let packetTime = -5; // Time parameter for wave packet
+        let lastTime = performance.now();
+        
+        // --- Audio System ---
+        let audioCtx;
+        let droneOsc, shimmerOsc, filter;
+        let masterGain, droneGain, pingGain;
+        let audioEnabled = false;
+
+        function initAudio() {
+            if (audioEnabled) return;
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.3;
+            masterGain.connect(audioCtx.destination);
+            
+            // Drone for energy E
+            droneOsc = audioCtx.createOscillator();
+            droneOsc.type = 'sine';
+            droneGain = audioCtx.createGain();
+            droneGain.gain.value = 0.1;
+            droneOsc.connect(droneGain);
+            droneGain.connect(masterGain);
+            droneOsc.start();
+            
+            audioEnabled = true;
+            document.getElementById('audio-icon').textContent = '🔊';
+            document.getElementById('btn-audio').classList.replace('bg-slate-800', 'bg-sky-600');
+            document.getElementById('btn-audio').classList.replace('border-slate-700', 'border-sky-500');
+            
+            updatePhysics();
+        }
+
+        document.getElementById('btn-audio').addEventListener('click', initAudio);
+
+        function playPing(tVal) {
+            if (!audioEnabled || tVal < 1e-4) return;
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(800 + (E * 50), audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1200 + (E * 50), audioCtx.currentTime + 0.1);
+            
+            // Volume depends on transmission probability T!
+            let vol = Math.max(0, Math.min(1, Math.log10(tVal * 100 + 1) / 2));
+            gain.gain.setValueAtTime(vol * 0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+            
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        function playThud() {
+            if (!audioEnabled) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.2);
+            
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+            
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
+        }
+
+        // --- Physics Calculations ---
+        function updatePhysics() {
+            E = parseFloat(sliderE.value);
+            V0 = parseFloat(sliderV0.value);
+            L = parseFloat(sliderL.value);
+            massRatio = parseFloat(selectMass.value);
+            
+            valE.textContent = E.toFixed(1);
+            valV0.textContent = V0.toFixed(1);
+            valL.textContent = L.toFixed(2);
+            
+            outRatio.textContent = (E/V0).toFixed(2);
+            
+            // Physics constants scaling for visual/calc logic
+            const m = massRatio; 
+            
+            if (E < V0) {
+                // Tunneling regime
+                kappa = Math.sqrt(2 * m * (V0 - E));
+                outKappa.textContent = kappa.toFixed(2);
+                
+                // Gamow transmission factor approx or exact 1D rectangular barrier
+                // T = [1 + (V0^2 * sinh^2(kappa * L)) / (4 * E * (V0 - E))]^-1
+                const kL = kappa * L * 5; // scale factor for visual L to physical math
+                const sinh2 = Math.pow(Math.sinh(kL), 2);
+                T = 1.0 / (1.0 + (V0 * V0 * sinh2) / (4 * E * (V0 - E)));
+            } else {
+                // Over barrier
+                kappa = 0;
+                outKappa.textContent = "0.00";
+                
+                const k = Math.sqrt(2 * m * (E - V0));
+                const kL = k * L * 5;
+                const sin2 = Math.pow(Math.sin(kL), 2);
+                T = 1.0 / (1.0 + (V0 * V0 * sin2) / (4 * E * (E - V0)));
+            }
+            
+            R = 1.0 - T;
+            
+            // Update HUD
+            let tPercent = T * 100;
+            if (tPercent < 0.0001 && tPercent > 0) {
+                outT.textContent = tPercent.toExponential(2) + "%";
+            } else {
+                outT.textContent = tPercent.toFixed(2) + "%";
+            }
+            outR.textContent = (R * 100).toFixed(2) + "%";
+            
+            // Audio update
+            if (audioEnabled && droneOsc) {
+                droneOsc.frequency.setTargetAtTime(100 + E * 30, audioCtx.currentTime, 0.1);
+            }
+        }
+
+        // --- UI Events ---
+        [sliderE, sliderV0, sliderL].forEach(el => {
+            el.addEventListener('input', updatePhysics);
+        });
+        selectMass.addEventListener('change', updatePhysics);
+
+        const presets = {
+            'stm': { e: 4.5, v0: 5.0, l: 0.1, m: 1 },
+            'flash': { e: 3.2, v0: 8.0, l: 0.5, m: 1 },
+            'alpha': { e: 5.4, v0: 9.0, l: 1.5, m: 7294 }, // He-4
+            'fusion': { e: 1.2, v0: 2.0, l: 0.3, m: 1836 },
+            'classical': { e: 2.0, v0: 10.0, l: 2.5, m: 1 }
+        };
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const p = presets[btn.dataset.preset];
+                if (p) {
+                    sliderE.value = p.e;
+                    sliderV0.value = p.v0;
+                    sliderL.value = p.l;
+                    selectMass.value = p.m;
+                    updatePhysics();
+                    
+                    // Reset animation
+                    packetTime = -5;
+                }
+            });
+        });
+
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.view-btn').forEach(b => {
+                    b.classList.remove('bg-sky-600', 'text-white', 'border-sky-500');
+                    b.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700');
+                });
+                btn.classList.add('bg-sky-600', 'text-white', 'border-sky-500');
+                btn.classList.remove('bg-slate-800', 'text-slate-300', 'border-slate-700');
+                currentView = btn.dataset.view;
+                if (currentView === 'packet') packetTime = -5; // Reset animation
+            });
+        });
+
+        // --- Resize & Canvas Setup ---
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            // Internal coordinate system
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+        }
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Initial setup
+        resizeCanvas();
+        updatePhysics();
+
+        // --- Render Loop ---
+        function draw() {
+            const dt = (performance.now() - lastTime) / 1000;
+            lastTime = performance.now();
+            time += dt * 5;
+            
+            const w = canvas.width / window.devicePixelRatio;
+            const h = canvas.height / window.devicePixelRatio;
+            
+            ctx.clearRect(0, 0, w, h);
+            
+            const centerX = w / 2;
+            const centerY = h * 0.7; // baseline
+            
+            const barrierPxWidth = L * 100;
+            const barrierLeft = centerX - barrierPxWidth / 2;
+            const barrierRight = centerX + barrierPxWidth / 2;
+            
+            const scaleY = 30; // pixels per eV
+            
+            // Draw Potential V(x)
+            ctx.fillStyle = '#111a22'; // slate-900 bg
+            ctx.fillRect(0, 0, w, h);
+            
+            ctx.strokeStyle = '#334155'; // slate-700
+            ctx.lineWidth = 1;
+            // Axis
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(w, centerY);
+            ctx.stroke();
+            
+            // V(x) Barrier Shape
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.15)'; // amber-400 / 15%
+            ctx.strokeStyle = '#f59e0b'; // amber-400
+            ctx.lineWidth = 2;
+            
+            const v0H = V0 * scaleY;
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(barrierLeft, centerY);
+            ctx.lineTo(barrierLeft, centerY - v0H);
+            ctx.lineTo(barrierRight, centerY - v0H);
+            ctx.lineTo(barrierRight, centerY);
+            ctx.lineTo(w, centerY);
+            ctx.stroke();
+            
+            ctx.fillRect(barrierLeft, centerY, barrierPxWidth, -v0H);
+            
+            // Draw Energy E line
+            const eH = E * scaleY;
+            ctx.strokeStyle = '#00f0ff'; // sky-400
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(0, centerY - eH);
+            ctx.lineTo(w, centerY - eH);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Draw Wavefunctions based on view
+            if (currentView === 'packet') {
+                drawWavepacket(w, h, barrierLeft, barrierRight, centerY - eH, dt);
+            } else if (currentView === 'prob') {
+                drawStationaryState(w, h, barrierLeft, barrierRight, centerY - eH, true);
+            } else if (currentView === 'wave') {
+                drawStationaryState(w, h, barrierLeft, barrierRight, centerY - eH, false);
+            }
+            
+            requestAnimationFrame(draw);
+        }
+
+        function drawStationaryState(w, h, xL, xR, baseline, isProb) {
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            // For stationary state, we approximate the analytical shape
+            const k = Math.sqrt(E) * 0.5; // wavenumber
+            const kap = (E < V0) ? Math.sqrt(V0 - E) * 0.5 : 0;
+            const k2 = (E >= V0) ? Math.sqrt(E - V0) * 0.5 : 0;
+            
+            const ampBase = 40;
+            
+            for (let x = 0; x < w; x += 2) {
+                let dx = x - xL;
+                let valRe = 0, valIm = 0;
+                
+                if (x < xL) {
+                    // Region I: Incident + Reflected
+                    let dist = (x - xL) / 10;
+                    valRe = Math.cos(k * dist - time) + Math.sqrt(R) * Math.cos(-k * dist - time);
+                    valIm = Math.sin(k * dist - time) + Math.sqrt(R) * Math.sin(-k * dist - time);
+                } else if (x > xR) {
+                    // Region III: Transmitted
+                    let dist = (x - xR) / 10;
+                    valRe = Math.sqrt(T) * Math.cos(k * dist - time);
+                    valIm = Math.sqrt(T) * Math.sin(k * dist - time);
+                } else {
+                    // Region II: Inside barrier
+                    let dist = (x - xL) / 10;
+                    let L_scaled = (xR - xL) / 10;
+                    if (E < V0) {
+                        // Evanescent (simplified analytical interp for visuals)
+                        let decay = Math.exp(-kap * dist);
+                        valRe = decay * Math.cos(-time);
+                        valIm = decay * Math.sin(-time);
+                    } else {
+                        // Oscillatory
+                        valRe = Math.cos(k2 * dist - time);
+                        valIm = Math.sin(k2 * dist - time);
+                    }
+                }
+                
+                if (isProb) {
+                    let prob = (valRe*valRe + valIm*valIm) * 0.5;
+                    ctx.strokeStyle = '#b3e600'; // emerald-400
+                    if (x === 0) ctx.moveTo(x, baseline - prob * ampBase);
+                    else ctx.lineTo(x, baseline - prob * ampBase);
+                } else {
+                    // Real part
+                    ctx.strokeStyle = '#00f0ff'; // sky-400
+                    if (x === 0) ctx.moveTo(x, baseline - valRe * ampBase);
+                    else ctx.lineTo(x, baseline - valRe * ampBase);
+                }
+            }
+            ctx.stroke();
+            
+            if (!isProb) {
+                // Imaginary part
+                ctx.beginPath();
+                ctx.strokeStyle = '#a855f7'; // purple-500
+                ctx.lineWidth = 1;
+                for (let x = 0; x < w; x += 2) {
+                    let dx = x - xL;
+                    let valIm = 0;
+                    if (x < xL) {
+                        let dist = (x - xL) / 10;
+                        valIm = Math.sin(k * dist - time) + Math.sqrt(R) * Math.sin(-k * dist - time);
+                    } else if (x > xR) {
+                        let dist = (x - xR) / 10;
+                        valIm = Math.sqrt(T) * Math.sin(k * dist - time);
+                    } else {
+                        let dist = (x - xL) / 10;
+                        if (E < V0) {
+                            let decay = Math.exp(-kap * dist);
+                            valIm = decay * Math.sin(-time);
+                        } else {
+                            valIm = Math.sin(k2 * dist - time);
+                        }
+                    }
+                    if (x === 0) ctx.moveTo(x, baseline - valIm * ampBase);
+                    else ctx.lineTo(x, baseline - valIm * ampBase);
+                }
+                ctx.stroke();
+            }
+        }
+
+        function drawWavepacket(w, h, xL, xR, baseline, dt) {
+            // Animate wavepacket
+            // Speed depends on E. 
+            let speed = Math.sqrt(E) * 100;
+            packetTime += dt;
+            
+            let pX = xL - 200 + (packetTime * speed);
+            let packetWidth = 40;
+            let k = Math.sqrt(E) * 0.3; // frequency inside envelope
+            const ampBase = 50;
+            
+            // Loop animation
+            if (pX > w + 200) {
+                packetTime = -5;
+                pX = xL - 200 + (packetTime * speed);
+            }
+            
+            // Trigger audio on impact
+            let impactDist = pX - xL;
+            if (impactDist > -5 && impactDist < 5 && speed * dt > 0) { // Just hit
+                if (T > 0.001) playPing(T);
+                else playThud();
+            }
+
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.strokeStyle = '#b3e600'; // emerald
+            
+            for (let x = 0; x < w; x += 2) {
+                let prob = 0;
+                
+                if (x < xL) {
+                    // Incident or Reflected
+                    if (pX < xL) {
+                        // Incident moving right
+                        let env = Math.exp(-Math.pow(x - pX, 2) / (packetWidth*packetWidth));
+                        prob = env * env;
+                    } else {
+                        // Reflected moving left
+                        let rX = xL - (pX - xL);
+                        let env = Math.exp(-Math.pow(x - rX, 2) / (packetWidth*packetWidth));
+                        prob = R * env * env;
+                    }
+                } else if (x > xR) {
+                    // Transmitted moving right
+                    if (pX > xL) {
+                        // delay transmission slightly to account for barrier width
+                        let tX = xR + (pX - xL); 
+                        let env = Math.exp(-Math.pow(x - tX, 2) / (packetWidth*packetWidth));
+                        prob = T * env * env;
+                    }
+                } else {
+                    // Inside barrier
+                    if (pX > xL - packetWidth && pX < xL + packetWidth*2) {
+                        // Flash in barrier
+                        let dist = (x - xL);
+                        let decay = Math.exp(-kappa * dist * 0.05); // visual decay
+                        let env = Math.exp(-Math.pow(pX - xL, 2) / (packetWidth*packetWidth));
+                        prob = decay * env * (pX > xL ? 1 : 0.5);
+                    }
+                }
+                
+                if (x === 0) ctx.moveTo(x, baseline - prob * ampBase);
+                else ctx.lineTo(x, baseline - prob * ampBase);
+            }
+            ctx.stroke();
+            
+            // Fill
+            ctx.fillStyle = 'rgba(179, 230, 0, 0.1)';
+            ctx.fill();
+        }
+
+        // Start Loop
+        requestAnimationFrame(draw);
+
+    </script>
+</body>
+</html>

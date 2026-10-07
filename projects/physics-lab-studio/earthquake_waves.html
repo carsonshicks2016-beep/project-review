@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Earthquake P & S Waves Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        .data-readout { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+        canvas { touch-action: none; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .glass-panel { background: rgba(17, 26, 34, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 0.5); }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 h-screen w-screen overflow-hidden flex flex-col selection:bg-sky-500/30">
+
+    <!-- Top Header -->
+    <header class="flex-none p-4 border-b border-slate-800 glass-panel z-20 flex justify-between items-center relative">
+        <div>
+            <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-emerald-400">Seismic Wave Radiator</h1>
+            <p class="text-xs text-slate-400 mt-1">P & S Waves and Shadow Zones</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <button id="btn-audio" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-medium transition-colors flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                Enable Audio
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 relative flex">
+        
+        <!-- Canvas Container -->
+        <div class="flex-1 relative" id="canvas-container">
+            <canvas id="sim-canvas" class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
+            
+            <!-- Floating HUD -->
+            <div class="absolute top-4 left-4 glass-panel rounded-2xl p-4 w-72 pointer-events-none z-10">
+                <h2 class="text-xs uppercase tracking-wider text-slate-500 font-bold mb-3 border-b border-slate-700/50 pb-2">Telemetry</h2>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Epicenter</span>
+                        <span class="data-readout text-sky-400" id="hud-epicenter">-90°</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Depth</span>
+                        <span class="data-readout text-sky-400" id="hud-depth">30 km</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Time (t)</span>
+                        <span class="data-readout text-emerald-400" id="hud-time">0.0 s</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-700/50">
+                        <span class="text-slate-400">P-Wave Velocity (<span class="italic text-xs">Mantle</span>)</span>
+                        <span class="data-readout">8.0 km/s</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">S-Wave Velocity (<span class="italic text-xs">Mantle</span>)</span>
+                        <span class="data-readout">4.5 km/s</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">P-Wave Velocity (<span class="italic text-xs">Core</span>)</span>
+                        <span class="data-readout">10.0 km/s</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-rose-400">S-Wave Velocity (<span class="italic text-xs">Core</span>)</span>
+                        <span class="data-readout text-rose-400 font-bold">0.0 km/s</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="absolute bottom-4 left-4 right-4 flex gap-4 overflow-x-auto pb-2 pointer-events-none z-10">
+                <!-- Cards -->
+                <div class="glass-panel rounded-xl p-4 flex-1 min-w-[250px] pointer-events-auto">
+                    <h3 class="font-bold text-sky-400 mb-2 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Why S-Waves Stop
+                    </h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        S-waves are shear (transverse) waves. Their speed depends on the shear modulus ($\mu$). Liquids have a shear modulus of zero because they cannot sustain shear stress—they simply flow. Thus, $v_S = \sqrt{\mu/\rho} = 0$, completely blocking S-waves at the core-mantle boundary!
+                    </p>
+                </div>
+                <div class="glass-panel rounded-xl p-4 flex-1 min-w-[250px] pointer-events-auto">
+                    <h3 class="font-bold text-rose-400 mb-2 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                        The Shadow Zones
+                    </h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        The liquid outer core stops S-waves entirely, casting a massive "shadow" from 104° to 180° globally. P-waves enter the liquid core but refract (bend) sharply due to the density/speed change, creating a ring-shaped P-wave shadow zone from 104° to 140°.
+                    </p>
+                </div>
+                <div class="glass-panel rounded-xl p-4 flex-1 min-w-[250px] pointer-events-auto">
+                    <h3 class="font-bold text-emerald-400 mb-2 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                        Epicenter Triangulation
+                    </h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Because P-waves travel faster than S-waves, the gap between their arrival times ($t_S - t_P$) increases with distance. By reading this lag from a seismogram, we get the distance. Intersecting distance circles from 3 stations reveals the exact epicenter!
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Sidebar -->
+        <aside class="w-80 border-l border-slate-800 glass-panel z-10 flex flex-col h-full overflow-y-auto">
+            <div class="p-5 space-y-6">
+                
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-100 mb-4">Seismic Controls</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <label class="text-xs text-slate-400">Magnitude (Mw)</label>
+                                <span class="text-xs data-readout text-sky-300" id="val-mag">7.5</span>
+                            </div>
+                            <input type="range" id="ctrl-mag" min="4.0" max="9.5" step="0.1" value="7.5" class="w-full accent-sky-500">
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <label class="text-xs text-slate-400">Focal Depth (km)</label>
+                                <span class="text-xs data-readout text-sky-300" id="val-depth">30</span>
+                            </div>
+                            <input type="range" id="ctrl-depth" min="10" max="600" step="10" value="30" class="w-full accent-sky-500">
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-slate-800">
+
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-300 mb-3">View Options</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                            <input type="checkbox" id="chk-rays" checked class="rounded border-slate-700 bg-slate-800 text-sky-500 focus:ring-sky-500">
+                            Show Ray Paths
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                            <input type="checkbox" id="chk-shadows" checked class="rounded border-slate-700 bg-slate-800 text-rose-500 focus:ring-rose-500">
+                            Highlight Shadow Zones
+                        </label>
+                    </div>
+                </div>
+
+                <hr class="border-slate-800">
+
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-300 mb-3">Presets</h3>
+                    <div class="grid grid-cols-1 gap-2">
+                        <button class="preset-btn px-3 py-2 text-xs rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors text-left" data-preset="shallow">
+                            Shallow Crustal (30km, Mw 7.5)
+                        </button>
+                        <button class="preset-btn px-3 py-2 text-xs rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors text-left" data-preset="deep">
+                            Deep Mantle Strike (600km, Mw 8.2)
+                        </button>
+                        <button class="preset-btn px-3 py-2 text-xs rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors text-left text-rose-400 font-bold" data-preset="trigger">
+                            TRIGGER EARTHQUAKE!
+                        </button>
+                    </div>
+                </div>
+
+                <hr class="border-slate-800">
+
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-300 mb-3">Seismograph Stations</h3>
+                    <div class="space-y-3" id="stations-container">
+                        <!-- Station templates inserted by JS -->
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        // Physics Constants & Setup
+        const EARTH_RADIUS = 6371;
+        const CORE_RADIUS = 3480;
+        const INNER_CORE_RADIUS = 1220;
+        
+        // Simplified velocities (km/s)
+        const VP_MANTLE = 10;
+        const VS_MANTLE = 5.5;
+        const VP_OUTER_CORE = 8;
+        const VS_OUTER_CORE = 0; // Liquid!
+        const VP_INNER_CORE = 11;
+        
+        let canvas, ctx;
+        let width, height;
+        let scale; 
+        
+        let epicenterAngle = -Math.PI/2; // Top of earth
+        let focalDepth = 30; // km
+        let magnitude = 7.5;
+        
+        let t = 0; // simulation time
+        let isSimulating = false;
+        let animationId;
+        
+        // Ray setup
+        let rays = [];
+        
+        // Stations
+        const stations = [
+            { id: 'A', angle: -Math.PI/2 + 0.5, name: 'STA-1 (Near)', logs: [], arrivedP: false, arrivedS: false },
+            { id: 'B', angle: -Math.PI/2 + 2.0, name: 'STA-2 (Shadow)', logs: [], arrivedP: false, arrivedS: false },
+            { id: 'C', angle: Math.PI/2, name: 'STA-3 (Antipode)', logs: [], arrivedP: false, arrivedS: false }
+        ];
+
+        // Audio System
+        const audioSys = {
+            ctx: null,
+            enabled: false,
+            init: function() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+                this.enabled = true;
+                document.getElementById('btn-audio').classList.replace('text-slate-200', 'text-emerald-400');
+                document.getElementById('btn-audio').innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg> Audio On`;
+            },
+            playQuake: function(mag) {
+                if (!this.enabled) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                const filter = this.ctx.createBiquadFilter();
+                
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(30, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + 1.5);
+                
+                filter.type = 'lowpass';
+                filter.frequency.value = 100;
+                
+                gain.gain.setValueAtTime(0, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(mag/10, this.ctx.currentTime + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 2);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + 2);
+            },
+            playPWave: function() {
+                if (!this.enabled) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.2);
+            },
+            playSWave: function() {
+                if (!this.enabled) return;
+                
+                const bufferSize = this.ctx.sampleRate * 2; 
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const output = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = Math.random() * 2 - 1;
+                }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 150;
+                
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.8, this.ctx.currentTime + 0.2);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 1.5);
+                
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                noise.start();
+            }
+        };
+
+        function init() {
+            canvas = document.getElementById('sim-canvas');
+            ctx = canvas.getContext('2d');
+            
+            window.addEventListener('resize', resize);
+            resize();
+            
+            document.getElementById('btn-audio').addEventListener('click', () => audioSys.init());
+            
+            document.getElementById('ctrl-mag').addEventListener('input', (e) => {
+                magnitude = parseFloat(e.target.value);
+                document.getElementById('val-mag').innerText = magnitude.toFixed(1);
+            });
+            
+            document.getElementById('ctrl-depth').addEventListener('input', (e) => {
+                focalDepth = parseFloat(e.target.value);
+                document.getElementById('val-depth').innerText = focalDepth;
+                document.getElementById('hud-depth').innerText = focalDepth + ' km';
+            });
+            
+            document.getElementById('chk-shadows').addEventListener('change', draw);
+            document.getElementById('chk-rays').addEventListener('change', draw);
+            
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const p = e.target.getAttribute('data-preset');
+                    if (p === 'shallow') {
+                        document.getElementById('ctrl-depth').value = 30;
+                        document.getElementById('ctrl-mag').value = 7.5;
+                    } else if (p === 'deep') {
+                        document.getElementById('ctrl-depth').value = 600;
+                        document.getElementById('ctrl-mag').value = 8.2;
+                    } else if (p === 'trigger') {
+                        triggerEarthquake();
+                        return; // don't redraw immediately, trigger does it
+                    }
+                    // trigger change events
+                    document.getElementById('ctrl-depth').dispatchEvent(new Event('input'));
+                    document.getElementById('ctrl-mag').dispatchEvent(new Event('input'));
+                    draw();
+                });
+            });
+
+            canvas.addEventListener('click', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left - width/2;
+                const y = e.clientY - rect.top - height/2;
+                
+                const d = Math.sqrt(x*x + y*y);
+                if (d < scale * EARTH_RADIUS * 1.2) {
+                    epicenterAngle = Math.atan2(y, x);
+                    triggerEarthquake();
+                }
+            });
+
+            buildStationsUI();
+            
+            draw();
+        }
+
+        function resize() {
+            width = canvas.parentElement.clientWidth;
+            height = canvas.parentElement.clientHeight;
+            // Handle high DPI
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+            
+            scale = Math.min(width, height) * 0.45 / EARTH_RADIUS;
+            draw();
+        }
+
+        function buildStationsUI() {
+            const container = document.getElementById('stations-container');
+            container.innerHTML = '';
+            stations.forEach((st, i) => {
+                container.innerHTML += `
+                    <div class="bg-slate-900 border border-slate-700 rounded p-2">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-slate-200">${st.name}</span>
+                            <span class="text-[10px] text-slate-500" id="st-status-${i}">Awaiting</span>
+                        </div>
+                        <div class="h-12 bg-slate-950 rounded relative overflow-hidden">
+                            <canvas id="seismogram-${i}" class="absolute inset-0 w-full h-full"></canvas>
+                        </div>
+                    </div>
+                `;
+            });
+            updateSeismograms();
+        }
+
+        function triggerEarthquake() {
+            t = 0;
+            rays = [];
+            stations.forEach(st => {
+                st.arrivedP = false;
+                st.arrivedS = false;
+                st.logs = [];
+                document.getElementById(`st-status-${stations.indexOf(st)}`).innerText = "Recording";
+                document.getElementById(`st-status-${stations.indexOf(st)}`).className = "text-[10px] text-slate-300";
+            });
+            
+            const originR = EARTH_RADIUS - focalDepth;
+            const originX = Math.cos(epicenterAngle) * originR;
+            const originY = Math.sin(epicenterAngle) * originR;
+            
+            document.getElementById('hud-epicenter').innerText = `${Math.round(epicenterAngle * 180/Math.PI)}°`;
+            
+            // Generate rays
+            for (let a = 0; a < Math.PI * 2; a += 0.04) {
+                rays.push({
+                    type: 'P',
+                    x: originX, y: originY,
+                    vx: Math.cos(a), vy: Math.sin(a),
+                    active: true,
+                    path: [{x: originX, y: originY}]
+                });
+                rays.push({
+                    type: 'S',
+                    x: originX, y: originY,
+                    vx: Math.cos(a), vy: Math.sin(a),
+                    active: true,
+                    path: [{x: originX, y: originY}]
+                });
+            }
+            
+            audioSys.playQuake(magnitude);
+            
+            if (!isSimulating) {
+                isSimulating = true;
+                lastFrameTime = performance.now();
+                loop();
+            }
+        }
+
+        let lastFrameTime = 0;
+        function loop() {
+            if (!isSimulating) return;
+            
+            const now = performance.now();
+            let dt = (now - lastFrameTime) / 1000; // seconds
+            if (dt > 0.1) dt = 0.1; // cap dt for stability
+            lastFrameTime = now;
+            
+            // Time scaling: let's make 1 simulation second = 100 real seconds
+            const simDt = dt * 100;
+            t += simDt;
+            document.getElementById('hud-time').innerText = t.toFixed(1) + ' s';
+            
+            updatePhysics(simDt);
+            draw();
+            updateSeismograms();
+            
+            if (t > 1500) { // Stop after 25 mins sim time
+                isSimulating = false;
+                stations.forEach((st, i) => {
+                    document.getElementById(`st-status-${i}`).innerText = "Finished";
+                });
+            } else {
+                animationId = requestAnimationFrame(loop);
+            }
+        }
+
+        function updatePhysics(dt) {
+            rays.forEach(ray => {
+                if (!ray.active) return;
+                
+                const r = Math.sqrt(ray.x*ray.x + ray.y*ray.y);
+                let v = ray.type === 'P' ? VP_MANTLE : VS_MANTLE;
+                
+                if (r < CORE_RADIUS) {
+                    if (ray.type === 'S') {
+                        ray.active = false; // blocked by liquid core!
+                        return;
+                    }
+                    if (r < INNER_CORE_RADIUS) {
+                        v = VP_INNER_CORE;
+                    } else {
+                        v = VP_OUTER_CORE;
+                    }
+                }
+                
+                const speedScale = v * dt;
+                
+                ray.x += ray.vx * speedScale;
+                ray.y += ray.vy * speedScale;
+                
+                const newR = Math.sqrt(ray.x*ray.x + ray.y*ray.y);
+                
+                if (newR > EARTH_RADIUS) {
+                    ray.active = false; // reached surface
+                    
+                    // Check stations
+                    const angle = Math.atan2(ray.y, ray.x);
+                    stations.forEach((st, i) => {
+                        // Angle diff
+                        let diff = Math.abs(angle - st.angle);
+                        if (diff > Math.PI) diff = 2*Math.PI - diff;
+                        if (diff < 0.15) { // Hit station!
+                            if (ray.type === 'P' && !st.arrivedP) {
+                                st.arrivedP = true;
+                                audioSys.playPWave();
+                                document.getElementById(`st-status-${i}`).innerText = "P-Wave!";
+                                document.getElementById(`st-status-${i}`).classList.add('text-sky-400');
+                                st.logs.push({t: t, type: 'P', amp: 1.0});
+                            } else if (ray.type === 'S' && !st.arrivedS) {
+                                st.arrivedS = true;
+                                audioSys.playSWave();
+                                document.getElementById(`st-status-${i}`).innerText = "S-Wave!";
+                                document.getElementById(`st-status-${i}`).classList.replace('text-sky-400', 'text-rose-400');
+                                st.logs.push({t: t, type: 'S', amp: 2.5});
+                            }
+                        }
+                    });
+                } else if (t % 15 < dt*3) {
+                    // Record path occasionally for drawing
+                    ray.path.push({x: ray.x, y: ray.y});
+                }
+            });
+            
+            // Background noise for seismograms
+            stations.forEach(st => {
+                if (Math.random() < 0.15) {
+                    let amp = 0.05; // noise
+                    if (st.arrivedS) amp = (Math.random() * 2) * Math.exp(-(t-st.logs.find(l=>l.type==='S').t)/200); // coda
+                    else if (st.arrivedP) amp = (Math.random() * 0.8) * Math.exp(-(t-st.logs.find(l=>l.type==='P').t)/200);
+                    st.logs.push({t: t, type: 'noise', amp: (Math.random()-0.5)*amp*magnitude});
+                }
+            });
+        }
+
+        function updateSeismograms() {
+            stations.forEach((st, i) => {
+                const c = document.getElementById(`seismogram-${i}`);
+                if (!c) return;
+                const sctx = c.getContext('2d');
+                // Avoid resizing every frame to save performance, only on first setup or resize.
+                // But we must clear.
+                if(c.width !== c.clientWidth * (window.devicePixelRatio||1)) {
+                    c.width = c.clientWidth * (window.devicePixelRatio||1);
+                    c.height = c.clientHeight * (window.devicePixelRatio||1);
+                    sctx.scale(window.devicePixelRatio||1, window.devicePixelRatio||1);
+                }
+                
+                sctx.clearRect(0,0, c.clientWidth, c.clientHeight);
+                sctx.strokeStyle = '#00f0ff';
+                sctx.lineWidth = 1;
+                sctx.beginPath();
+                
+                const timeWindow = 1500; 
+                
+                st.logs.forEach((log, idx) => {
+                    const x = (log.t / timeWindow) * c.clientWidth;
+                    const y = c.clientHeight/2 + log.amp * 8;
+                    if (idx === 0) sctx.moveTo(x, y);
+                    else sctx.lineTo(x, y);
+                });
+                sctx.stroke();
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.save();
+            ctx.translate(width/2, height/2);
+            
+            // Draw Shadow Zones if toggled
+            if (document.getElementById('chk-shadows').checked) {
+                // P-wave shadow: 104 to 140
+                ctx.fillStyle = 'rgba(230, 0, 76, 0.15)';
+                ctx.beginPath();
+                ctx.moveTo(0,0);
+                ctx.arc(0,0, EARTH_RADIUS*scale + 20, epicenterAngle + 104*Math.PI/180, epicenterAngle + 140*Math.PI/180);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(0,0);
+                ctx.arc(0,0, EARTH_RADIUS*scale + 20, epicenterAngle - 140*Math.PI/180, epicenterAngle - 104*Math.PI/180);
+                ctx.fill();
+                
+                // S-wave shadow: 104 to 180 (overlapping)
+                ctx.fillStyle = 'rgba(251, 191, 36, 0.08)';
+                ctx.beginPath();
+                ctx.moveTo(0,0);
+                ctx.arc(0,0, EARTH_RADIUS*scale + 20, epicenterAngle + 104*Math.PI/180, epicenterAngle + Math.PI);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(0,0);
+                ctx.arc(0,0, EARTH_RADIUS*scale + 20, epicenterAngle - Math.PI, epicenterAngle - 104*Math.PI/180);
+                ctx.fill();
+            }
+
+            // Draw Earth Layers
+            // Mantle
+            ctx.fillStyle = '#1d2b38';
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, EARTH_RADIUS * scale, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Outer Core (Liquid)
+            ctx.fillStyle = '#7c2d12'; // dark orange
+            ctx.beginPath();
+            ctx.arc(0, 0, CORE_RADIUS * scale, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Inner Core (Solid)
+            ctx.fillStyle = '#fbbf24'; // amber
+            ctx.beginPath();
+            ctx.arc(0, 0, INNER_CORE_RADIUS * scale, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw rays
+            if (document.getElementById('chk-rays').checked) {
+                rays.forEach(ray => {
+                    ctx.beginPath();
+                    if (ray.path.length > 0) {
+                        ctx.moveTo(ray.path[0].x * scale, ray.path[0].y * scale);
+                        for(let i=1; i<ray.path.length; i++) {
+                            ctx.lineTo(ray.path[i].x * scale, ray.path[i].y * scale);
+                        }
+                        ctx.lineTo(ray.x * scale, ray.y * scale);
+                    }
+                    ctx.strokeStyle = ray.type === 'P' ? 'rgba(0, 240, 255, 0.5)' : 'rgba(230, 0, 76, 0.5)';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    
+                    // Leading point
+                    if(ray.active) {
+                        ctx.fillStyle = ray.type === 'P' ? '#00f0ff' : '#e6004c';
+                        ctx.beginPath();
+                        ctx.arc(ray.x*scale, ray.y*scale, 2, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                });
+            }
+
+            // Draw Stations
+            stations.forEach((st, i) => {
+                const sx = Math.cos(st.angle) * EARTH_RADIUS * scale;
+                const sy = Math.sin(st.angle) * EARTH_RADIUS * scale;
+                
+                ctx.fillStyle = st.arrivedP ? '#ccff00' : '#94a3b8';
+                ctx.beginPath();
+                ctx.moveTo(sx, sy);
+                ctx.lineTo(sx + Math.cos(st.angle)*10, sy + Math.sin(st.angle)*10 - 5);
+                ctx.lineTo(sx + Math.cos(st.angle)*10, sy + Math.sin(st.angle)*10 + 5);
+                ctx.fill();
+                
+                ctx.fillStyle = '#cbd5e1';
+                ctx.font = '10px monospace';
+                ctx.fillText(st.name, sx + Math.cos(st.angle)*15, sy + Math.sin(st.angle)*15);
+            });
+
+            // Epicenter Marker
+            const originR = EARTH_RADIUS - focalDepth;
+            const ex = Math.cos(epicenterAngle) * originR * scale;
+            const ey = Math.sin(epicenterAngle) * originR * scale;
+            
+            ctx.strokeStyle = '#e6004c';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(ex - 8, ey - 8); ctx.lineTo(ex + 8, ey + 8);
+            ctx.moveTo(ex - 8, ey + 8); ctx.lineTo(ex + 8, ey - 8);
+            ctx.stroke();
+            
+            // Ripples if simulating
+            if (isSimulating && t < 100) {
+                ctx.strokeStyle = `rgba(230, 0, 76, ${1 - t/100})`;
+                ctx.beginPath();
+                ctx.arc(ex, ey, t * 10 * scale, 0, Math.PI*2);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

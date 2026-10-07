@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Physics Lab Workstation — Interactive Physics Studio (Labs 00–43)</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+  <style>
+    /* Custom clean scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(17, 26, 34, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(51, 65, 85, 0.8);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 116, 139, 1);
+    }
+    .hero-glow {
+      background: radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.12) 0%, rgba(17, 26, 34, 0) 75%);
+    }
+    .glass-panel {
+      background: rgba(17, 26, 34, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(51, 65, 85, 0.5);
+    }
+    .glow-border {
+      box-shadow: 0 0 25px -5px rgba(0, 240, 255, 0.15);
+    }
+    iframe {
+      border: none;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 h-full flex flex-col font-sans selection:bg-sky-500 selection:text-white overflow-hidden">
+
+  <!-- Background decorative ambient glow -->
+  <div class="fixed inset-0 hero-glow pointer-events-none z-0"></div>
+
+  <!-- Main Top Bar -->
+  <header class="relative z-20 flex-shrink-0 h-14 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md px-4 flex items-center justify-between gap-4">
+    <!-- Brand & Left Controls -->
+    <div class="flex items-center gap-3">
+      <!-- Sidebar Toggle Button (Mobile/Desktop) -->
+      <button id="toggleSidebarBtn" title="Toggle Navigation Sidebar" class="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700/60">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+
+      <!-- Logo & Title -->
+      <div class="flex items-center gap-2.5 cursor-pointer" id="brandLogo">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-sky-500 via-indigo-500 to-emerald-400 flex items-center justify-center font-black text-sm shadow-md shadow-sky-500/20 text-white">
+          Ψ
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span class="font-bold tracking-tight text-white text-sm sm:text-base">PHYSICS<span class="text-sky-400">LAB</span></span>
+          <span class="hidden sm:inline-block text-[11px] font-mono text-slate-400 uppercase tracking-wider">Studio Workstation</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Mode Switcher & Quick Navigation -->
+    <div class="flex items-center gap-1.5 bg-slate-950/70 p-1 rounded-xl border border-slate-800 text-xs">
+      <button id="navCatalogBtn" class="px-3 py-1 rounded-lg font-medium transition-all text-slate-400 hover:text-slate-200">
+        🏛️ Catalog
+      </button>
+      <button id="navStudioBtn" class="px-3 py-1 rounded-lg font-medium transition-all bg-sky-500 text-white shadow-sm shadow-sky-500/30">
+        ⚡ Lab Studio
+      </button>
+    </div>
+
+    <!-- Right Utility Actions -->
+    <div class="flex items-center gap-2">
+      <!-- Search Trigger / Quick Search Bar -->
+      <div class="relative hidden md:block w-48 lg:w-64">
+        <svg class="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input
+          type="text"
+          id="globalSearchInput"
+          placeholder="Search 44 labs ( / )..."
+          class="w-full bg-slate-950/80 border border-slate-800 rounded-lg pl-8 pr-12 py-1 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all font-sans"
+        />
+        <kbd class="absolute right-2 top-1 text-[9px] font-mono text-slate-500 bg-slate-800/80 px-1 rounded border border-slate-700">⌘K</kbd>
+      </div>
+
+      <!-- Shuffle Random Lab Button -->
+      <button id="randomLabBtn" title="Launch Random Simulation (R)" class="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700/60 flex items-center gap-1.5 text-xs px-2.5">
+        <span>🎲</span>
+        <span class="hidden sm:inline">Shuffle</span>
+      </button>
+
+      <!-- Fullscreen Dashboard Button -->
+      <button id="fullscreenAppBtn" title="Toggle Fullscreen" class="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700/60">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Workspace Body (Sidebar + Content Viewport) -->
+  <div class="relative z-10 flex-1 flex overflow-hidden">
+
+    <!-- Collapsible Navigation Sidebar -->
+    <aside id="sidebar" class="w-80 flex-shrink-0 border-r border-slate-800 bg-slate-900/95 backdrop-blur-md flex flex-col transition-all duration-300 z-30">
+      <!-- Sidebar Header / Category Filter -->
+      <div class="p-3 border-b border-slate-800 space-y-2">
+        <div class="flex items-center justify-between text-xs text-slate-400">
+          <span class="font-semibold tracking-wider uppercase text-[10px] text-slate-500">Disciplines</span>
+          <button id="showFavoritesOnlyBtn" class="text-[11px] hover:text-amber-400 flex items-center gap-1 transition-colors text-slate-400">
+            <span id="favStarIcon">☆</span> Favorites (<span id="favCount">0</span>)
+          </button>
+        </div>
+
+        <select id="sidebarCatSelect" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-sky-500">
+          <option value="all">All Disciplines (44 Labs)</option>
+          <option value="waves">🔊 Sound & Waves (7)</option>
+          <option value="fluids">🌊 Fluid Dynamics (5)</option>
+          <option value="optics">☀️ Light & Optics (5)</option>
+          <option value="gravity">🪐 Gravity & Orbits (5)</option>
+          <option value="em">⚡ Electromagnetism (4)</option>
+          <option value="thermo">🔥 Thermodynamics (4)</option>
+          <option value="quantum">⚛️ Quantum & Nuclear (4)</option>
+          <option value="geo">🌍 Geophysics & Space (5)</option>
+          <option value="engineering">🏗️ Everyday & Engineering (5)</option>
+        </select>
+      </div>
+
+      <!-- Labs List (Scrollable) -->
+      <div class="flex-1 overflow-y-auto p-2 space-y-1" id="sidebarLabsList">
+        <!-- Rendered dynamically via JS -->
+      </div>
+
+      <!-- Sidebar Footer / Quick Shortcuts -->
+      <div class="p-3 border-t border-slate-800/80 bg-slate-950/60 text-[11px] text-slate-400 flex items-center justify-between">
+        <div class="flex items-center gap-1 text-[10px] text-slate-500">
+          <kbd class="px-1 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono">[</kbd>
+          <kbd class="px-1 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono">]</kbd>
+          <span>Prev/Next</span>
+        </div>
+        <span class="text-slate-500 font-mono text-[10px]" id="sidebarCountIndicator">44 / 44</span>
+      </div>
+    </aside>
+
+    <!-- Content Stage (Studio Viewport OR Catalog Grid) -->
+    <main class="flex-1 flex flex-col relative overflow-hidden bg-slate-950">
+
+      <!-- ============================================== -->
+      <!-- VIEW 1: STUDIO WORKSTATION (DEFAULT)           -->
+      <!-- ============================================== -->
+      <section id="studioView" class="flex-1 flex flex-col relative overflow-hidden">
+        
+        <!-- Active Lab Action Bar -->
+        <div class="h-12 border-b border-slate-800/90 bg-slate-900/80 px-4 flex items-center justify-between gap-3 text-xs z-10 flex-shrink-0">
+          <!-- Active Lab Title & Badges -->
+          <div class="flex items-center gap-2.5 overflow-hidden">
+            <span id="activeLabNum" class="px-2 py-0.5 rounded font-mono font-bold bg-sky-500/15 text-sky-400 border border-sky-500/30 text-[11px]">
+              #00
+            </span>
+            <h2 id="activeLabTitle" class="font-bold text-white tracking-tight truncate text-sm sm:text-base">
+              Supersonic Speed & Sonic Boom
+            </h2>
+            <span id="activeLabCat" class="hidden lg:inline-block px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-300 border border-slate-700/60 truncate">
+              Sound & Waves
+            </span>
+            <span id="activeLabFormula" class="hidden xl:inline-block font-mono text-[11px] text-indigo-300/90 bg-indigo-950/40 border border-indigo-800/40 px-2 py-0.5 rounded truncate max-w-xs">
+              t_boom = (h/c)√(1 - 1/M²)
+            </span>
+          </div>
+
+          <!-- Studio Viewport Actions -->
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            <!-- Favorite Active Lab -->
+            <button id="activeFavBtn" title="Bookmark / Star this lab" class="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-amber-400 transition-colors border border-slate-700/60">
+              <span id="activeFavStar">☆</span>
+            </button>
+
+            <!-- Reload Active Lab Iframe -->
+            <button id="reloadIframeBtn" title="Reload Simulation (Ctrl+R)" class="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700/60">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+            </button>
+
+            <!-- Toggle Physics Intelligence Drawer -->
+            <button id="toggleDrawerBtn" title="Toggle Physics Guide & Telemetry Drawer (I)" class="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-sky-400 hover:text-sky-300 transition-colors border border-slate-700/60 flex items-center gap-1.5 font-medium text-[11px]">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span class="hidden sm:inline">Physics Guide</span>
+            </button>
+
+            <!-- Open Standalone in New Window -->
+            <a id="openExternalBtn" href="supersonic_sound_generator.html" target="_blank" title="Open Clean Simulation in New Window" class="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700/60 inline-flex items-center">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+              </svg>
+            </a>
+
+            <!-- Maximize Simulation Canvas -->
+            <button id="maximizeStudioBtn" title="Maximize Viewport (F)" class="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700/60">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Studio Viewport Layout (Iframe + Collapsible Drawer) -->
+        <div class="flex-1 flex relative overflow-hidden">
+          
+          <!-- Embedded Iframe Stage -->
+          <div class="flex-1 relative bg-slate-950 flex flex-col overflow-hidden">
+            <!-- Loading Indicator -->
+            <div id="iframeLoader" class="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center gap-3 z-0 transition-opacity duration-300 pointer-events-none">
+              <div class="w-8 h-8 border-2 border-sky-500/20 border-t-sky-400 rounded-full animate-spin"></div>
+              <p class="text-xs font-mono text-slate-500">Loading Simulation Engine...</p>
+            </div>
+
+            <!-- The Live Interactive Iframe -->
+            <iframe
+              id="activeSimulationFrame"
+              src="supersonic_sound_generator.html"
+              title="Active Physics Simulation"
+              allow="autoplay; audio"
+              class="relative z-10 w-full h-full"
+            ></iframe>
+          </div>
+
+          <!-- Slide-out Physics Intelligence Drawer -->
+          <aside id="physicsDrawer" class="w-80 lg:w-96 border-l border-slate-800 bg-slate-900/95 backdrop-blur-md flex flex-col z-20 transition-all duration-300 overflow-y-auto">
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                <h3 class="text-xs font-bold tracking-wider uppercase text-slate-200">Physics Intelligence</h3>
+              </div>
+              <button id="closeDrawerBtn" class="text-slate-500 hover:text-slate-300 p-1">✕</button>
+            </div>
+
+            <div class="p-5 space-y-6 text-xs leading-relaxed">
+              <!-- Principle Overview -->
+              <div>
+                <span class="text-[10px] font-mono tracking-wider uppercase text-slate-500 block mb-1">Phenomenon Overview</span>
+                <p id="drawerDesc" class="text-slate-300 text-xs leading-relaxed">
+                  Calculates the retarded-time acoustic physics of a supersonic jet flying over an observer. Visualizes the Mach cone, zone of silence, and synthesized N-wave shock profile.
+                </p>
+              </div>
+
+              <!-- Mathematical Formulation -->
+              <div class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800">
+                <span class="text-[10px] font-mono tracking-wider uppercase text-indigo-400 block mb-1.5 font-bold">Governing Equation</span>
+                <div id="drawerFormula" class="font-mono text-xs text-sky-300 break-words">
+                  t_boom = (h/c)√(1 - 1/M²)
+                </div>
+              </div>
+
+              <!-- Critical Threshold to Test -->
+              <div class="bg-emerald-950/30 p-3.5 rounded-xl border border-emerald-800/40">
+                <div class="flex items-center gap-2 text-emerald-400 font-bold mb-1 text-[11px]">
+                  <span>🎯</span>
+                  <span>Critical Threshold to Test</span>
+                </div>
+                <p id="drawerThreshold" class="text-slate-300 text-xs">
+                  Mach = 1.0 (Sound barrier transition)
+                </p>
+              </div>
+
+              <!-- Interactive Audio Feedback Tips -->
+              <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80 space-y-2">
+                <div class="flex items-center gap-1.5 text-slate-400 font-semibold text-[11px]">
+                  <span>🔊</span>
+                  <span>Audio & Sonification</span>
+                </div>
+                <p class="text-slate-400 text-[11px]">
+                  Click the <strong>Play</strong> or <strong>Enable Audio</strong> button inside the simulation canvas to unlock Web Audio API real-time acoustic synthesis.
+                </p>
+              </div>
+
+              <!-- Hotkeys Cheatsheet -->
+              <div class="pt-4 border-t border-slate-800">
+                <span class="text-[10px] font-mono tracking-wider uppercase text-slate-500 block mb-2 font-bold">Workstation Hotkeys</span>
+                <div class="grid grid-cols-2 gap-2 text-[10px] font-mono text-slate-400">
+                  <div class="flex items-center gap-1.5"><kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">[</kbd> <span>Prev Lab</span></div>
+                  <div class="flex items-center gap-1.5"><kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">]</kbd> <span>Next Lab</span></div>
+                  <div class="flex items-center gap-1.5"><kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">R</kbd> <span>Reload</span></div>
+                  <div class="flex items-center gap-1.5"><kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">I</kbd> <span>Guide Panel</span></div>
+                  <div class="flex items-center gap-1.5"><kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">/</kbd> <span>Search</span></div>
+                  <div class="flex items-center gap-1.5"><kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">Esc</kbd> <span>Catalog</span></div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW 2: FULL CATALOG OVERVIEW GRID            -->
+      <!-- ============================================== -->
+      <section id="catalogView" class="hidden flex-1 overflow-y-auto p-6 md:p-8 space-y-8">
+        
+        <!-- Catalog Header Banner -->
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-800">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="text-xs font-mono font-semibold tracking-wider uppercase text-emerald-400">Master Physics Archive</span>
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight">
+              Interactive Physics Laboratories (00–42)
+            </h1>
+            <p class="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl">
+              44 standalone interactive physics simulations covering acoustics, fluids, optics, orbital mechanics, electrodynamics, thermodynamics, quantum mechanics, and geophysics.
+            </p>
+          </div>
+
+          <!-- Quick Stats Pills -->
+          <div class="flex flex-wrap gap-2 text-xs font-mono">
+            <div class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300">
+              <span class="text-sky-400 font-bold block text-sm">44</span>
+              <span class="text-[10px] text-slate-500 uppercase">Simulations</span>
+            </div>
+            <div class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300">
+              <span class="text-emerald-400 font-bold block text-sm">9</span>
+              <span class="text-[10px] text-slate-500 uppercase">Disciplines</span>
+            </div>
+            <div class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300">
+              <span class="text-indigo-400 font-bold block text-sm">60 FPS</span>
+              <span class="text-[10px] text-slate-500 uppercase">Canvas 2D</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Catalog Category Filter Pills -->
+        <div class="max-w-6xl mx-auto flex flex-wrap gap-2 text-xs" id="catalogCatPills">
+          <button data-cat="all" class="cat-pill px-3 py-1.5 rounded-lg font-medium transition-all bg-sky-500 text-white shadow-sm shadow-sky-500/30">All (44)</button>
+          <button data-cat="waves" class="cat-pill px-3 py-1.5 rounded-lg font-medium transition-all bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">🔊 Sound & Waves (7)</button>
+          <button data-cat="fluids" class="cat-pill px-3 py-1.5 rounded-lg font-medium transition-all bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">🌊 Fluid Dynamics (5)</button>
+          <button data-cat="optics" class="cat-pill px-3 py-1.5 rounded-lg font-medium transition-all bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">☀️ Light & Optics (5)</button>
+          <button data-cat="gravity" class="cat-pill px-3 py-1.5 rounded-lg font-medium transition-all bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">🪐 Gravity & Orbits (5)</button>
+          <button data-cat="em" class="cat-pill px-3 py-1.5 rounded-lg font-medium transition-all bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">⚡ Electromagnetism (4)</button>
+          <button data-cat="thermo" class="cat-pill px-3 py-1.5 rounded-lg font-medium transition-all bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">🔥 Thermodynamics (4)</button>
+          <button data-cat="quantum" class="cat-pill px-3 py-1.5 rounded-lg font-medium transition-all bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">⚛️ Quantum & Nuclear (4)</button>
+          <button data-cat="geo" class="cat-pill px-3 py-1.5 rounded-lg font-medium transition-all bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">🌍 Geophysics & Space (5)</button>
+          <button data-cat="engineering" class="cat-pill px-3 py-1.5 rounded-lg font-medium transition-all bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">🏗️ Everyday & Engineering (5)</button>
+        </div>
+
+        <!-- Catalog Grid Cards -->
+        <div id="catalogGrid" class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- Rendered dynamically via JS -->
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Master Interactive Dashboard Controller Script -->
+  <script>
+    // Master Registry of all 44 Programs
+    const labs = [
+      {
+        num: 0,
+        id: "supersonic_sound_generator",
+        title: "Supersonic Speed & Sonic Boom",
+        file: "supersonic_sound_generator.html",
+        cat: "waves",
+        catName: "Sound & Waves",
+        badge: "Mach 0.2–5.0",
+        formula: "t_boom = (h/c)√(1 - 1/M²)",
+        threshold: "Mach 1.0 sound barrier wall",
+        desc: "Calculates the retarded-time acoustic physics of a supersonic jet flying over an observer. Visualizes the Mach cone, zone of silence, and synthesized N-wave shock profile."
+      },
+      {
+        num: 1,
+        id: "doppler_siren",
+        title: "Doppler Siren Simulator",
+        file: "doppler_siren.html",
+        cat: "waves",
+        catName: "Sound & Waves",
+        badge: "20–350 km/h",
+        formula: "f_obs = f_src / (1 - (v/c)cos θ)",
+        threshold: "Passing moment (inflection point)",
+        desc: "Emergency vehicle driving past a stationary listener with dynamic wavefront compression/stretching and inverse-square volume falloff."
+      },
+      {
+        num: 2,
+        id: "room_resonance",
+        title: "Room Resonance Explorer",
+        file: "room_resonance.html",
+        cat: "waves",
+        catName: "Sound & Waves",
+        badge: "20–500 Hz",
+        formula: "f = (c/2)√((nx/Lx)² + (ny/Ly)²)",
+        threshold: "Standing wave nodes vs antinodes",
+        desc: "Standing wave modes in rectangular rooms. Click anywhere to position a listener in pressure nodes vs antinodes, run frequency sweeps, and see why corners boom."
+      },
+      {
+        num: 3,
+        id: "sofar_channel",
+        title: "Underwater SOFAR Channel",
+        file: "sofar_channel.html",
+        cat: "waves",
+        catName: "Sound & Waves",
+        badge: "0–4,000m Depth",
+        formula: "cos(θ) / c(z) = const",
+        threshold: "SOFAR axis depth (~1,000 m)",
+        desc: "Munk sound speed profile creating a refractive acoustic waveguide in the ocean, trapping whale calls and naval signals across thousands of kilometers."
+      },
+      {
+        num: 4,
+        id: "acoustic_levitation",
+        title: "Acoustic Levitation Simulator",
+        file: "acoustic_levitation.html",
+        cat: "waves",
+        catName: "Sound & Waves",
+        badge: "Gor'kov Potential",
+        formula: "F_ac = -∇U_gorkov > mg",
+        threshold: "Acoustic force exceeding particle weight",
+        desc: "Opposing ultrasonic transducers forming stationary pressure nodes that trap and levitate small solid particles against gravity via acoustic radiation pressure."
+      },
+      {
+        num: 5,
+        id: "chladni_plate",
+        title: "Chladni Plate Vibration Patterns",
+        file: "chladni_plate.html",
+        cat: "waves",
+        catName: "Sound & Waves",
+        badge: "1,500 Sand Particles",
+        formula: "w(x,y) = cos(mπx/L)cos(nπy/L) ± ...",
+        threshold: "Modal degeneracy mix parameter",
+        desc: "Vibrating metal plate where 1,500 sand particles physically migrate away from vibrating antinodes to assemble the iconic geometric nodal line figures."
+      },
+      {
+        num: 6,
+        id: "reynolds_flow",
+        title: "Reynolds Flow & Vortex Street",
+        file: "reynolds_flow.html",
+        cat: "fluids",
+        catName: "Fluid Dynamics",
+        badge: "Re = 1–500",
+        formula: "Re = v·D / ν,  St ≈ 0.2",
+        threshold: "Re ≈ 47 (Hopf Bifurcation)",
+        desc: "Fluid flow past a cylinder transitioning from laminar Stokes creeping flow to the alternating von Kármán vortex street with whistling Strouhal tones."
+      },
+      {
+        num: 7,
+        id: "bernoulli_lift",
+        title: "Bernoulli Lift & Aerodynamic Stall",
+        file: "bernoulli_lift.html",
+        cat: "fluids",
+        catName: "Fluid Dynamics",
+        badge: "AoA -5° to +25°",
+        formula: "C_L ≈ 2πα,  p + ½ρv² = const",
+        threshold: "AoA ≈ 15° (Critical Stall Angle)",
+        desc: "Airfoil streamlines and pressure differential. Watch boundary layer separation at critical angle of attack triggering catastrophic lift collapse and stall horn."
+      },
+      {
+        num: 8,
+        id: "rayleigh_benard",
+        title: "Rayleigh–Bénard Thermal Convection",
+        file: "rayleigh_benard.html",
+        cat: "fluids",
+        catName: "Fluid Dynamics",
+        badge: "Ra_c ≈ 1708",
+        formula: "Ra = gβΔT d³ / (ν α)",
+        threshold: "Ra > 1708 (Conduction to Convection)",
+        desc: "Fluid layer heated from below. Cross the critical Rayleigh number threshold to watch fluid spontaneously self-organize into rolling convection cells and plumes."
+      },
+      {
+        num: 9,
+        id: "hydraulic_jump",
+        title: "Hydraulic Jump & Sink Ring",
+        file: "hydraulic_jump.html",
+        cat: "fluids",
+        catName: "Fluid Dynamics",
+        badge: "Fr > 1 to Fr < 1",
+        formula: "y2/y1 = ½(√(1 + 8Fr₁²) - 1)",
+        threshold: "Fr = 1.0 (Critical Froude Jump)",
+        desc: "The open-channel fluid equivalent of a supersonic shock wave: tap water spreading as a thin high-speed sheet (Fr > 1) and jumping abruptly to a thick turbulent ring."
+      },
+      {
+        num: 10,
+        id: "tornado_vortex",
+        title: "Tornado Vortex & Wind Shear",
+        file: "tornado_vortex.html",
+        cat: "fluids",
+        catName: "Fluid Dynamics",
+        badge: "EF0 to EF5",
+        formula: "v·r = const,  dp/dr = ρv²/r",
+        threshold: "Lifting Condensation Level (LCL)",
+        desc: "Horizontal wind shear rolls tilted upright by thunderstorm updrafts. Angular momentum conservation spins up a violent low-pressure condensation funnel."
+      },
+      {
+        num: 11,
+        id: "rayleigh_scattering",
+        title: "Why Is the Sky Blue? Rayleigh Scattering",
+        file: "rayleigh_scattering.html",
+        cat: "optics",
+        catName: "Light & Optics",
+        badge: "I ∝ 1/λ⁴",
+        formula: "σ_R(λ) ∝ 1/λ⁴",
+        threshold: "Zenith (1 airmass) vs Sunset (40 airmasses)",
+        desc: "Solar radiation passing through Earth's atmosphere. Short blue wavelengths scatter 10x more than red. Midday sky appears cyan; sunsets burn deep crimson."
+      },
+      {
+        num: 12,
+        id: "gravitational_lensing",
+        title: "Gravitational Lensing & Einstein Rings",
+        file: "gravitational_lensing.html",
+        cat: "optics",
+        catName: "Light & Optics",
+        badge: "General Relativity",
+        formula: "α = 4GM / (c² b)",
+        threshold: "Alignment u = β/θ_E → 0 (Einstein Ring)",
+        desc: "Spacetime bending light rays around black holes and galaxies. Drag a background spiral galaxy to watch it morph into gravitational arcs and complete Einstein rings."
+      },
+      {
+        num: 13,
+        id: "total_internal_reflection",
+        title: "Total Internal Reflection & Fiber Optics",
+        file: "total_internal_reflection.html",
+        cat: "optics",
+        catName: "Light & Optics",
+        badge: "θ_c = arcsin(n2/n1)",
+        formula: "n1 sin θ1 = n2 sin θ2",
+        threshold: "θ1 > θ_c (100% Internal Reflection)",
+        desc: "Light at optical boundaries. Cross the critical angle to watch refraction collapse into 100% internal reflection, evanescent wave decay, and fiber optic transmission."
+      },
+      {
+        num: 14,
+        id: "thin_film_interference",
+        title: "Thin Film Interference & Soap Bubbles",
+        file: "thin_film_interference.html",
+        cat: "optics",
+        catName: "Light & Optics",
+        badge: "0–1,500 nm Film",
+        formula: "OPD = 2 n d cos(θ_r) ± λ/2",
+        threshold: "d < 30 nm (Zero reflectance Black Film)",
+        desc: "Why soap bubbles and oil slicks shimmer with iridescent rainbow colors. Gravity drains the film until destructive interference turns it completely black right before popping."
+      },
+      {
+        num: 15,
+        id: "diffraction_grating",
+        title: "Diffraction Grating & Spectroscopy",
+        file: "diffraction_grating.html",
+        cat: "optics",
+        catName: "Light & Optics",
+        badge: "2 to 500 Slits",
+        formula: "d sin θ = m λ,  R = m N",
+        threshold: "Slit count N sharpening fringes",
+        desc: "Multi-slit interference sharpening blurry fringes into razor-thin atomic spectral lines. Hydrogen Balmer series, Sodium doublets, and stellar fingerprint sonification."
+      },
+      {
+        num: 16,
+        id: "lagrange_points",
+        title: "Lagrange Points & Effective Potential",
+        file: "lagrange_points.html",
+        cat: "gravity",
+        catName: "Gravity & Orbits",
+        badge: "L1–L5 Equilibria",
+        formula: "U_eff = ½ω²r² + GM1/r1 + GM2/r2",
+        threshold: "Jacobi Constant C_J neck opening",
+        desc: "Circular restricted 3-body problem in co-rotating frame. Saddle points L1-L3, Trojan peaks L4/L5, Jacobi constant zero-velocity curves, and orbital maneuvers at JWST's home."
+      },
+      {
+        num: 17,
+        id: "tidal_locking",
+        title: "Tidal Locking & Spin-Orbit Resonance",
+        file: "tidal_locking.html",
+        cat: "gravity",
+        catName: "Gravity & Orbits",
+        badge: "1:1 vs 3:2 Resonance",
+        formula: "τ_tidal ∝ 1/r⁶ · sin(2δ)",
+        threshold: "Circular (1:1) vs Eccentric (3:2)",
+        desc: "Gravitational friction braking moon rotation until spin matches orbital period. Explains why the Moon shows one face and Mercury locked into a 3:2 resonance."
+      },
+      {
+        num: 18,
+        id: "hohmann_transfer",
+        title: "Hohmann Transfer Orbit & Mars Flight",
+        file: "hohmann_transfer.html",
+        cat: "gravity",
+        catName: "Gravity & Orbits",
+        badge: "Delta-V Optimization",
+        formula: "v² = μ(2/r - 1/a)",
+        threshold: "Planetary Phase Angle Alignment",
+        desc: "Fuel-optimal interplanetary transfer ellipse. Calculate Δv burns, transit duration, planetary phase angles, and why launch windows to Mars open every 26 months."
+      },
+      {
+        num: 19,
+        id: "spaghettification",
+        title: "Spaghettification & Black Hole Fall",
+        file: "spaghettification.html",
+        cat: "gravity",
+        catName: "Gravity & Orbits",
+        badge: "Stellar vs Supermassive",
+        formula: "Δa_tidal = (2GM/r³) · L",
+        threshold: "Event Horizon r = r_s",
+        desc: "Radial stretching and lateral compression near event horizons. Why supermassive black holes have gentle horizons while stellar black holes shred you outside."
+      },
+      {
+        num: 20,
+        id: "three_body_problem",
+        title: "Three-Body Problem & Chaotic Orbits",
+        file: "three_body_problem.html",
+        cat: "gravity",
+        catName: "Gravity & Orbits",
+        badge: "Figure-8 & Chaos",
+        formula: "d²r_i/dt² = -G ∑ m_j(r_i - r_j)/r³",
+        threshold: "0.0001% Perturbation (Lyapunov divergence)",
+        desc: "Symplectic RK4 gravitational integration. Watch the stable periodic Figure-8 choreography or perturb a shadow twin by 0.0001% to witness deterministic chaos."
+      },
+      {
+        num: 21,
+        id: "lightning_leader",
+        title: "Lightning Stepped Leader & Return Stroke",
+        file: "lightning_leader.html",
+        cat: "em",
+        catName: "Electromagnetism",
+        badge: "30,000 K Plasma",
+        formula: "E_breakdown ≈ 3 MV/m",
+        threshold: "Downward leader meets upward streamer",
+        desc: "Dielectric breakdown of air. Negative stepped leaders branching down, upward streamers connecting, explosive return stroke, and distance-delayed rolling thunder."
+      },
+      {
+        num: 22,
+        id: "em_wave_builder",
+        title: "Electromagnetic Wave & Maxwell's Equations",
+        file: "em_wave_builder.html",
+        cat: "em",
+        catName: "Electromagnetism",
+        badge: "3D E & B Fields",
+        formula: "∇×E = -∂B/∂t,  S = (1/μ0) E×B",
+        threshold: "Linear to Circular Polarization",
+        desc: "Accelerating charges radiating coupled orthogonal Electric and Magnetic waves at the speed of light. Poynting energy vector, linear/circular polarization, and AM/FM."
+      },
+      {
+        num: 23,
+        id: "faraday_cage",
+        title: "Faraday Cage & Electrostatic Shielding",
+        file: "faraday_cage.html",
+        cat: "em",
+        catName: "Electromagnetism",
+        badge: "Gauss's Law",
+        formula: "∮ E·dA = 0 ⟹ E_inside = 0",
+        threshold: "Aperture Hole Size vs Wavelength",
+        desc: "Why metal enclosures cancel external electric fields. Free electron surface redistribution, radio signal cutoffs, microwave door mesh, and high-voltage lightning strikes."
+      },
+      {
+        num: 24,
+        id: "eddy_current_brake",
+        title: "Eddy Current Brake & Magnetic Damping",
+        file: "eddy_current_brake.html",
+        cat: "em",
+        catName: "Electromagnetism",
+        badge: "Lenz's Law",
+        formula: "emf = -dΦ/dt,  F_brake ∝ -σ B² v",
+        threshold: "Copper vs Plastic vs Slotted Tube",
+        desc: "Drop a neodymium magnet through copper vs plastic tubes. Swirling induced eddy currents produce opposing magnetic fields, slowing the fall into surreal slow motion."
+      },
+      {
+        num: 25,
+        id: "maxwells_demon",
+        title: "Maxwell's Demon & Information Entropy",
+        file: "maxwells_demon.html",
+        cat: "thermo",
+        catName: "Thermodynamics",
+        badge: "Landauer's Principle",
+        formula: "E_erase = k_B T ln(2)",
+        threshold: "Demon sorting ON vs Memory erasure",
+        desc: "A microscopic demon sorting hot and cold gas molecules without mechanical work. Why information is physical and erasing memory saves the Second Law of Thermodynamics."
+      },
+      {
+        num: 26,
+        id: "adiabatic_lapse",
+        title: "Adiabatic Lapse Rate & Cloud Base",
+        file: "adiabatic_lapse.html",
+        cat: "thermo",
+        catName: "Thermodynamics",
+        badge: "Dry 9.8°C vs Wet 5°C/km",
+        formula: "z_LCL ≈ 125(T_ground - T_dew)",
+        threshold: "Lifting Condensation Level (LCL)",
+        desc: "Rising air parcels expanding and cooling adiabatically. Cloud base formation at the Lifting Condensation Level, latent heat release, and mountain rain-shadow winds."
+      },
+      {
+        num: 27,
+        id: "carnot_engine",
+        title: "Carnot Engine & Thermodynamic Cycles",
+        file: "carnot_engine.html",
+        cat: "thermo",
+        catName: "Thermodynamics",
+        badge: "Maximum Efficiency",
+        formula: "η_Carnot = 1 - T_cold / T_hot",
+        threshold: "Second Law Limit (T_cold / T_hot)",
+        desc: "The theoretical efficiency ceiling of heat engines. Animated piston, PV and TS diagrams, 4 reversible strokes, and comparisons with Otto and Diesel engines."
+      },
+      {
+        num: 28,
+        id: "blackbody_radiation",
+        title: "Blackbody Radiation & Planck's Law",
+        file: "blackbody_radiation.html",
+        cat: "thermo",
+        catName: "Thermodynamics",
+        badge: "Quantum Revolution",
+        formula: "B(λ,T) = (2hc²/λ⁵)/(e^(hc/λkT) - 1)",
+        threshold: "Rayleigh-Jeans Catastrophe vs Planck",
+        desc: "Thermal emission from 2.7K to 30,000K. The ultraviolet catastrophe collapse, Wien's peak displacement, Stefan-Boltzmann T⁴ law, and true physical glowing color rendering."
+      },
+      {
+        num: 29,
+        id: "double_slit",
+        title: "Double Slit & Wave-Particle Duality",
+        file: "double_slit.html",
+        cat: "quantum",
+        catName: "Quantum & Nuclear",
+        badge: "Born Rule Collapse",
+        formula: "P(x) = |ψ1 + ψ2|²",
+        threshold: "Decoherence D: 0 (Wave) to 1 (Particle)",
+        desc: "Individual particles building an interference pattern one dot at a time. Turn on a which-way detector to witness the quantum measurement collapse wavefunction fringes."
+      },
+      {
+        num: 30,
+        id: "quantum_tunneling",
+        title: "Quantum Tunneling & Alpha Decay",
+        file: "quantum_tunneling.html",
+        cat: "quantum",
+        catName: "Quantum & Nuclear",
+        badge: "Schrödinger Equation",
+        formula: "T ≈ 16(E/V0)(1 - E/V0) e^(-2κL)",
+        threshold: "E < V0 (Classical barrier vs Quantum)",
+        desc: "Wavepackets penetrating classically forbidden potential energy barriers. Gamow's alpha decay half-lives, scanning tunneling microscopy (STM), and solar nuclear fusion."
+      },
+      {
+        num: 31,
+        id: "radioactive_decay",
+        title: "Radioactive Decay & Carbon-14 Dating",
+        file: "radioactive_decay.html",
+        cat: "quantum",
+        catName: "Quantum & Nuclear",
+        badge: "Half-Life Law",
+        formula: "N(t) = N0 (½)^(t / t_half)",
+        threshold: "Stochastic Poisson to Deterministic Decay",
+        desc: "Stochastic Poisson decay of 5,000 glowing atomic nuclei. Authentic Geiger counter audio clicks, exponential half-life emergence, and carbon dating ancient archeological artifacts."
+      },
+      {
+        num: 32,
+        id: "nuclear_chain_reaction",
+        title: "Nuclear Fission Chain Reaction",
+        file: "nuclear_chain_reaction.html",
+        cat: "quantum",
+        catName: "Quantum & Nuclear",
+        badge: "Multiplication k_eff",
+        formula: "k_eff = production / (loss + capture)",
+        threshold: "k = 1.0 (Sub vs Critical vs Prompt Super)",
+        desc: "U-235 fission cascade. Subcritical fizzle vs critical commercial reactor power vs prompt supercritical runaway, delayed neutron stabilization, and control rod SCRAM."
+      },
+      {
+        num: 33,
+        id: "earthquake_waves",
+        title: "Earthquake P & S Waves & Core Shadows",
+        file: "earthquake_waves.html",
+        cat: "geo",
+        catName: "Geophysics & Space",
+        badge: "Liquid Core Discovery",
+        formula: "v_P = √((K + 4/3μ)/ρ), v_S = √(μ/ρ)",
+        threshold: "Liquid Outer Core (μ = 0, S-wave blocked)",
+        desc: "Seismic waves propagating through Earth's layers. Liquid outer core blocking shear S-waves (104°–180° shadow zone) and epicenter triangulation via S-P time lag."
+      },
+      {
+        num: 34,
+        id: "coriolis_effect",
+        title: "Coriolis Effect & Atmospheric Cyclones",
+        file: "coriolis_effect.html",
+        cat: "geo",
+        catName: "Geophysics & Space",
+        badge: "Rotating Frame",
+        formula: "a_Coriolis = -2 (Ω × v)",
+        threshold: "Equator (f = 0, Zero Deflection)",
+        desc: "Inertial vs rotating carousel frames. Why moving air deflects right in the North and left in the South, creating counter-clockwise hurricanes and clockwise cyclones."
+      },
+      {
+        num: 35,
+        id: "ocean_tides",
+        title: "Ocean Tides & Dual Tidal Bulges",
+        file: "ocean_tides.html",
+        cat: "geo",
+        catName: "Geophysics & Space",
+        badge: "Spring vs Neap Tides",
+        formula: "a_tidal ≈ 2 G M R_earth / d³",
+        threshold: "Syzygy (Spring) vs Quadrature (Neap)",
+        desc: "The two-bulge paradox: why near and far sides both experience high tide every day. Moon-Sun alignment syzygy (Spring tides) vs 90° quadrature (Neap tides)."
+      },
+      {
+        num: 36,
+        id: "stellar_lifecycle",
+        title: "Stellar Lifecycle & H-R Diagram",
+        file: "stellar_lifecycle.html",
+        cat: "geo",
+        catName: "Geophysics & Space",
+        badge: "Mass Is Destiny",
+        formula: "L ∝ M^3.5,  M_Ch ≈ 1.44 M_☉",
+        threshold: "Chandrasekhar (1.44 M_☉) & TOV (2.2 M_☉)",
+        desc: "Hydrostatic equilibrium across cosmic time. Follow stars from gas cloud to Red Giant, White Dwarf, Supernova iron catastrophe, Neutron Star pulsar, or Black Hole."
+      },
+      {
+        num: 37,
+        id: "cosmic_redshift",
+        title: "Cosmic Redshift & Metric Expansion",
+        file: "cosmic_redshift.html",
+        cat: "geo",
+        catName: "Geophysics & Space",
+        badge: "FLRW Metric",
+        formula: "1 + z = λ_obs / λ_emit = 1 / a(t)",
+        threshold: "z = 1100 (Cosmic Microwave Background)",
+        desc: "Why cosmological redshift is spacetime stretching, not Doppler velocity. Watch photons stretch from blue light into microwaves (z = 1100 CMB) across billions of years."
+      },
+      {
+        num: 38,
+        id: "bridge_resonance",
+        title: "Tacoma Narrows Aeroelastic Flutter",
+        file: "bridge_resonance.html",
+        cat: "engineering",
+        catName: "Everyday & Engineering",
+        badge: "Negative Damping Lock-In",
+        formula: "I_α α'' + (c_α - c_aero) α' + k_α α = 0",
+        threshold: "Wind Speed ≈ 40 mph (Flutter Speed)",
+        desc: "The myth of simple resonance debunked: aerodynamic flutter feeds energy into torsional twisting until suspension cables snap and Galloping Gertie collapses."
+      },
+      {
+        num: 39,
+        id: "bicycle_stability",
+        title: "Bicycle Self-Stability & Steering Trail",
+        file: "bicycle_stability.html",
+        cat: "engineering",
+        catName: "Everyday & Engineering",
+        badge: "v > 14 km/h Self-Righting",
+        formula: "Trail = (R cos θ_rake - offset) / sin θ",
+        threshold: "v_crit ≈ 14 km/h (Weave to Stable)",
+        desc: "Why riderless bicycles balance themselves above critical speed. Caster trail geometry steering into leans, centrifugal righting, and no-gyro wheel experiments."
+      },
+      {
+        num: 40,
+        id: "terminal_velocity",
+        title: "Terminal Velocity & Skydiver Freefall",
+        file: "terminal_velocity.html",
+        cat: "engineering",
+        catName: "Everyday & Engineering",
+        badge: "Quadratic Drag Balance",
+        formula: "v_term = √(2mg / (ρ C_d A))",
+        threshold: "Chute Ripcord Area Surge (50x Drag)",
+        desc: "Air drag growing with velocity squared until balancing gravity. Belly-to-earth (120 mph) vs head-down dive (200 mph), parachute canopy shock, and Stratos space jump."
+      },
+      {
+        num: 41,
+        id: "spinning_top",
+        title: "Spinning Top Precession & Gyroscopes",
+        file: "spinning_top.html",
+        cat: "engineering",
+        catName: "Everyday & Engineering",
+        badge: "dL/dt = τ",
+        formula: "Ω_precession = m g d / (I ω_spin)",
+        threshold: "Spin Decay to Wobble Topple",
+        desc: "Angular momentum defying gravitational topple. Fast spin = slow precession, nutation flower loops, the sleeping vertical top, and spacecraft gyroscopic attitude control."
+      },
+      {
+        num: 42,
+        id: "microwave_hotspots",
+        title: "Microwave Oven Standing Waves & c",
+        file: "microwave_hotspots.html",
+        cat: "engineering",
+        catName: "Everyday & Engineering",
+        badge: "Measure c in Kitchen",
+        formula: "c = 2 · d_hotspot · 2.45 GHz",
+        threshold: "Stationary vs Turntable Rotation",
+        desc: "2.45 GHz cavity standing wave nodes and antinodes. Why turntable rotation is needed, thermal chocolate bar experiment, and measuring the speed of light with a ruler."
+      },
+      {
+        num: 43,
+        id: "mach_lab",
+        title: "Mach Lab: Sound in Motion",
+        file: "mach-lab/index.html",
+        cat: "waves",
+        catName: "Sound & Waves",
+        badge: "Mach 0.3–8.0",
+        formula: "t = τ + √((vτ)² + h²) / c",
+        threshold: "Mach 1.0 sound barrier",
+        desc: "A highly-polished physics-based auralization of a supersonic jet flyby. Visualizes the Mach cone and synthesizes the exact N-wave shock profile on the ground."
+      }
+    ];
+
+    // LocalStorage State Keys
+    const STORAGE_KEY_LAST_LAB = 'physics_lab_active_index';
+    const STORAGE_KEY_FAVORITES = 'physics_lab_favorites';
+
+    // Application State
+    let activeLabIndex = 0;
+    let favorites = new Set();
+    let currentCategoryFilter = 'all';
+    let searchQuery = '';
+    let isDrawerOpen = true;
+    let isSidebarOpen = true;
+    let currentViewMode = 'studio'; // 'studio' or 'catalog'
+    let showFavoritesOnly = false;
+
+    // Load LocalStorage
+    try {
+      const savedFavs = localStorage.getItem(STORAGE_KEY_FAVORITES);
+      if (savedFavs) favorites = new Set(JSON.parse(savedFavs));
+      const savedIndex = localStorage.getItem(STORAGE_KEY_LAST_LAB);
+      if (savedIndex !== null) {
+        const parsed = parseInt(savedIndex, 10);
+        if (parsed >= 0 && parsed < labs.length) activeLabIndex = parsed;
+      }
+    } catch(e) {
+      console.warn("Storage error:", e);
+    }
+
+    // DOM Elements
+    const sidebar = document.getElementById('sidebar');
+    const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
+    const sidebarLabsList = document.getElementById('sidebarLabsList');
+    const sidebarCatSelect = document.getElementById('sidebarCatSelect');
+    const showFavoritesOnlyBtn = document.getElementById('showFavoritesOnlyBtn');
+    const favCountEl = document.getElementById('favCount');
+    const favStarIcon = document.getElementById('favStarIcon');
+    const sidebarCountIndicator = document.getElementById('sidebarCountIndicator');
+
+    const studioView = document.getElementById('studioView');
+    const catalogView = document.getElementById('catalogView');
+    const navStudioBtn = document.getElementById('navStudioBtn');
+    const navCatalogBtn = document.getElementById('navCatalogBtn');
+    const brandLogo = document.getElementById('brandLogo');
+
+    const activeSimulationFrame = document.getElementById('activeSimulationFrame');
+    const iframeLoader = document.getElementById('iframeLoader');
+    const activeLabNum = document.getElementById('activeLabNum');
+    const activeLabTitle = document.getElementById('activeLabTitle');
+    const activeLabCat = document.getElementById('activeLabCat');
+    const activeLabFormula = document.getElementById('activeLabFormula');
+    const openExternalBtn = document.getElementById('openExternalBtn');
+    const reloadIframeBtn = document.getElementById('reloadIframeBtn');
+    const activeFavBtn = document.getElementById('activeFavBtn');
+    const activeFavStar = document.getElementById('activeFavStar');
+    const maximizeStudioBtn = document.getElementById('maximizeStudioBtn');
+
+    const physicsDrawer = document.getElementById('physicsDrawer');
+    const toggleDrawerBtn = document.getElementById('toggleDrawerBtn');
+    const closeDrawerBtn = document.getElementById('closeDrawerBtn');
+    const drawerDesc = document.getElementById('drawerDesc');
+    const drawerFormula = document.getElementById('drawerFormula');
+    const drawerThreshold = document.getElementById('drawerThreshold');
+
+    const globalSearchInput = document.getElementById('globalSearchInput');
+    const randomLabBtn = document.getElementById('randomLabBtn');
+    const fullscreenAppBtn = document.getElementById('fullscreenAppBtn');
+
+    const catalogGrid = document.getElementById('catalogGrid');
+    const catalogCatPills = document.querySelectorAll('.cat-pill');
+
+    // Render Sidebar List
+    function renderSidebar() {
+      const filtered = labs.filter(lab => {
+        const matchesCat = (currentCategoryFilter === 'all') || (lab.cat === currentCategoryFilter);
+        const matchesFav = !showFavoritesOnly || favorites.has(lab.num);
+        const q = searchQuery.toLowerCase();
+        const matchesSearch = !q || 
+          lab.title.toLowerCase().includes(q) || 
+          lab.formula.toLowerCase().includes(q) || 
+          lab.desc.toLowerCase().includes(q) ||
+          lab.catName.toLowerCase().includes(q) ||
+          lab.badge.toLowerCase().includes(q);
+        return matchesCat && matchesFav && matchesSearch;
+      });
+
+      sidebarCountIndicator.textContent = `${filtered.length} / ${labs.length}`;
+
+      if (filtered.length === 0) {
+        sidebarLabsList.innerHTML = `
+          <div class="py-8 px-4 text-center text-slate-500 text-xs">
+            No simulations match this filter.
+          </div>
+        `;
+        return;
+      }
+
+      sidebarLabsList.innerHTML = filtered.map(lab => {
+        const isActive = lab.num === activeLabIndex;
+        const isFav = favorites.has(lab.num);
+
+        return `
+          <div
+            data-lab-num="${lab.num}"
+            class="sidebar-item group relative flex items-center justify-between p-2 rounded-xl text-xs cursor-pointer transition-all ${
+              isActive 
+                ? 'bg-sky-500/15 border border-sky-500/40 text-sky-200 font-semibold shadow-sm shadow-sky-500/10' 
+                : 'hover:bg-slate-800/80 text-slate-300 border border-transparent'
+            }"
+          >
+            <div class="flex items-center gap-2.5 overflow-hidden">
+              <span class="font-mono text-[10px] px-1.5 py-0.5 rounded ${
+                isActive ? 'bg-sky-500 text-white font-bold' : 'bg-slate-800 text-slate-400 group-hover:text-slate-200'
+              }">
+                #${lab.num.toString().padStart(2, '0')}
+              </span>
+              <span class="truncate">${lab.title}</span>
+            </div>
+
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <button
+                data-fav-toggle="${lab.num}"
+                class="fav-toggle-btn text-[13px] px-1 py-0.5 rounded transition-transform hover:scale-125 ${
+                  isFav ? 'text-amber-400' : 'text-slate-600 hover:text-slate-400'
+                }"
+                title="${isFav ? 'Remove Favorite' : 'Mark Favorite'}"
+              >
+                ${isFav ? '★' : '☆'}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Add click listeners to sidebar items
+      document.querySelectorAll('.sidebar-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          if (e.target.closest('.fav-toggle-btn')) return;
+          const num = parseInt(item.dataset.labNum, 10);
+          switchLab(num);
+        });
+      });
+
+      // Add favorite toggle listeners
+      document.querySelectorAll('.fav-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const num = parseInt(btn.dataset.favToggle, 10);
+          toggleFavorite(num);
+        });
+      });
+    }
+
+    // Render Catalog Grid View
+    function renderCatalogGrid() {
+      const filtered = labs.filter(lab => {
+        const matchesCat = (currentCategoryFilter === 'all') || (lab.cat === currentCategoryFilter);
+        const matchesFav = !showFavoritesOnly || favorites.has(lab.num);
+        const q = searchQuery.toLowerCase();
+        const matchesSearch = !q || 
+          lab.title.toLowerCase().includes(q) || 
+          lab.formula.toLowerCase().includes(q) || 
+          lab.desc.toLowerCase().includes(q) ||
+          lab.catName.toLowerCase().includes(q) ||
+          lab.badge.toLowerCase().includes(q);
+        return matchesCat && matchesFav && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        catalogGrid.innerHTML = `
+          <div class="col-span-full py-16 text-center text-slate-500">
+            <p class="text-base">No simulations found matching this criteria.</p>
+            <p class="text-xs text-slate-600 mt-1">Try resetting your search query or selecting "All".</p>
+          </div>
+        `;
+        return;
+      }
+
+      catalogGrid.innerHTML = filtered.map(lab => {
+        const isFav = favorites.has(lab.num);
+        const isActive = lab.num === activeLabIndex;
+
+        return `
+          <div class="group relative bg-slate-900/80 border ${
+            isActive ? 'border-sky-500 shadow-lg shadow-sky-500/10' : 'border-slate-800 hover:border-slate-700'
+          } rounded-2xl p-5 transition-all duration-200 flex flex-col justify-between backdrop-blur-sm">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-2.5">
+                <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-sky-400 font-bold border border-slate-700/60">
+                  #${lab.num.toString().padStart(2, '0')}
+                </span>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-2 py-0.5 rounded">
+                    ${lab.badge}
+                  </span>
+                  <button
+                    data-grid-fav="${lab.num}"
+                    class="grid-fav-btn text-sm px-1 transition-transform hover:scale-125 ${
+                      isFav ? 'text-amber-400' : 'text-slate-600 hover:text-slate-400'
+                    }"
+                  >
+                    ${isFav ? '★' : '☆'}
+                  </button>
+                </div>
+              </div>
+
+              <h3 class="text-base font-bold text-white group-hover:text-sky-300 transition-colors tracking-tight mb-1">
+                ${lab.title}
+              </h3>
+
+              <div class="text-[11px] font-mono text-indigo-300 mb-3 bg-slate-950/80 p-2 rounded-lg border border-slate-800/80 overflow-x-auto truncate">
+                ${lab.formula}
+              </div>
+
+              <p class="text-slate-400 text-xs leading-relaxed mb-5 line-clamp-3">
+                ${lab.desc}
+              </p>
+            </div>
+
+            <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
+              <span class="text-[11px] text-slate-500 font-medium">${lab.catName}</span>
+              <button
+                data-launch-lab="${lab.num}"
+                class="launch-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/25 hover:bg-sky-500 hover:text-white transition-all shadow-sm"
+              >
+                <span>Launch</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Add launch listeners
+      document.querySelectorAll('.launch-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const num = parseInt(btn.dataset.launchLab, 10);
+          switchLab(num);
+          setViewMode('studio');
+        });
+      });
+
+      // Add grid favorite listeners
+      document.querySelectorAll('.grid-fav-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const num = parseInt(btn.dataset.gridFav, 10);
+          toggleFavorite(num);
+        });
+      });
+    }
+
+    // Switch Active Laboratory
+    function switchLab(index) {
+      if (index < 0 || index >= labs.length) return;
+      activeLabIndex = index;
+
+      try {
+        localStorage.setItem(STORAGE_KEY_LAST_LAB, activeLabIndex.toString());
+      } catch(e) {}
+
+      const lab = labs[activeLabIndex];
+
+      // Update URL hash without reload
+      window.location.hash = `lab=${lab.id}`;
+
+      // Update Studio Header
+      activeLabNum.textContent = `#${lab.num.toString().padStart(2, '0')}`;
+      activeLabTitle.textContent = lab.title;
+      activeLabCat.textContent = lab.catName;
+      activeLabFormula.textContent = lab.formula;
+      openExternalBtn.href = lab.file;
+
+      const isFav = favorites.has(lab.num);
+      activeFavStar.textContent = isFav ? '★' : '☆';
+      activeFavStar.className = isFav ? 'text-amber-400' : 'text-slate-400';
+
+      // Update Intelligence Drawer
+      drawerDesc.textContent = lab.desc;
+      drawerFormula.textContent = lab.formula;
+      drawerThreshold.textContent = lab.threshold;
+
+      // Update Iframe Source with Loading Transition
+      iframeLoader.style.opacity = '1';
+      activeSimulationFrame.src = lab.file;
+      activeSimulationFrame.onload = () => {
+        setTimeout(() => {
+          iframeLoader.style.opacity = '0';
+        }, 120);
+      };
+
+      // Refresh sidebars and catalog cards
+      renderSidebar();
+      renderCatalogGrid();
+    }
+
+    // Toggle Favorite
+    function toggleFavorite(num) {
+      if (favorites.has(num)) {
+        favorites.delete(num);
+      } else {
+        favorites.add(num);
+      }
+
+      try {
+        localStorage.setItem(STORAGE_KEY_FAVORITES, JSON.stringify(Array.from(favorites)));
+      } catch(e) {}
+
+      updateFavoritesUI();
+      renderSidebar();
+      renderCatalogGrid();
+
+      if (num === activeLabIndex) {
+        const isFav = favorites.has(num);
+        activeFavStar.textContent = isFav ? '★' : '☆';
+        activeFavStar.className = isFav ? 'text-amber-400' : 'text-slate-400';
+      }
+    }
+
+    function updateFavoritesUI() {
+      favCountEl.textContent = favorites.size.toString();
+      favStarIcon.textContent = showFavoritesOnly ? '★' : '☆';
+      showFavoritesOnlyBtn.classList.toggle('text-amber-400', showFavoritesOnly);
+    }
+
+    // Mode Switcher (Studio vs Catalog)
+    function setViewMode(mode) {
+      currentViewMode = mode;
+      if (mode === 'studio') {
+        studioView.classList.remove('hidden');
+        catalogView.classList.add('hidden');
+        navStudioBtn.classList.add('bg-sky-500', 'text-white', 'shadow-sm', 'shadow-sky-500/30');
+        navStudioBtn.classList.remove('text-slate-400');
+        navCatalogBtn.classList.remove('bg-sky-500', 'text-white', 'shadow-sm', 'shadow-sky-500/30');
+        navCatalogBtn.classList.add('text-slate-400');
+      } else {
+        studioView.classList.add('hidden');
+        catalogView.classList.remove('hidden');
+        navCatalogBtn.classList.add('bg-sky-500', 'text-white', 'shadow-sm', 'shadow-sky-500/30');
+        navCatalogBtn.classList.remove('text-slate-400');
+        navStudioBtn.classList.remove('bg-sky-500', 'text-white', 'shadow-sm', 'shadow-sky-500/30');
+        navStudioBtn.classList.add('text-slate-400');
+        renderCatalogGrid();
+      }
+    }
+
+    // Event Listeners
+    navStudioBtn.addEventListener('click', () => setViewMode('studio'));
+    navCatalogBtn.addEventListener('click', () => setViewMode('catalog'));
+    brandLogo.addEventListener('click', () => setViewMode('studio'));
+
+    // Sidebar Toggle
+    toggleSidebarBtn.addEventListener('click', () => {
+      isSidebarOpen = !isSidebarOpen;
+      sidebar.classList.toggle('-ml-80', !isSidebarOpen);
+    });
+
+    // Drawer Toggle
+    function toggleDrawer(open) {
+      if (open !== undefined) isDrawerOpen = open;
+      else isDrawerOpen = !isDrawerOpen;
+      physicsDrawer.classList.toggle('hidden', !isDrawerOpen);
+    }
+    toggleDrawerBtn.addEventListener('click', () => toggleDrawer());
+    closeDrawerBtn.addEventListener('click', () => toggleDrawer(false));
+
+    // Reload Active Iframe
+    reloadIframeBtn.addEventListener('click', () => {
+      iframeLoader.style.opacity = '1';
+      activeSimulationFrame.contentWindow.location.reload();
+      setTimeout(() => { iframeLoader.style.opacity = '0'; }, 300);
+    });
+
+    // Active Favorite Button
+    activeFavBtn.addEventListener('click', () => {
+      toggleFavorite(activeLabIndex);
+    });
+
+    // Maximize Viewport
+    maximizeStudioBtn.addEventListener('click', () => {
+      toggleDrawer(false);
+      isSidebarOpen = false;
+      sidebar.classList.add('-ml-80');
+    });
+
+    // Fullscreen App
+    fullscreenAppBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    // Shuffle Random Lab
+    randomLabBtn.addEventListener('click', () => {
+      const rand = Math.floor(Math.random() * labs.length);
+      switchLab(rand);
+      setViewMode('studio');
+    });
+
+    // Global Search
+    globalSearchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      renderSidebar();
+      renderCatalogGrid();
+    });
+
+    // Sidebar Category Filter
+    sidebarCatSelect.addEventListener('change', (e) => {
+      currentCategoryFilter = e.target.value;
+      syncCategoryPills();
+      renderSidebar();
+      renderCatalogGrid();
+    });
+
+    // Show Favorites Only
+    showFavoritesOnlyBtn.addEventListener('click', () => {
+      showFavoritesOnly = !showFavoritesOnly;
+      updateFavoritesUI();
+      renderSidebar();
+      renderCatalogGrid();
+    });
+
+    // Catalog Category Pills
+    function syncCategoryPills() {
+      catalogCatPills.forEach(pill => {
+        const isMatch = pill.dataset.cat === currentCategoryFilter;
+        pill.classList.toggle('bg-sky-500', isMatch);
+        pill.classList.toggle('text-white', isMatch);
+        pill.classList.toggle('bg-slate-900', !isMatch);
+        pill.classList.toggle('text-slate-300', !isMatch);
+      });
+    }
+
+    catalogCatPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        currentCategoryFilter = pill.dataset.cat;
+        sidebarCatSelect.value = currentCategoryFilter;
+        syncCategoryPills();
+        renderSidebar();
+        renderCatalogGrid();
+      });
+    });
+
+    // Global Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      // Ignore if typing in an input
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) {
+        if (e.key === 'Escape') e.target.blur();
+        return;
+      }
+
+      if (e.key === '[' || (e.altKey && e.key === 'ArrowLeft')) {
+        // Previous Lab
+        e.preventDefault();
+        const prev = (activeLabIndex - 1 + labs.length) % labs.length;
+        switchLab(prev);
+      } else if (e.key === ']' || (e.altKey && e.key === 'ArrowRight')) {
+        // Next Lab
+        e.preventDefault();
+        const next = (activeLabIndex + 1) % labs.length;
+        switchLab(next);
+      } else if (e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key === 'k')) {
+        // Focus Search
+        e.preventDefault();
+        globalSearchInput.focus();
+      } else if (e.key === 'Escape') {
+        // Escape toggles between Studio and Catalog
+        setViewMode(currentViewMode === 'studio' ? 'catalog' : 'studio');
+      } else if (e.key === 'i' || e.key === 'I') {
+        // Toggle Drawer
+        e.preventDefault();
+        toggleDrawer();
+      } else if (e.key === 'r' || e.key === 'R') {
+        // Reload
+        if (!e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          reloadIframeBtn.click();
+        }
+      }
+    });
+
+    // URL Hash Routing Support
+    function handleHashRoute() {
+      const hash = window.location.hash.slice(1);
+      if (hash.startsWith('lab=')) {
+        const labId = hash.slice(4);
+        const found = labs.findIndex(l => l.id === labId || l.file === labId || l.file.replace('.html','') === labId);
+        if (found !== -1) {
+          switchLab(found);
+          setViewMode('studio');
+          return;
+        }
+      } else if (hash === 'catalog') {
+        setViewMode('catalog');
+        return;
+      }
+      switchLab(activeLabIndex);
+    }
+
+    // Initialize
+    updateFavoritesUI();
+    handleHashRoute();
+  </script>
+</body>
+</html>

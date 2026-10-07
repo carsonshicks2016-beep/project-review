@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hohmann Transfer Orbit & Interplanetary Flight Calculator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { margin: 0; overflow-x: hidden; background-color: #0b1217; color: #f8fafc; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .data-readout { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+        canvas { display: block; width: 100%; height: 100%; }
+        .glass-panel { background-color: rgba(17, 26, 34, 0.8); backdrop-filter: blur(8px); border: 1px solid #1d2b38; }
+        
+        /* Custom scrollbar for panel */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col md:flex-row overflow-hidden text-sm">
+
+    <!-- Main Canvas Area -->
+    <div class="relative flex-grow h-[50vh] md:h-full bg-slate-950">
+        <canvas id="simCanvas"></canvas>
+        
+        <!-- Top HUD -->
+        <div class="absolute top-4 left-4 right-4 flex justify-between pointer-events-none">
+            <div class="glass-panel rounded-xl p-4 w-64 pointer-events-auto">
+                <h2 class="text-sky-400 font-bold mb-2 uppercase tracking-wide text-xs">Mission Telemetry</h2>
+                <div class="space-y-1 text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Status:</span> <span id="statusReadout" class="text-emerald-400 font-bold">PRE-LAUNCH</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Mission Time:</span> <span id="timeReadout" class="data-readout text-slate-200">0 days</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Speed (v):</span> <span id="speedReadout" class="data-readout text-slate-200">0.00 km/s</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Dist to Target:</span> <span id="distReadout" class="data-readout text-slate-200">-</span></div>
+                </div>
+            </div>
+            
+            <div class="glass-panel rounded-xl p-4 w-64 pointer-events-auto">
+                <h2 class="text-amber-400 font-bold mb-2 uppercase tracking-wide text-xs">Maneuver Nodes (Δv)</h2>
+                <div class="space-y-1 text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Dep Burn (Δv1):</span> <span id="dv1Readout" class="data-readout text-slate-200">0.00 km/s</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Arr Burn (Δv2):</span> <span id="dv2Readout" class="data-readout text-slate-200">0.00 km/s</span></div>
+                    <div class="flex justify-between border-t border-slate-700 pt-1 mt-1"><span class="text-slate-400">Total Δv:</span> <span id="dvTotalReadout" class="data-readout text-rose-400 font-bold">0.00 km/s</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Optimal Transit:</span> <span id="transitReadout" class="data-readout text-slate-200">0 days</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bottom Explainer Cards Overlay (Mobile friendly) -->
+        <div class="absolute bottom-4 left-4 right-4 hidden md:flex gap-4 pointer-events-none z-10">
+            <div class="glass-panel rounded-xl p-4 flex-1 pointer-events-auto">
+                <h3 class="text-sky-400 font-bold mb-1 text-xs">1. The Hohmann Transfer</h3>
+                <p class="text-xs text-slate-300">The most fuel-efficient way to move between two circular orbits. It uses an elliptical orbit that exactly grazes both the starting orbit (at periapsis) and the target orbit (at apoapsis). It requires two precise engine burns (Δv).</p>
+            </div>
+            <div class="glass-panel rounded-xl p-4 flex-1 pointer-events-auto">
+                <h3 class="text-sky-400 font-bold mb-1 text-xs">2. Launch Windows & Synodic Period</h3>
+                <p class="text-xs text-slate-300">Because planets move at different speeds, you can't launch anytime. You must wait for the correct "phase angle" so the target planet arrives at the intercept point at the same time you do. For Earth-Mars, this window opens every 26 months (synodic period).</p>
+            </div>
+            <div class="glass-panel rounded-xl p-4 flex-1 pointer-events-auto">
+                <h3 class="text-sky-400 font-bold mb-1 text-xs">3. Real-World Limitations</h3>
+                <p class="text-xs text-slate-300">Hohmann transfers are slow. For outer planets (Jupiter, Saturn), transit times take decades. Real missions often use faster trajectories (requiring more fuel) or gravitational slingshots (gravity assists) to steal momentum from other planets to speed up.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Controls -->
+    <div class="w-full md:w-80 lg:w-96 glass-panel flex flex-col h-[50vh] md:h-full z-20 border-l border-slate-800 overflow-y-auto">
+        <div class="p-5 flex-grow space-y-6">
+            <div>
+                <h1 class="text-xl font-bold text-slate-100 mb-1">Orbital Mechanics</h1>
+                <p class="text-xs text-slate-400">Interplanetary Flight Calculator</p>
+            </div>
+
+            <!-- Mission Selection -->
+            <div class="space-y-2">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Mission Profile</label>
+                <select id="missionSelect" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block p-2.5 outline-none">
+                    <option value="earth-mars">Earth to Mars</option>
+                    <option value="earth-venus">Earth to Venus</option>
+                    <option value="leo-geo">LEO to GEO</option>
+                    <option value="earth-jupiter">Earth to Jupiter</option>
+                    <option value="earth-moon">Earth to Moon</option>
+                </select>
+            </div>
+
+            <!-- Phase Angle Slider -->
+            <div class="space-y-2">
+                <div class="flex justify-between">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Planetary Phase Angle</label>
+                    <span id="phaseAngleValue" class="text-xs font-mono text-amber-400">0°</span>
+                </div>
+                <input id="phaseSlider" type="range" min="-180" max="180" value="44" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500">
+                <div class="flex justify-between text-[10px] text-slate-500">
+                    <span>-180°</span>
+                    <button id="optimalPhaseBtn" class="text-sky-400 hover:text-sky-300 underline">Set Optimal</button>
+                    <span>+180°</span>
+                </div>
+            </div>
+
+            <!-- Simulation Speed -->
+            <div class="space-y-2">
+                <div class="flex justify-between">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Time Warp</label>
+                    <span id="timeWarpValue" class="text-xs font-mono text-slate-200">1x</span>
+                </div>
+                <input id="timeWarpSlider" type="range" min="0" max="100" value="50" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <button id="launchBtn" class="col-span-2 bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 px-4 rounded-xl shadow-[0_0_15px_rgba(225,29,72,0.5)] transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    INITIATE Δv1 BURN
+                </button>
+                <button id="resetBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 px-4 rounded-lg transition-colors border border-slate-700 text-sm">
+                    Reset System
+                </button>
+                <button id="audioToggleBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 px-4 rounded-lg transition-colors border border-slate-700 text-sm flex items-center justify-center gap-2">
+                    <span id="audioIcon">🔇</span> Audio
+                </button>
+            </div>
+        </div>
+        
+        <div class="p-4 bg-slate-900/80 text-[10px] text-slate-500 border-t border-slate-800 md:hidden">
+            Scroll down for mission info.
+        </div>
+    </div>
+    
+    <!-- Mobile Explainer Cards (visible only on small screens below controls) -->
+    <div class="md:hidden flex flex-col gap-4 p-4 glass-panel z-10 w-full overflow-y-auto max-h-[40vh]">
+        <div class="bg-slate-900 rounded-xl p-4 border border-slate-800">
+            <h3 class="text-sky-400 font-bold mb-1 text-sm">1. The Hohmann Transfer</h3>
+            <p class="text-xs text-slate-300">Fuel-efficient transfer using an elliptical orbit connecting two circular orbits.</p>
+        </div>
+        <div class="bg-slate-900 rounded-xl p-4 border border-slate-800">
+            <h3 class="text-sky-400 font-bold mb-1 text-sm">2. Launch Windows</h3>
+            <p class="text-xs text-slate-300">Target must be at the right phase angle to intercept. Windows open periodically.</p>
+        </div>
+        <div class="bg-slate-900 rounded-xl p-4 border border-slate-800">
+            <h3 class="text-sky-400 font-bold mb-1 text-sm">3. Real-World Limits</h3>
+            <p class="text-xs text-slate-300">Hohmann transfers are slow. Deep space uses faster trajectories and gravity assists.</p>
+        </div>
+    </div>
+
+    <script>
+        // Physics Constants
+        const G = 6.67430e-11; // m^3 / (kg s^2)
+        const M_SUN = 1.989e30; // kg
+        const M_EARTH = 5.972e24; // kg
+        const AU = 149597870700; // meters
+
+        // Mission Profiles
+        const missions = {
+            'earth-mars': {
+                name: 'Earth to Mars',
+                centerMass: M_SUN,
+                centerColor: '#fbbf24',
+                centerRadius: 15,
+                body1: { name: 'Earth', r: 1.0 * AU, color: '#00f0ff', radius: 6 },
+                body2: { name: 'Mars', r: 1.524 * AU, color: '#e6004c', radius: 5 },
+                scale: 2.0 * AU,
+                timeScaleBase: 86400 * 5, // 5 days per frame at 1x
+                maxWarp: 100
+            },
+            'earth-venus': {
+                name: 'Earth to Venus',
+                centerMass: M_SUN,
+                centerColor: '#fbbf24',
+                centerRadius: 15,
+                body1: { name: 'Earth', r: 1.0 * AU, color: '#00f0ff', radius: 6 },
+                body2: { name: 'Venus', r: 0.723 * AU, color: '#fb923c', radius: 6 },
+                scale: 1.5 * AU,
+                timeScaleBase: 86400 * 3,
+                maxWarp: 100
+            },
+            'leo-geo': {
+                name: 'LEO to GEO',
+                centerMass: M_EARTH,
+                centerColor: '#00d4e0',
+                centerRadius: 12,
+                body1: { name: 'LEO (Sat)', r: (6371 + 400) * 1000, color: '#94a3b8', radius: 4 }, // 400km alt
+                body2: { name: 'GEO', r: 42164 * 1000, color: '#8b5cf6', radius: 4 },
+                scale: 50000 * 1000,
+                timeScaleBase: 60 * 5, // 5 mins per frame at 1x
+                maxWarp: 100
+            },
+            'earth-jupiter': {
+                name: 'Earth to Jupiter',
+                centerMass: M_SUN,
+                centerColor: '#fbbf24',
+                centerRadius: 10,
+                body1: { name: 'Earth', r: 1.0 * AU, color: '#00f0ff', radius: 4 },
+                body2: { name: 'Jupiter', r: 5.203 * AU, color: '#d97706', radius: 10 },
+                scale: 6.0 * AU,
+                timeScaleBase: 86400 * 20, // 20 days per frame
+                maxWarp: 100
+            },
+            'earth-moon': {
+                name: 'Earth to Moon',
+                centerMass: M_EARTH,
+                centerColor: '#00d4e0',
+                centerRadius: 15,
+                body1: { name: 'LEO', r: (6371 + 200) * 1000, color: '#94a3b8', radius: 4 },
+                body2: { name: 'Moon', r: 384400 * 1000, color: '#e2e8f0', radius: 6 },
+                scale: 450000 * 1000,
+                timeScaleBase: 3600, // 1 hour per frame
+                maxWarp: 100
+            }
+        };
+
+        // Application State
+        let currentMission = missions['earth-mars'];
+        let state = {
+            t: 0,
+            simTime: 0,
+            warpMulti: 1,
+            phaseOffset: 0, // radians
+            status: 'PRE-LAUNCH', // PRE-LAUNCH, TRANSIT, ARRIVED, MISSED
+            spacecraft: {
+                active: false,
+                r: 0,
+                theta: 0,
+                a: 0, // semi-major axis
+                e: 0, // eccentricity
+                v: 0,
+                burn1: 0,
+                burn2: 0,
+                t_transfer: 0
+            }
+        };
+
+        // DOM Elements
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const missionSelect = document.getElementById('missionSelect');
+        const phaseSlider = document.getElementById('phaseSlider');
+        const phaseAngleValue = document.getElementById('phaseAngleValue');
+        const optimalPhaseBtn = document.getElementById('optimalPhaseBtn');
+        const timeWarpSlider = document.getElementById('timeWarpSlider');
+        const timeWarpValue = document.getElementById('timeWarpValue');
+        const launchBtn = document.getElementById('launchBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const audioToggleBtn = document.getElementById('audioToggleBtn');
+        const audioIcon = document.getElementById('audioIcon');
+
+        // Readouts
+        const readouts = {
+            status: document.getElementById('statusReadout'),
+            time: document.getElementById('timeReadout'),
+            speed: document.getElementById('speedReadout'),
+            dist: document.getElementById('distReadout'),
+            dv1: document.getElementById('dv1Readout'),
+            dv2: document.getElementById('dv2Readout'),
+            dvTotal: document.getElementById('dvTotalReadout'),
+            transit: document.getElementById('transitReadout')
+        };
+
+        // Audio System
+        let audioCtx = null;
+        let isAudioEnabled = false;
+        let engineOsc = null;
+        let engineNoise = null;
+        let engineGain = null;
+        let telemetryInterval = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function toggleAudio() {
+            if (!isAudioEnabled) {
+                initAudio();
+                isAudioEnabled = true;
+                audioIcon.innerText = '🔊';
+                audioToggleBtn.classList.add('bg-sky-700');
+            } else {
+                isAudioEnabled = false;
+                audioIcon.innerText = '🔇';
+                audioToggleBtn.classList.remove('bg-sky-700');
+                stopEngineSound();
+                clearInterval(telemetryInterval);
+            }
+        }
+
+        function playEngineSound(durationSec) {
+            if (!isAudioEnabled || !audioCtx) return;
+            
+            // Sub-bass oscillator
+            engineOsc = audioCtx.createOscillator();
+            engineOsc.type = 'sawtooth';
+            engineOsc.frequency.setValueAtTime(40, audioCtx.currentTime);
+            engineOsc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + durationSec/2);
+            engineOsc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + durationSec);
+
+            // White noise
+            const bufferSize = audioCtx.sampleRate * 2; // 2 seconds of noise
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            engineNoise = audioCtx.createBufferSource();
+            engineNoise.buffer = buffer;
+            engineNoise.loop = true;
+
+            // Lowpass filter for noise
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 400;
+
+            engineGain = audioCtx.createGain();
+            engineGain.gain.setValueAtTime(0, audioCtx.currentTime);
+            engineGain.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.1);
+            engineGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + durationSec);
+
+            engineOsc.connect(engineGain);
+            engineNoise.connect(filter);
+            filter.connect(engineGain);
+            engineGain.connect(audioCtx.destination);
+
+            engineOsc.start();
+            engineNoise.start();
+            engineOsc.stop(audioCtx.currentTime + durationSec);
+            engineNoise.stop(audioCtx.currentTime + durationSec);
+        }
+
+        function stopEngineSound() {
+            if (engineGain) {
+                engineGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+                setTimeout(() => {
+                    if (engineOsc) { engineOsc.stop(); engineOsc = null; }
+                    if (engineNoise) { engineNoise.stop(); engineNoise = null; }
+                }, 100);
+            }
+        }
+
+        function playTelemetryClick() {
+            if (!isAudioEnabled || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1200 + Math.random()*400, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playArrivalChime() {
+            if (!isAudioEnabled || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            
+            osc.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
+            osc.frequency.setValueAtTime(554.37, audioCtx.currentTime + 0.15); // C#5
+            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.3); // E5
+            
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.05);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime + 0.3);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 1.5);
+        }
+
+        // Physics Helpers
+        const mu = (mass) => G * mass;
+        const v_circ = (r, m) => Math.sqrt(mu(m) / r);
+        const period = (a, m) => 2 * Math.PI * Math.sqrt(Math.pow(a, 3) / mu(m));
+        
+        // Calculate Hohmann parameters for current mission
+        function calcHohmann() {
+            const m = currentMission.centerMass;
+            const r1 = currentMission.body1.r;
+            const r2 = currentMission.body2.r;
+            
+            const v1 = v_circ(r1, m);
+            const v2 = v_circ(r2, m);
+            
+            const a_t = (r1 + r2) / 2;
+            const v_t1 = Math.sqrt(mu(m) * (2/r1 - 1/a_t));
+            const v_t2 = Math.sqrt(mu(m) * (2/r2 - 1/a_t));
+            
+            const dv1 = Math.abs(v_t1 - v1);
+            const dv2 = Math.abs(v2 - v_t2);
+            const t_transfer = Math.PI * Math.sqrt(Math.pow(a_t, 3) / mu(m));
+            
+            // Phase angle calculation (angle target planet moves during transfer)
+            const w2 = Math.sqrt(mu(m) / Math.pow(r2, 3)); // angular velocity of target
+            const alpha_travel = w2 * t_transfer;
+            const optimalPhase = Math.PI - alpha_travel; // radians
+            
+            return { a_t, dv1, dv2, t_transfer, optimalPhase, v1, v2, v_t1, v_t2 };
+        }
+
+        function formatTime(seconds) {
+            const days = seconds / 86400;
+            if (days > 365) return (days/365).toFixed(2) + ' yrs';
+            if (days > 30) return (days/30).toFixed(1) + ' mos';
+            if (days < 1) return (seconds/3600).toFixed(1) + ' hrs';
+            return days.toFixed(1) + ' days';
+        }
+
+        function updateHUD() {
+            const h = calcHohmann();
+            
+            readouts.dv1.innerText = (h.dv1 / 1000).toFixed(2) + ' km/s';
+            readouts.dv2.innerText = (h.dv2 / 1000).toFixed(2) + ' km/s';
+            readouts.dvTotal.innerText = ((h.dv1 + h.dv2) / 1000).toFixed(2) + ' km/s';
+            readouts.transit.innerText = formatTime(h.t_transfer);
+            
+            readouts.status.innerText = state.status;
+            if(state.status === 'PRE-LAUNCH') readouts.status.className = 'text-amber-400 font-bold';
+            else if(state.status === 'TRANSIT') readouts.status.className = 'text-sky-400 font-bold animate-pulse';
+            else if(state.status === 'ARRIVED') readouts.status.className = 'text-emerald-400 font-bold';
+            else readouts.status.className = 'text-rose-500 font-bold';
+            
+            readouts.time.innerText = formatTime(state.simTime);
+            
+            if (state.spacecraft.active) {
+                // v = sqrt(mu * (2/r - 1/a))
+                const v = Math.sqrt(mu(currentMission.centerMass) * (2/state.spacecraft.r - 1/state.spacecraft.a));
+                readouts.speed.innerText = (v / 1000).toFixed(2) + ' km/s';
+                
+                // Dist to target
+                const t2_angle = (state.phaseOffset + Math.sqrt(mu(currentMission.centerMass) / Math.pow(currentMission.body2.r, 3)) * state.simTime) % (2*Math.PI);
+                const x1 = state.spacecraft.r * Math.cos(state.spacecraft.theta);
+                const y1 = state.spacecraft.r * Math.sin(state.spacecraft.theta);
+                const x2 = currentMission.body2.r * Math.cos(t2_angle);
+                const y2 = currentMission.body2.r * Math.sin(t2_angle);
+                const dist = Math.sqrt(Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2));
+                
+                readouts.dist.innerText = (dist / 1000).toExponential(2) + ' km';
+            } else {
+                readouts.speed.innerText = (h.v1 / 1000).toFixed(2) + ' km/s';
+                readouts.dist.innerText = '-';
+            }
+        }
+
+        function resize() {
+            canvas.width = canvas.parentElement.clientWidth * window.devicePixelRatio;
+            canvas.height = canvas.parentElement.clientHeight * window.devicePixelRatio;
+        }
+
+        window.addEventListener('resize', resize);
+
+        // Simulation Loop
+        let lastTime = 0;
+        function loop(timestamp) {
+            const dt = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+            
+            if (dt < 0.1) {
+                updateSim(dt);
+                draw();
+            }
+            
+            requestAnimationFrame(loop);
+        }
+
+        function updateSim(dt_real) {
+            // Apply warp curve
+            const warpVal = parseFloat(timeWarpSlider.value);
+            // 0-100 map to 0 to maxWarp non-linearly
+            state.warpMulti = Math.pow(warpVal / 100, 3) * currentMission.maxWarp;
+            if(warpVal === 0) state.warpMulti = 0;
+            
+            // dt_sim in seconds
+            const dt_sim = dt_real * state.warpMulti * currentMission.timeScaleBase;
+            
+            if (state.warpMulti > 0 && state.status !== 'ARRIVED' && state.status !== 'MISSED') {
+                state.simTime += dt_sim;
+            }
+            
+            if (state.status === 'TRANSIT') {
+                const h = calcHohmann();
+                
+                // Spacecraft follows ellipse
+                // For simplicity, we use mean anomaly -> eccentric anomaly -> true anomaly
+                const n = Math.sqrt(mu(currentMission.centerMass) / Math.pow(state.spacecraft.a, 3));
+                const M = n * state.simTime;
+                
+                if (state.simTime >= h.t_transfer) {
+                    // Reached apoapsis
+                    state.simTime = h.t_transfer;
+                    
+                    // Check distance to target
+                    const t2_angle = (state.phaseOffset + Math.sqrt(mu(currentMission.centerMass) / Math.pow(currentMission.body2.r, 3)) * state.simTime) % (2*Math.PI);
+                    const sc_angle = Math.PI; // Apoapsis is exactly opposite start
+                    
+                    // Normalize angles to compare
+                    let diff = Math.abs((t2_angle % (2*Math.PI)) - (sc_angle % (2*Math.PI)));
+                    if (diff > Math.PI) diff = 2*Math.PI - diff;
+                    
+                    if (diff < 0.1) { // Hit!
+                        state.status = 'ARRIVED';
+                        playEngineSound(1.0); // Insertion burn
+                        setTimeout(playArrivalChime, 1200);
+                    } else {
+                        state.status = 'MISSED';
+                    }
+                    
+                    updateHUD();
+                } else {
+                    // Approximate r and theta for drawing
+                    // Using r = a(1-e^2)/(1+e*cos(theta))
+                    // Simplification for visualization: linear interpolation of angle 0 to PI over transfer time
+                    // For true physics viz, we need Kepler's equation solver
+                    
+                    // Kepler solver
+                    let E = M;
+                    const e = state.spacecraft.e;
+                    for(let i=0; i<5; i++) {
+                        E = E - (E - e*Math.sin(E) - M) / (1 - e*Math.cos(E));
+                    }
+                    
+                    const nu = 2 * Math.atan(Math.sqrt((1+e)/(1-e)) * Math.tan(E/2));
+                    state.spacecraft.theta = nu;
+                    state.spacecraft.r = state.spacecraft.a * (1 - e*e) / (1 + e * Math.cos(nu));
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const scale = Math.min(canvas.width, canvas.height) * 0.4 / currentMission.scale;
+            
+            ctx.translate(cx, cy);
+            
+            // Draw Center Body
+            ctx.beginPath();
+            ctx.arc(0, 0, currentMission.centerRadius * window.devicePixelRatio, 0, 2*Math.PI);
+            ctx.fillStyle = currentMission.centerColor;
+            ctx.shadowColor = currentMission.centerColor;
+            ctx.shadowBlur = 20;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            const m = currentMission.centerMass;
+            
+            // Draw Body 1 Orbit
+            ctx.beginPath();
+            ctx.arc(0, 0, currentMission.body1.r * scale, 0, 2*Math.PI);
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            
+            // Draw Body 2 Orbit
+            ctx.beginPath();
+            ctx.arc(0, 0, currentMission.body2.r * scale, 0, 2*Math.PI);
+            ctx.stroke();
+            
+            // Draw Transfer Orbit (if launched)
+            if (state.spacecraft.active || state.status === 'PRE-LAUNCH') {
+                const h = calcHohmann();
+                const e = (currentMission.body2.r - currentMission.body1.r) / (currentMission.body2.r + currentMission.body1.r);
+                const a = h.a_t;
+                const c = a * e; // distance from center to focus
+                
+                ctx.beginPath();
+                ctx.ellipse(c * scale, 0, a * scale, a * Math.sqrt(1-e*e) * scale, 0, 0, 2*Math.PI);
+                ctx.strokeStyle = state.status === 'PRE-LAUNCH' ? 'rgba(0, 240, 255, 0.2)' : 'rgba(0, 240, 255, 0.6)';
+                if(state.status === 'PRE-LAUNCH') ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            // Angles
+            const w1 = Math.sqrt(mu(m) / Math.pow(currentMission.body1.r, 3));
+            const w2 = Math.sqrt(mu(m) / Math.pow(currentMission.body2.r, 3));
+            
+            const a1 = (w1 * state.simTime) % (2*Math.PI);
+            let a2 = (state.phaseOffset + w2 * state.simTime) % (2*Math.PI);
+            
+            // Body 1
+            const x1 = currentMission.body1.r * scale * Math.cos(a1);
+            const y1 = currentMission.body1.r * scale * Math.sin(a1);
+            ctx.beginPath();
+            ctx.arc(x1, y1, currentMission.body1.radius * window.devicePixelRatio, 0, 2*Math.PI);
+            ctx.fillStyle = currentMission.body1.color;
+            ctx.fill();
+            
+            // Body 2
+            const x2 = currentMission.body2.r * scale * Math.cos(a2);
+            const y2 = currentMission.body2.r * scale * Math.sin(a2);
+            ctx.beginPath();
+            ctx.arc(x2, y2, currentMission.body2.radius * window.devicePixelRatio, 0, 2*Math.PI);
+            ctx.fillStyle = currentMission.body2.color;
+            ctx.fill();
+            
+            // Spacecraft
+            if (state.spacecraft.active) {
+                // Rotation relative to orbit start (which is at a1 when launched)
+                // For simplicity in this 2D sim, launch always happens at angle 0.
+                // We lock body 1 to angle 0 at t=0.
+                
+                const sx = state.spacecraft.r * scale * Math.cos(state.spacecraft.theta);
+                const sy = state.spacecraft.r * scale * Math.sin(state.spacecraft.theta);
+                
+                ctx.beginPath();
+                ctx.arc(sx, sy, 3 * window.devicePixelRatio, 0, 2*Math.PI);
+                ctx.fillStyle = '#f8fafc';
+                ctx.shadowColor = '#f8fafc';
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                
+                // Trail
+                if (state.status === 'TRANSIT') {
+                    // Draw partial ellipse for trail
+                    // ... (omitted for brevity, we already draw the full transfer orbit ring)
+                }
+            } else if (state.status === 'PRE-LAUNCH') {
+                // Spacecraft is at body 1
+                ctx.beginPath();
+                ctx.arc(x1, y1, 2 * window.devicePixelRatio, 0, 2*Math.PI);
+                ctx.fillStyle = '#f8fafc';
+                ctx.fill();
+            }
+            
+            ctx.restore();
+            
+            // UI Overlays
+            if(state.simTime % 1.0 < 0.1) updateHUD();
+        }
+
+        // Event Listeners
+        missionSelect.addEventListener('change', (e) => {
+            currentMission = missions[e.target.value];
+            resetSim();
+        });
+
+        phaseSlider.addEventListener('input', (e) => {
+            const deg = parseInt(e.target.value);
+            phaseAngleValue.innerText = deg + '°';
+            state.phaseOffset = deg * Math.PI / 180;
+            if(state.status === 'PRE-LAUNCH') draw(); // Force redraw to see planet move
+        });
+
+        optimalPhaseBtn.addEventListener('click', () => {
+            const h = calcHohmann();
+            let optDeg = (h.optimalPhase * 180 / Math.PI);
+            if(optDeg > 180) optDeg -= 360;
+            phaseSlider.value = optDeg;
+            phaseSlider.dispatchEvent(new Event('input'));
+        });
+
+        timeWarpSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            if(val == 0) timeWarpValue.innerText = 'PAUSED';
+            else {
+                const multi = Math.pow(val / 100, 3) * currentMission.maxWarp;
+                timeWarpValue.innerText = multi.toFixed(1) + 'x';
+            }
+        });
+
+        launchBtn.addEventListener('click', () => {
+            if(state.status === 'PRE-LAUNCH') {
+                state.status = 'TRANSIT';
+                state.simTime = 0; // Reset time to 0 at launch
+                
+                const h = calcHohmann();
+                state.spacecraft.active = true;
+                state.spacecraft.a = h.a_t;
+                state.spacecraft.e = (currentMission.body2.r - currentMission.body1.r) / (currentMission.body2.r + currentMission.body1.r);
+                state.spacecraft.r = currentMission.body1.r;
+                state.spacecraft.theta = 0;
+                
+                // Set phase offset based on current slider (target planet position at t=0)
+                // It's already set via slider input
+                
+                launchBtn.disabled = true;
+                launchBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                missionSelect.disabled = true;
+                phaseSlider.disabled = true;
+                
+                playEngineSound(1.5);
+                
+                if(isAudioEnabled && !telemetryInterval) {
+                    telemetryInterval = setInterval(playTelemetryClick, 1000);
+                }
+                
+                // If warp is 0, auto set to some speed
+                if(timeWarpSlider.value == 0) {
+                    timeWarpSlider.value = 50;
+                    timeWarpSlider.dispatchEvent(new Event('input'));
+                }
+            }
+        });
+
+        resetBtn.addEventListener('click', resetSim);
+        audioToggleBtn.addEventListener('click', toggleAudio);
+
+        function resetSim() {
+            state = {
+                t: 0,
+                simTime: 0,
+                warpMulti: 1,
+                phaseOffset: parseFloat(phaseSlider.value) * Math.PI / 180,
+                status: 'PRE-LAUNCH',
+                spacecraft: { active: false, r: 0, theta: 0, a: 0, e: 0, v: 0 }
+            };
+            
+            launchBtn.disabled = false;
+            launchBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            missionSelect.disabled = false;
+            phaseSlider.disabled = false;
+            
+            clearInterval(telemetryInterval);
+            telemetryInterval = null;
+            stopEngineSound();
+            
+            updateHUD();
+            draw();
+        }
+
+        // Init
+        resize();
+        optimalPhaseBtn.click(); // Set optimal phase by default
+        updateHUD();
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>

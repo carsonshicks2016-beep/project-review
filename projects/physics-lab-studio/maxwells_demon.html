@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maxwell's Demon & Thermodynamic Entropy Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #111a22; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .hud-value { font-variant-numeric: tabular-nums; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 h-screen flex flex-col font-sans overflow-hidden select-none">
+    <!-- Header -->
+    <header class="p-3 border-b border-slate-800 bg-slate-900/80 flex justify-between items-center z-10 shrink-0">
+        <h1 class="text-xl font-bold text-slate-100 flex items-center gap-3">
+            <span class="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>
+            Maxwell's Demon <span class="text-slate-500 font-normal text-sm ml-2">Thermodynamic Entropy Simulator</span>
+        </h1>
+        <button id="audio-toggle" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors border border-slate-700 font-medium flex items-center gap-2 text-sm text-sky-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5 10v4a2 2 0 002 2h2l4 4V4L9 8H7a2 2 0 00-2 2z"></path></svg>
+            <span id="audio-label">Enable Audio</span>
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex overflow-hidden relative">
+        <!-- Canvas Container -->
+        <div class="flex-1 relative p-4 flex flex-col items-center justify-center bg-[#0a0f18]">
+            <div class="relative w-full max-w-6xl aspect-[2/1] bg-slate-950 border border-slate-700 rounded-xl overflow-hidden shadow-2xl shadow-slate-900/50">
+                <canvas id="sim-canvas" class="w-full h-full block"></canvas>
+                
+                <!-- HUD Overlay -->
+                <div class="absolute top-0 left-0 w-full flex justify-between p-4 pointer-events-none text-xs md:text-sm font-mono">
+                    <!-- Left Chamber HUD -->
+                    <div class="bg-slate-950/80 backdrop-blur-md border border-slate-800 p-3 rounded-lg text-sky-200 shadow-lg min-w-[140px]">
+                        <div class="font-bold text-sky-400 mb-1.5 border-b border-sky-900/50 pb-1 flex justify-between">
+                            <span>LEFT (COLD)</span>
+                        </div>
+                        <div class="flex justify-between gap-4"><span>Temp:</span> <span class="hud-value"><span id="hud-tl">300</span> K</span></div>
+                        <div class="flex justify-between gap-4"><span>Count:</span> <span class="hud-value" id="hud-nl">100</span></div>
+                        <div class="flex justify-between gap-4"><span>Press:</span> <span class="hud-value"><span id="hud-pl">101.3</span> kPa</span></div>
+                    </div>
+                    
+                    <!-- Thermodynamics HUD -->
+                    <div class="bg-slate-950/90 backdrop-blur-md border border-emerald-900/50 p-3 rounded-lg text-slate-300 text-center mx-4 min-w-[220px] shadow-lg shadow-emerald-900/10">
+                        <div class="font-bold text-emerald-400 mb-1.5 border-b border-emerald-900/50 pb-1">THERMODYNAMICS</div>
+                        <div class="flex justify-between gap-4 text-sky-200"><span>Gas Entropy ΔS_gas:</span> <span class="hud-value"><span id="hud-dsgas">0.00</span> k_B</span></div>
+                        <div class="flex justify-between gap-4 text-amber-200 mt-1"><span>Demon Memory:</span> <span class="hud-value"><span id="hud-bits">0</span> bits</span></div>
+                        <div class="flex justify-between gap-4 text-rose-300"><span>Erase Cost ΔS_erase:</span> <span class="hud-value"><span id="hud-dserase">0.00</span> k_B</span></div>
+                        <div class="mt-2 pt-1 border-t border-slate-800 font-bold flex justify-between gap-4 text-emerald-300">
+                            <span>Total Entropy ΔS_tot:</span> <span class="hud-value"><span id="hud-dstotal">0.00</span> k_B</span>
+                        </div>
+                    </div>
+
+                    <!-- Right Chamber HUD -->
+                    <div class="bg-slate-950/80 backdrop-blur-md border border-slate-800 p-3 rounded-lg text-rose-200 shadow-lg min-w-[140px]">
+                        <div class="font-bold text-rose-400 mb-1.5 border-b border-rose-900/50 pb-1 flex justify-between">
+                            <span>RIGHT (HOT)</span>
+                        </div>
+                        <div class="flex justify-between gap-4"><span>Temp:</span> <span class="hud-value"><span id="hud-tr">300</span> K</span></div>
+                        <div class="flex justify-between gap-4"><span>Count:</span> <span class="hud-value" id="hud-nr">100</span></div>
+                        <div class="flex justify-between gap-4"><span>Press:</span> <span class="hud-value"><span id="hud-pr">101.3</span> kPa</span></div>
+                    </div>
+                </div>
+
+                <!-- Door Indicator overlay (manual mode hint) -->
+                <div id="manual-hint" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/80 text-amber-400 text-xs px-3 py-1.5 rounded-full border border-amber-900/50 hidden pointer-events-none backdrop-blur-sm">
+                    Press SPACE to toggle trapdoor
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Controls -->
+        <aside class="w-80 bg-slate-900 border-l border-slate-800 flex flex-col overflow-y-auto shrink-0 z-10">
+            <div class="p-5 space-y-6">
+                <!-- Modes -->
+                <section>
+                    <h2 class="text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider">Demon Mode</h2>
+                    <div class="space-y-2">
+                        <select id="ctrl-mode" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-200 outline-none focus:border-sky-500 transition-colors cursor-pointer">
+                            <option value="off">Demon OFF (Thermalize)</option>
+                            <option value="sort" selected>Demon ON (Sort Hot -> Right)</option>
+                            <option value="reverse">Demon REVERSED (Sort Cold -> Right)</option>
+                            <option value="manual">Manual Door (Spacebar)</option>
+                        </select>
+                    </div>
+                </section>
+
+                <!-- Sliders -->
+                <section class="space-y-5 bg-slate-950/80 p-4 rounded-xl border border-slate-800/50">
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="text-xs font-bold text-slate-400 uppercase">Speed Threshold v*</label>
+                            <span id="lbl-thresh" class="text-xs font-mono text-sky-400">1.0</span>
+                        </div>
+                        <input type="range" id="ctrl-thresh" min="0.2" max="2.5" step="0.1" value="1.0" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500">
+                        <div class="text-[10px] text-slate-500 mt-1.5 leading-tight">Molecules faster than this go right, slower go left.</div>
+                    </div>
+                    
+                    <div class="pt-2 border-t border-slate-800/50">
+                        <div class="flex justify-between mb-2">
+                            <label class="text-xs font-bold text-slate-400 uppercase">Particle Count</label>
+                            <span id="lbl-count" class="text-xs font-mono text-emerald-400">200</span>
+                        </div>
+                        <input type="range" id="ctrl-count" min="50" max="500" step="10" value="200" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                    </div>
+                </section>
+                
+                <!-- Actions -->
+                <section>
+                    <button id="btn-erase" class="w-full py-3 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-900/50 rounded-xl transition-all font-bold shadow-lg active:scale-[0.98] flex flex-col items-center justify-center gap-1 group">
+                        <span>Erase Demon's Memory</span>
+                        <span class="text-[10px] text-rose-400/70 font-normal group-hover:text-rose-300 transition-colors">Apply Landauer Heat Cost (k_B T ln 2)</span>
+                    </button>
+                </section>
+
+                <!-- Presets -->
+                <section>
+                    <h3 class="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">Presets</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="preset-btn px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-xs text-left transition-colors font-medium text-slate-300" data-preset="equilibrium">Thermal Equilibrium</button>
+                        <button class="preset-btn px-3 py-2 bg-slate-800 hover:bg-sky-900/40 hover:border-sky-800/50 hover:text-sky-300 rounded-lg border border-slate-700 text-xs text-left transition-colors font-medium text-slate-300" data-preset="sorting">Active Sorting</button>
+                        <button class="preset-btn px-3 py-2 bg-slate-800 hover:bg-rose-900/40 hover:border-rose-800/50 hover:text-rose-300 rounded-lg border border-slate-700 text-xs text-left transition-colors font-medium text-slate-300" data-preset="separated">Complete Separation</button>
+                        <button class="preset-btn px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-xs text-left transition-colors font-medium text-slate-300" data-preset="expansion">Free Expansion</button>
+                    </div>
+                </section>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Explainer Cards -->
+    <footer class="h-44 bg-slate-900 border-t border-slate-800 p-4 flex gap-4 overflow-x-auto shrink-0 snap-x z-20">
+        <!-- Card 1 -->
+        <div class="w-80 shrink-0 bg-slate-950 border border-slate-800 rounded-xl p-4 snap-center relative overflow-hidden group">
+            <div class="absolute inset-0 bg-gradient-to-br from-sky-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <h3 class="font-bold text-sky-400 mb-1.5 text-sm">1. Maxwell's Paradox (1867)</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+                James Clerk Maxwell imagined a tiny "demon" guarding a trapdoor between gas chambers. By only letting fast molecules go right and slow ones left, the demon seemingly creates a temperature difference without doing mechanical work—challenging the Second Law of Thermodynamics.
+            </p>
+        </div>
+        <!-- Card 2 -->
+        <div class="w-80 shrink-0 bg-slate-950 border border-slate-800 rounded-xl p-4 snap-center relative overflow-hidden group">
+            <div class="absolute inset-0 bg-gradient-to-br from-emerald-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <h3 class="font-bold text-emerald-400 mb-1.5 text-sm">2. Szilard Engine (1929)</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+                Leo Szilard simplified the paradox, showing that the demon must <em>measure</em> the particle's state. He linked thermodynamics to information theory, suggesting the act of measurement or information processing itself is part of the physical system's entropy balance.
+            </p>
+        </div>
+        <!-- Card 3 -->
+        <div class="w-80 shrink-0 bg-slate-950 border border-slate-800 rounded-xl p-4 snap-center relative overflow-hidden group">
+            <div class="absolute inset-0 bg-gradient-to-br from-rose-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <h3 class="font-bold text-rose-400 mb-1.5 text-sm">3. Landauer's Principle (1961)</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+                Rolf Landauer proved that "Information is Physical." The measurement doesn't necessarily cost energy, but <strong>erasing</strong> the demon's memory to repeat the cycle does! Erasing 1 bit dissipates at least <span class="font-mono text-amber-200/70">k_B T ln(2)</span> of heat, perfectly balancing the entropy equation.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // --- PHYSICS & SYSTEM CONSTANTS ---
+        const PARTICLE_RADIUS = 3;
+        const BASE_SPEED = 2.0;
+        const BASE_TEMP = 300; // Kelvin
+        const K_B = 1.0; // Normalized Boltzmann constant for simulation scale
+        
+        // --- STATE ---
+        let particles = [];
+        let numParticles = 200;
+        let speedThreshold = 1.0;
+        let mode = 'sort'; // off, sort, reverse, manual
+        let manualDoorOpen = false;
+        
+        let demonMemoryBits = 0;
+        let eraseEntropy = 0;
+        
+        let initialEntropy = 0;
+        let simRunning = true;
+
+        // Partition properties
+        const PARTITION_WIDTH = 6;
+        let GAP_Y = 0; // Center Y
+        let GAP_HEIGHT = 80;
+        let doorOpen = false;
+        let doorTransition = 0; // 0 to 1
+
+        // Canvas setup
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let leftChamberWidth;
+
+        // Resize handler
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            // High DPI support
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            width = rect.width;
+            height = rect.height;
+            leftChamberWidth = width / 2;
+            GAP_Y = height / 2;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // --- AUDIO SYSTEM (Web Audio API) ---
+        let audioCtx = null;
+        let leftHum = null;
+        let leftGain = null;
+        let rightHum = null;
+        let rightGain = null;
+        let masterGain = null;
+        let noiseBuffer = null;
+        let audioEnabled = false;
+
+        async function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.5;
+            masterGain.connect(audioCtx.destination);
+
+            // Ambient hums
+            leftHum = audioCtx.createOscillator();
+            leftHum.type = 'sine';
+            leftGain = audioCtx.createGain();
+            leftHum.connect(leftGain);
+            leftGain.connect(masterGain);
+            leftHum.start();
+
+            rightHum = audioCtx.createOscillator();
+            rightHum.type = 'triangle';
+            rightGain = audioCtx.createGain();
+            rightHum.connect(rightGain);
+            rightGain.connect(masterGain);
+            rightHum.start();
+
+            // Create thermal noise buffer (patter)
+            const bufferSize = audioCtx.sampleRate * 2; // 2 seconds
+            noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+            
+            audioEnabled = true;
+            document.getElementById('audio-toggle').classList.replace('bg-slate-800', 'bg-emerald-900/50');
+            document.getElementById('audio-toggle').classList.replace('text-sky-400', 'text-emerald-400');
+            document.getElementById('audio-toggle').classList.add('border-emerald-700/50');
+            document.getElementById('audio-label').textContent = "Audio Active";
+        }
+
+        document.getElementById('audio-toggle').addEventListener('click', () => {
+            if (!audioEnabled) {
+                initAudio();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            } else {
+                audioCtx.suspend();
+                audioEnabled = false;
+                document.getElementById('audio-toggle').classList.replace('bg-emerald-900/50', 'bg-slate-800');
+                document.getElementById('audio-toggle').classList.replace('text-emerald-400', 'text-sky-400');
+                document.getElementById('audio-toggle').classList.remove('border-emerald-700/50');
+                document.getElementById('audio-label').textContent = "Enable Audio";
+            }
+        });
+
+        function playCollisionSound(speed, x) {
+            if (!audioEnabled || !audioCtx) return;
+            
+            // Limit concurrent sounds roughly by chance based on speed
+            if (Math.random() > 0.1) return;
+
+            const noiseNode = audioCtx.createBufferSource();
+            noiseNode.buffer = noiseBuffer;
+            
+            const bandpass = audioCtx.createBiquadFilter();
+            bandpass.type = 'bandpass';
+            // Higher speed = higher frequency ping
+            bandpass.frequency.value = 500 + speed * 800;
+            bandpass.Q.value = 1.0;
+
+            const panner = audioCtx.createStereoPanner();
+            panner.pan.value = (x / width) * 2 - 1;
+
+            const env = audioCtx.createGain();
+            env.gain.setValueAtTime(0, audioCtx.currentTime);
+            env.gain.linearRampToValueAtTime(Math.min(0.1, speed * 0.05), audioCtx.currentTime + 0.005);
+            env.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+
+            noiseNode.connect(bandpass);
+            bandpass.connect(panner);
+            panner.connect(env);
+            env.connect(masterGain);
+
+            noiseNode.start();
+            noiseNode.stop(audioCtx.currentTime + 0.06);
+        }
+
+        function playDoorSound(opening) {
+            if (!audioEnabled || !audioCtx) return;
+            
+            const osc = audioCtx.createOscillator();
+            osc.type = opening ? 'square' : 'sawtooth';
+            
+            osc.frequency.setValueAtTime(opening ? 300 : 800, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(opening ? 800 : 300, audioCtx.currentTime + 0.1);
+
+            const env = audioCtx.createGain();
+            env.gain.setValueAtTime(0, audioCtx.currentTime);
+            env.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.02);
+            env.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+
+            osc.connect(env);
+            env.connect(masterGain);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function updateAudioDrones(tL, tR) {
+            if (!audioEnabled || !audioCtx) return;
+            
+            // Map temp (e.g. 100-600) to frequency
+            const clampTemp = (t) => Math.max(10, Math.min(1000, t));
+            
+            const freqL = 50 + (clampTemp(tL) / 300) * 100;
+            const freqR = 100 + (clampTemp(tR) / 300) * 200;
+            
+            leftHum.frequency.setTargetAtTime(freqL, audioCtx.currentTime, 0.5);
+            rightHum.frequency.setTargetAtTime(freqR, audioCtx.currentTime, 0.5);
+            
+            leftGain.gain.setTargetAtTime(0.1, audioCtx.currentTime, 0.5);
+            rightGain.gain.setTargetAtTime(0.05, audioCtx.currentTime, 0.5); // Triangle is louder
+        }
+
+
+        // --- PARTICLE PHYSICS ---
+        class Particle {
+            constructor(x, y, vx, vy) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.r = PARTICLE_RADIUS;
+                this.mass = 1;
+                this.chamber = x < leftChamberWidth ? 0 : 1;
+            }
+            
+            get speed() {
+                return Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+            }
+            
+            get energy() {
+                return 0.5 * this.mass * (this.vx*this.vx + this.vy*this.vy);
+            }
+        }
+
+        // Maxwell-Boltzmann Box-Muller transform for initial velocities
+        function randomGaussian() {
+            let u = 0, v = 0;
+            while(u === 0) u = Math.random(); //Converting [0,1) to (0,1)
+            while(v === 0) v = Math.random();
+            return Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+        }
+
+        function initParticles(preset = 'equilibrium') {
+            particles = [];
+            
+            let countL = numParticles / 2;
+            let countR = numParticles / 2;
+            let tL = BASE_TEMP;
+            let tR = BASE_TEMP;
+
+            if (preset === 'separated') {
+                // All hot right, all cold left
+                tL = 100;
+                tR = 500;
+            } else if (preset === 'expansion') {
+                // All particles left side
+                countL = numParticles;
+                countR = 0;
+                mode = 'manual';
+                document.getElementById('ctrl-mode').value = 'manual';
+                manualDoorOpen = true; // start open
+            }
+
+            const speedScaleL = Math.sqrt(tL / BASE_TEMP) * BASE_SPEED;
+            const speedScaleR = Math.sqrt(tR / BASE_TEMP) * BASE_SPEED;
+
+            for (let i = 0; i < countL; i++) {
+                particles.push(new Particle(
+                    Math.random() * (leftChamberWidth - 20) + 10,
+                    Math.random() * (height - 20) + 10,
+                    randomGaussian() * speedScaleL,
+                    randomGaussian() * speedScaleL
+                ));
+            }
+            for (let i = 0; i < countR; i++) {
+                particles.push(new Particle(
+                    leftChamberWidth + 10 + Math.random() * (leftChamberWidth - 20),
+                    Math.random() * (height - 20) + 10,
+                    randomGaussian() * speedScaleR,
+                    randomGaussian() * speedScaleR
+                ));
+            }
+
+            demonMemoryBits = 0;
+            eraseEntropy = 0;
+            initialEntropy = calculateGasEntropy();
+        }
+
+        function calculateMetrics() {
+            let nL = 0, nR = 0;
+            let eL = 0, eR = 0;
+            
+            for (let p of particles) {
+                if (p.x < leftChamberWidth) {
+                    nL++;
+                    eL += p.energy;
+                    p.chamber = 0;
+                } else {
+                    nR++;
+                    eR += p.energy;
+                    p.chamber = 1;
+                }
+            }
+
+            // Temp = 2/3 * (E/N) / k_B. We use 2D gas, so Temp = (E/N)/k_B
+            const tL = nL > 0 ? (eL / nL) * (BASE_TEMP / (BASE_SPEED*BASE_SPEED*0.5)) : 0;
+            const tR = nR > 0 ? (eR / nR) * (BASE_TEMP / (BASE_SPEED*BASE_SPEED*0.5)) : 0;
+            
+            // Pressure = N k_B T / V (V is area in 2D)
+            const volL = leftChamberWidth * height;
+            const volR = (width - leftChamberWidth) * height;
+            
+            // Scale arbitrary units for display
+            const pL = nL > 0 ? (nL * tL) / volL * 1000 : 0;
+            const pR = nR > 0 ? (nR * tR) / volR * 1000 : 0;
+
+            return {nL, nR, tL, tR, pL, pR};
+        }
+
+        function calculateGasEntropy() {
+            const m = calculateMetrics();
+            // Sackur-Tetrode equation analog for 2D ideal gas
+            // S = N k_B [ ln(V/N) + ln(T) + C ]
+            // We focus on ΔS, so we ignore constants.
+            
+            const S_chamber = (N, T, V) => {
+                if (N <= 0 || T <= 0) return 0;
+                return N * K_B * (Math.log(V/N) + Math.log(T));
+            };
+
+            const volL = leftChamberWidth * height;
+            const volR = (width - leftChamberWidth) * height;
+
+            return S_chamber(m.nL, m.tL, volL) + S_chamber(m.nR, m.tR, volR);
+        }
+
+        // --- UPDATE LOOP ---
+        function updatePhysics() {
+            const dt = 1.0;
+            
+            // 1. Update Positions & Boundary Collisions
+            for (let i=0; i<particles.length; i++) {
+                let p = particles[i];
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+
+                let hitWall = false;
+
+                // Outer Walls
+                if (p.x < p.r) { p.x = p.r; p.vx *= -1; hitWall = true; }
+                if (p.x > width - p.r) { p.x = width - p.r; p.vx *= -1; hitWall = true; }
+                if (p.y < p.r) { p.y = p.r; p.vy *= -1; hitWall = true; }
+                if (p.y > height - p.r) { p.y = height - p.r; p.vy *= -1; hitWall = true; }
+
+                // Partition Collision
+                let nextChamber = p.x < leftChamberWidth ? 0 : 1;
+                
+                // If crossing the center line
+                if (p.chamber !== nextChamber) {
+                    let inGapY = Math.abs(p.y - GAP_Y) < GAP_HEIGHT/2;
+                    let crossAllowed = inGapY && doorOpen;
+                    
+                    if (!crossAllowed) {
+                        // Bounce off partition
+                        if (p.chamber === 0) {
+                            p.x = leftChamberWidth - p.r - PARTITION_WIDTH/2;
+                        } else {
+                            p.x = leftChamberWidth + p.r + PARTITION_WIDTH/2;
+                        }
+                        p.vx *= -1;
+                        hitWall = true;
+                    } else {
+                        // Successfully crossed, update chamber
+                        p.chamber = nextChamber;
+                        // Information Cost: If a demon made a choice, it costs a bit.
+                        if (mode === 'sort' || mode === 'reverse') {
+                            demonMemoryBits++;
+                        }
+                    }
+                }
+
+                if (hitWall) playCollisionSound(p.speed / BASE_SPEED, p.x);
+            }
+
+            // 2. Particle-Particle Collisions (Grid-based or simple O(N^2) optimization)
+            // For N=50-500, simple O(N^2) is totally fine in JS.
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    let p1 = particles[i];
+                    let p2 = particles[j];
+                    
+                    // Quick check using bounding box
+                    if (Math.abs(p1.x - p2.x) > p1.r + p2.r || Math.abs(p1.y - p2.y) > p1.r + p2.r) continue;
+
+                    let dx = p2.x - p1.x;
+                    let dy = p2.y - p1.y;
+                    let distSq = dx*dx + dy*dy;
+                    let rSq = (p1.r + p2.r) * (p1.r + p2.r);
+
+                    if (distSq < rSq && distSq > 0) {
+                        let dist = Math.sqrt(distSq);
+                        
+                        // Separate them
+                        let overlap = (p1.r + p2.r - dist) / 2;
+                        let nx = dx / dist;
+                        let ny = dy / dist;
+                        
+                        p1.x -= nx * overlap;
+                        p1.y -= ny * overlap;
+                        p2.x += nx * overlap;
+                        p2.y += ny * overlap;
+
+                        // Elastic collision math
+                        let kx = (p1.vx - p2.vx);
+                        let ky = (p1.vy - p2.vy);
+                        
+                        // Dot product
+                        let p = 2.0 * (nx * kx + ny * ky) / (p1.mass + p2.mass);
+                        
+                        p1.vx -= p * p2.mass * nx;
+                        p1.vy -= p * p2.mass * ny;
+                        p2.vx += p * p1.mass * nx;
+                        p2.vy += p * p1.mass * ny;
+                        
+                        playCollisionSound((p1.speed+p2.speed)/2 / BASE_SPEED, p1.x);
+                    }
+                }
+            }
+
+            // 3. Demon Logic (Control Door)
+            let wantDoorOpen = false;
+            
+            if (mode === 'manual') {
+                wantDoorOpen = manualDoorOpen;
+            } else if (mode !== 'off') {
+                // Demon sensing logic
+                // Check particles in sensing zone (near gap)
+                const SENSE_DIST = 30;
+                for (let p of particles) {
+                    if (Math.abs(p.y - GAP_Y) > GAP_HEIGHT/2 + 10) continue;
+                    
+                    let distToLine = Math.abs(p.x - leftChamberWidth);
+                    if (distToLine < SENSE_DIST) {
+                        let speed = p.speed;
+                        let isFast = speed > speedThreshold * BASE_SPEED;
+                        let movingRight = p.vx > 0;
+                        
+                        if (mode === 'sort') {
+                            // Sort: Fast go Right, Slow go Left
+                            if ((isFast && movingRight) || (!isFast && !movingRight)) {
+                                wantDoorOpen = true;
+                                break;
+                            }
+                        } else if (mode === 'reverse') {
+                            // Reverse: Slow go Right, Fast go Left
+                            if ((!isFast && movingRight) || (isFast && !movingRight)) {
+                                wantDoorOpen = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else {
+                wantDoorOpen = true; // Off mode just leaves door open for thermalization
+            }
+
+            if (wantDoorOpen && !doorOpen) {
+                doorOpen = true;
+                playDoorSound(true);
+            } else if (!wantDoorOpen && doorOpen) {
+                doorOpen = false;
+                playDoorSound(false);
+            }
+
+            // Door animation
+            if (doorOpen) doorTransition = Math.min(1, doorTransition + 0.1);
+            else doorTransition = Math.max(0, doorTransition - 0.1);
+        }
+
+        // --- RENDER LOOP ---
+        function render() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw chambers background
+            const m = calculateMetrics();
+            
+            // Color mapping based on temp
+            const tMap = (t) => {
+                const norm = Math.max(-1, Math.min(1, (t - BASE_TEMP) / 200));
+                if (norm > 0) return `rgba(225, 29, 72, ${norm * 0.15})`; // Rose for hot
+                return `rgba(0, 212, 224, ${-norm * 0.15})`; // Sky for cold
+            };
+
+            ctx.fillStyle = tMap(m.tL);
+            ctx.fillRect(0, 0, leftChamberWidth, height);
+            
+            ctx.fillStyle = tMap(m.tR);
+            ctx.fillRect(leftChamberWidth, 0, width - leftChamberWidth, height);
+
+            // Draw Partition
+            ctx.fillStyle = '#334155'; // slate-700
+            
+            // Top half
+            ctx.fillRect(leftChamberWidth - PARTITION_WIDTH/2, 0, PARTITION_WIDTH, GAP_Y - GAP_HEIGHT/2);
+            // Bottom half
+            ctx.fillRect(leftChamberWidth - PARTITION_WIDTH/2, GAP_Y + GAP_HEIGHT/2, PARTITION_WIDTH, height - (GAP_Y + GAP_HEIGHT/2));
+
+            // Draw Door
+            if (doorTransition < 1) {
+                const doorH = (GAP_HEIGHT/2) * (1 - doorTransition);
+                ctx.fillStyle = '#f59e0b'; // amber-500
+                // Top slide
+                ctx.fillRect(leftChamberWidth - 2, GAP_Y - GAP_HEIGHT/2, 4, doorH);
+                // Bottom slide
+                ctx.fillRect(leftChamberWidth - 2, GAP_Y + GAP_HEIGHT/2 - doorH, 4, doorH);
+            }
+            
+            // Sensing Field Visualization
+            if (mode === 'sort' || mode === 'reverse') {
+                ctx.strokeStyle = 'rgba(245, 158, 11, 0.2)'; // amber
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(leftChamberWidth - 30, GAP_Y - GAP_HEIGHT/2);
+                ctx.lineTo(leftChamberWidth - 30, GAP_Y + GAP_HEIGHT/2);
+                ctx.moveTo(leftChamberWidth + 30, GAP_Y - GAP_HEIGHT/2);
+                ctx.lineTo(leftChamberWidth + 30, GAP_Y + GAP_HEIGHT/2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Draw Particles
+            for (let p of particles) {
+                let speedNorm = p.speed / BASE_SPEED;
+                
+                // Color mapping: Cold(Blue) -> Normal(White) -> Hot(Red)
+                let r, g, b;
+                if (speedNorm < 1) {
+                    r = Math.floor(100 + 155*speedNorm);
+                    g = Math.floor(200 + 55*speedNorm);
+                    b = 255;
+                } else {
+                    let h = Math.min(1, (speedNorm - 1) / 1.5);
+                    r = 255;
+                    g = Math.floor(255 * (1 - h));
+                    b = Math.floor(255 * (1 - h));
+                }
+                
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgb(${r},${g},${b})`;
+                ctx.fill();
+                
+                // Optional: motion blur or glow for fast ones
+                if (speedNorm > 1.5) {
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = `rgb(${r},${g},${b})`;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            }
+        }
+
+        function updateHUD(metrics) {
+            document.getElementById('hud-tl').textContent = metrics.tL.toFixed(1);
+            document.getElementById('hud-nl').textContent = metrics.nL;
+            document.getElementById('hud-pl').textContent = metrics.pL.toFixed(1);
+            
+            document.getElementById('hud-tr').textContent = metrics.tR.toFixed(1);
+            document.getElementById('hud-nr').textContent = metrics.nR;
+            document.getElementById('hud-pr').textContent = metrics.pR.toFixed(1);
+
+            let currentGasEntropy = calculateGasEntropy();
+            let dS_gas = (currentGasEntropy - initialEntropy) / 100; // Scaled for display readability
+            
+            document.getElementById('hud-dsgas').textContent = dS_gas.toFixed(2);
+            document.getElementById('hud-bits').textContent = demonMemoryBits;
+            
+            let dS_erase_display = (eraseEntropy) / 100;
+            document.getElementById('hud-dserase').textContent = dS_erase_display.toFixed(2);
+            
+            let dS_tot = dS_gas + dS_erase_display;
+            document.getElementById('hud-dstotal').textContent = dS_tot.toFixed(2);
+
+            // Color coding Delta S Total
+            const dsTotEl = document.getElementById('hud-dstotal');
+            if (dS_tot < -0.01) dsTotEl.className = 'text-rose-400 font-bold';
+            else dsTotEl.className = 'text-emerald-400 font-bold';
+
+            updateAudioDrones(metrics.tL, metrics.tR);
+        }
+
+        function loop() {
+            if (simRunning) {
+                updatePhysics();
+                render();
+                if (Math.random() < 0.1) { // Update HUD less frequently
+                    updateHUD(calculateMetrics());
+                }
+            }
+            requestAnimationFrame(loop);
+        }
+
+        // --- INPUT & CONTROLS ---
+        
+        document.getElementById('ctrl-mode').addEventListener('change', (e) => {
+            mode = e.target.value;
+            const hint = document.getElementById('manual-hint');
+            if (mode === 'manual') hint.classList.remove('hidden');
+            else hint.classList.add('hidden');
+        });
+
+        document.getElementById('ctrl-thresh').addEventListener('input', (e) => {
+            speedThreshold = parseFloat(e.target.value);
+            document.getElementById('lbl-thresh').textContent = speedThreshold.toFixed(1);
+        });
+
+        document.getElementById('ctrl-count').addEventListener('input', (e) => {
+            numParticles = parseInt(e.target.value);
+            document.getElementById('lbl-count').textContent = numParticles;
+            initParticles();
+        });
+
+        document.getElementById('btn-erase').addEventListener('click', () => {
+            // Apply Landauer Cost: E = k_B T ln(2) per bit
+            // For entropy: ΔS = Q/T = N_bits * k_B * ln(2)
+            const addedEntropy = demonMemoryBits * K_B * Math.LN2;
+            eraseEntropy += addedEntropy;
+            demonMemoryBits = 0; // Erased!
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && mode === 'manual') {
+                e.preventDefault();
+                manualDoorOpen = true;
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'Space' && mode === 'manual') {
+                e.preventDefault();
+                manualDoorOpen = false;
+            }
+        });
+
+        // Presets
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const p = e.target.dataset.preset;
+                initParticles(p);
+                
+                // Adjust mode based on preset
+                const modeSelect = document.getElementById('ctrl-mode');
+                if (p === 'equilibrium' || p === 'separated') {
+                    mode = 'off';
+                    modeSelect.value = 'off';
+                } else if (p === 'sorting') {
+                    mode = 'sort';
+                    modeSelect.value = 'sort';
+                }
+                
+                if (mode === 'manual') document.getElementById('manual-hint').classList.remove('hidden');
+                else document.getElementById('manual-hint').classList.add('hidden');
+            });
+        });
+
+        // Initialize
+        initParticles();
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>

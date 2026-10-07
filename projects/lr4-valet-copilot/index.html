@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LR4 Valet Copilot</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <p class="eyebrow">2015 Land Rover LR4 HSE</p>
+          <h1>LR4 Valet Copilot</h1>
+        </div>
+        <div class="cabinet-state" aria-label="System state">
+          <span id="wakeStateDot" class="state-dot standby"></span>
+          <div>
+            <small id="wakeStateLabel">Silent cabin mode</small>
+            <strong id="wakeStateDetail">Waiting for wake command</strong>
+          </div>
+        </div>
+      </header>
+
+      <section class="workspace">
+        <aside class="left-rail">
+          <section class="panel wake-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Voice Gate</p>
+                <h2>Wake Command</h2>
+              </div>
+              <span class="pill quiet">Muted</span>
+            </div>
+
+            <div class="wake-orb" id="wakeOrb" aria-hidden="true">
+              <span></span>
+            </div>
+
+            <label class="field-label">
+              Wake phrase
+              <input id="wakePhraseInput" autocomplete="off" />
+            </label>
+
+            <div class="button-row">
+              <button id="wakeButton" title="Trigger the prototype wake sequence">Wake</button>
+              <button id="speakButton" title="Speak the current valet line with browser TTS">Voice Test</button>
+              <button id="sleepButton" title="Return to silent cabin mode">Sleep</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Collector</p>
+                <h2>Pi Stack</h2>
+              </div>
+            </div>
+            <div id="hardwareStack" class="hardware-stack"></div>
+          </section>
+        </aside>
+
+        <section class="center-stage">
+          <section class="hero-panel">
+            <div class="hero-copy">
+              <p class="eyebrow">Refined British valet mode</p>
+              <h2 id="valetLine">Good evening, Carson. I am standing by.</h2>
+              <p id="valetSubline" class="muted">
+                The cabin remains quiet until the wake command is detected.
+              </p>
+            </div>
+            <div class="hero-actions">
+              <button class="mini-tab active" data-scan="delta">Delta Scan</button>
+              <button class="mini-tab" data-scan="drive">Drive Feel</button>
+              <button class="mini-tab" data-scan="install">Install Plan</button>
+            </div>
+            <canvas id="mainCanvas" width="1200" height="520" aria-label="LR4 copilot visual display"></canvas>
+          </section>
+
+          <section class="mode-grid">
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">OBD-II Bluetooth</p>
+                  <h2>Live Delta Values</h2>
+                </div>
+                <span id="obdStatus" class="pill good">Streaming mock</span>
+              </div>
+              <div id="deltaGrid" class="delta-grid"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Accelerometer / Gyro</p>
+                  <h2>Cabin Motion</h2>
+                </div>
+                <span id="motionScore" class="pill watch">Calibrating</span>
+              </div>
+              <div id="motionGrid" class="motion-grid"></div>
+            </section>
+          </section>
+        </section>
+
+        <aside class="right-rail">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">LR4 Watchlist</p>
+                <h2>Car-Specific Focus</h2>
+              </div>
+            </div>
+            <div id="watchList" class="watch-list"></div>
+          </section>
+
+          <section class="panel llm-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Local Intelligence</p>
+                <h2>LLM Core</h2>
+              </div>
+              <span id="llmStatus" class="pill quiet">Mock ready</span>
+            </div>
+
+            <label class="field-label">
+              Provider
+              <select id="llmProvider">
+                <option value="mock">Mock Pi LLM</option>
+                <option value="proxy">Pi valet proxy</option>
+                <option value="ollama">Ollama local API</option>
+                <option value="llamacpp">llama.cpp server</option>
+              </select>
+            </label>
+
+            <label class="field-label">
+              Endpoint
+              <input id="llmEndpoint" autocomplete="off" />
+            </label>
+
+            <label class="field-label">
+              Model
+              <input id="llmModel" autocomplete="off" />
+            </label>
+
+            <div class="button-row">
+              <button id="llmHealthButton" title="Check whether the selected local LLM endpoint is reachable">Health</button>
+              <button id="llmBriefButton" title="Ask the local LLM for a valet-style LR4 brief">Brief</button>
+            </div>
+
+            <div class="llm-readout">
+              <small>Last valet brief</small>
+              <p id="llmLastResponse">No LLM brief requested yet.</p>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Session Log</p>
+                <h2>Valet Memory</h2>
+              </div>
+            </div>
+            <div id="sessionLog" class="session-log"></div>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>

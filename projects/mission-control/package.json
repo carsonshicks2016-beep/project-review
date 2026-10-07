@@ -1,0 +1,14 @@
+{
+  "name": "mission-control",
+  "version": "1.0.0",
+  "description": "Central Project Command Center & Launcher",
+  "type": "module",
+  "main": "server/index.mjs",
+  "scripts": {
+    "start": "node server/index.mjs",
+    "dev": "node --watch server/index.mjs"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

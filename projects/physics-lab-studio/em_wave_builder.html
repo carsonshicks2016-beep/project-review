@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electromagnetic Wave & Maxwell's Equations Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#141c2e',
+                            900: '#111a22',
+                            950: '#0b1217',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .data-font { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+        canvas { touch-action: none; cursor: grab; }
+        canvas:active { cursor: grabbing; }
+        input[type=range] {
+            accent-color: #00f0ff;
+        }
+    </style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+</head>
+<body class="bg-slate-950 text-slate-200 h-screen overflow-hidden flex flex-col selection:bg-sky-500/30">
+
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center z-10 shrink-0">
+        <div>
+            <h1 class="text-xl font-bold text-sky-400">Electromagnetic Wave & Maxwell's Equations Builder</h1>
+            <p class="text-xs text-slate-400 mt-1">Interactive 3D Simulation & Sonification</p>
+        </div>
+        <button id="audio-start-btn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-emerald-900/20 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+            Initialize Audio
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex overflow-hidden">
+        
+        <!-- Sidebar Controls -->
+        <aside class="w-80 bg-slate-900 border-r border-slate-800 flex flex-col overflow-y-auto shrink-0 z-10">
+            <div class="p-5 space-y-6">
+                
+                <!-- Presets -->
+                <div class="space-y-3">
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Presets</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 hover:border-sky-500 transition-colors" data-preset="radio">Radio Wave</button>
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 hover:border-sky-500 transition-colors" data-preset="light">Visible Photon</button>
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 hover:border-sky-500 transition-colors" data-preset="circular">Circular Filter</button>
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 hover:border-sky-500 transition-colors" data-preset="am">AM Broadcast</button>
+                    </div>
+                </div>
+
+                <hr class="border-slate-800">
+
+                <!-- Wave Parameters -->
+                <div class="space-y-4">
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Wave Parameters</h3>
+                    
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>Visual Frequency (Hz)</span>
+                            <span id="freq-val" class="text-sky-400 font-mono">1.0</span>
+                        </div>
+                        <input type="range" id="freq-slider" min="0.1" max="5.0" step="0.1" value="1.0" class="w-full">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>Amplitude (E₀)</span>
+                            <span id="amp-val" class="text-sky-400 font-mono">100</span>
+                        </div>
+                        <input type="range" id="amp-slider" min="10" max="200" step="1" value="100" class="w-full">
+                    </div>
+                </div>
+
+                <hr class="border-slate-800">
+
+                <!-- Polarization -->
+                <div class="space-y-3">
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Polarization</h3>
+                    <select id="polarization-select" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm focus:outline-none focus:border-sky-500">
+                        <option value="linear-v">Linear (Vertical / Y)</option>
+                        <option value="linear-h">Linear (Horizontal / X)</option>
+                        <option value="linear-45">Linear (45° Angle)</option>
+                        <option value="rcp">Right Circular (RCP)</option>
+                        <option value="lcp">Left Circular (LCP)</option>
+                        <option value="elliptical">Elliptical</option>
+                    </select>
+                </div>
+
+                <hr class="border-slate-800">
+
+                <!-- Modulation -->
+                <div class="space-y-3">
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Modulation Mode</h3>
+                    <div class="flex flex-col gap-2">
+                        <label class="flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="radio" name="modulation" value="none" checked class="text-sky-500 bg-slate-950 border-slate-700">
+                            Unmodulated Carrier
+                        </label>
+                        <label class="flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="radio" name="modulation" value="am" class="text-sky-500 bg-slate-950 border-slate-700">
+                            Amplitude Modulation (AM)
+                        </label>
+                        <label class="flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="radio" name="modulation" value="fm" class="text-sky-500 bg-slate-950 border-slate-700">
+                            Frequency Modulation (FM)
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- Canvas Area -->
+        <div class="flex-1 relative flex flex-col">
+            <!-- HUD -->
+            <div class="absolute top-4 left-4 right-4 flex justify-between pointer-events-none z-10">
+                <div class="bg-slate-900/80 backdrop-blur border border-slate-700 p-4 rounded-2xl shadow-xl pointer-events-auto w-64">
+                    <h4 class="text-xs font-bold text-slate-400 mb-2 uppercase">Live Telemetry</h4>
+                    <div class="grid grid-cols-2 gap-y-2 text-xs">
+                        <div class="text-slate-500">Wavelength (λ)</div>
+                        <div class="text-right data-font text-slate-200" id="hud-wavelength">-- m</div>
+                        <div class="text-slate-500">Frequency (f)</div>
+                        <div class="text-right data-font text-slate-200" id="hud-frequency">-- Hz</div>
+                        <div class="text-slate-500">Speed (c)</div>
+                        <div class="text-right data-font text-slate-200">3×10⁸ m/s</div>
+                        <div class="col-span-2 h-px bg-slate-800 my-1"></div>
+                        <div class="text-slate-500">Peak E-Field</div>
+                        <div class="text-right data-font text-sky-400" id="hud-e">-- V/m</div>
+                        <div class="text-slate-500">Peak B-Field</div>
+                        <div class="text-right data-font text-rose-400" id="hud-b">-- T</div>
+                        <div class="text-slate-500">Poynting (S)</div>
+                        <div class="text-right data-font text-emerald-400" id="hud-s">-- W/m²</div>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-900/80 backdrop-blur border border-slate-700 p-3 rounded-xl shadow-xl pointer-events-auto h-fit text-xs text-slate-400 flex flex-col gap-1">
+                    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-sky-500 inline-block"></span> Electric Field (E)</div>
+                    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> Magnetic Field (B)</div>
+                    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> Poynting Vector (S)</div>
+                    <div class="mt-1 pt-1 border-t border-slate-800 text-[10px]">Drag to rotate 3D view</div>
+                </div>
+            </div>
+
+            <canvas id="simCanvas" class="w-full h-full block"></canvas>
+            
+            <!-- Equations Overlay -->
+            <div class="absolute bottom-4 left-4 bg-slate-900/80 backdrop-blur border border-slate-700 p-3 rounded-xl pointer-events-none data-font text-xs text-slate-300">
+                <div>∇ × E = -∂B/∂t</div>
+                <div>∇ × B = μ₀ε₀ ∂E/∂t</div>
+                <div class="text-emerald-400 mt-1">S = (1/μ₀) (E × B)</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Explainer Cards -->
+    <section class="bg-slate-900 border-t border-slate-800 p-4 shrink-0 overflow-x-auto">
+        <div class="flex gap-4 min-w-max mx-auto max-w-6xl">
+            <div class="bg-slate-850 p-4 rounded-2xl border border-slate-700 w-80 shrink-0">
+                <h4 class="font-bold text-sky-400 mb-2">1. Origin of Waves</h4>
+                <p class="text-xs text-slate-400 leading-relaxed">Electromagnetic waves are generated by accelerating electric charges. When a charge oscillates, it creates a changing electric field, which induces a changing magnetic field, and so on. This self-sustaining disturbance propagates through space at the speed of light.</p>
+            </div>
+            <div class="bg-slate-850 p-4 rounded-2xl border border-slate-700 w-80 shrink-0">
+                <h4 class="font-bold text-rose-400 mb-2">2. Orthogonal Fields</h4>
+                <p class="text-xs text-slate-400 leading-relaxed">Maxwell's equations dictate that the Electric (E) and Magnetic (B) fields must be mutually perpendicular, and both are perpendicular to the direction of wave propagation (transverse wave). They oscillate exactly in phase in a vacuum.</p>
+            </div>
+            <div class="bg-slate-850 p-4 rounded-2xl border border-slate-700 w-80 shrink-0">
+                <h4 class="font-bold text-emerald-400 mb-2">3. Polarization in Tech</h4>
+                <p class="text-xs text-slate-400 leading-relaxed">Polarization describes the orientation of the E-field. Polarized sunglasses block horizontally polarized glare. 3D cinema glasses use circular polarization (one lens Right, one Left) so tilting your head doesn't ruin the 3D effect!</p>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // --- State ---
+        const state = {
+            time: 0,
+            frequency: 1.0,
+            amplitude: 100,
+            polarization: 'linear-v',
+            modulation: 'none', // none, am, fm
+            
+            // 3D Camera Angles
+            pitch: 0.3,
+            yaw: -0.6,
+            distance: 800,
+            
+            // Physics Constants (scaled for vis)
+            c: 300, // Speed of light scale
+            mu0: 1.256e-6,
+            
+            audioContext: null,
+            oscillator: null,
+            gainNode: null,
+            pannerNode: null,
+            modOsc: null,
+            modGain: null
+        };
+
+        // --- DOM Elements ---
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const freqSlider = document.getElementById('freq-slider');
+        const ampSlider = document.getElementById('amp-slider');
+        const polSelect = document.getElementById('polarization-select');
+        const modRadios = document.getElementsByName('modulation');
+        const audioBtn = document.getElementById('audio-start-btn');
+        const presets = document.querySelectorAll('.preset-btn');
+
+        // --- HUD Elements ---
+        const hudWave = document.getElementById('hud-wavelength');
+        const hudFreq = document.getElementById('hud-frequency');
+        const hudE = document.getElementById('hud-e');
+        const hudB = document.getElementById('hud-b');
+        const hudS = document.getElementById('hud-s');
+
+        // --- Resize ---
+        function resize() {
+            canvas.width = canvas.clientWidth * window.devicePixelRatio;
+            canvas.height = canvas.clientHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- Interaction ---
+        let isDragging = false;
+        let lastX, lastY;
+
+        canvas.addEventListener('mousedown', e => {
+            isDragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+        });
+        window.addEventListener('mouseup', () => isDragging = false);
+        window.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+            const dx = e.clientX - lastX;
+            const dy = e.clientY - lastY;
+            state.yaw += dx * 0.01;
+            state.pitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, state.pitch + dy * 0.01));
+            lastX = e.clientX;
+            lastY = e.clientY;
+        });
+        
+        // Touch support
+        canvas.addEventListener('touchstart', e => {
+            if (e.touches.length === 1) {
+                isDragging = true;
+                lastX = e.touches[0].clientX;
+                lastY = e.touches[0].clientY;
+            }
+        });
+        window.addEventListener('touchend', () => isDragging = false);
+        window.addEventListener('touchmove', e => {
+            if (!isDragging || e.touches.length !== 1) return;
+            const dx = e.touches[0].clientX - lastX;
+            const dy = e.touches[0].clientY - lastY;
+            state.yaw += dx * 0.01;
+            state.pitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, state.pitch + dy * 0.01));
+            lastX = e.touches[0].clientX;
+            lastY = e.touches[0].clientY;
+        });
+
+
+        // --- Listeners ---
+        freqSlider.addEventListener('input', e => { state.frequency = parseFloat(e.target.value); document.getElementById('freq-val').innerText = state.frequency.toFixed(1); updateAudio(); });
+        ampSlider.addEventListener('input', e => { state.amplitude = parseFloat(e.target.value); document.getElementById('amp-val').innerText = state.amplitude; });
+        polSelect.addEventListener('change', e => { state.polarization = e.target.value; });
+        modRadios.forEach(r => r.addEventListener('change', e => { state.modulation = e.target.value; updateAudio(); }));
+        
+        presets.forEach(btn => btn.addEventListener('click', e => {
+            const preset = e.target.dataset.preset;
+            if (preset === 'radio') {
+                freqSlider.value = 0.5; ampSlider.value = 100; polSelect.value = 'linear-v'; document.querySelector('input[value="none"]').checked = true;
+            } else if (preset === 'light') {
+                freqSlider.value = 4.0; ampSlider.value = 50; polSelect.value = 'linear-45'; document.querySelector('input[value="none"]').checked = true;
+            } else if (preset === 'circular') {
+                freqSlider.value = 1.0; ampSlider.value = 120; polSelect.value = 'rcp'; document.querySelector('input[value="none"]').checked = true;
+            } else if (preset === 'am') {
+                freqSlider.value = 2.0; ampSlider.value = 150; polSelect.value = 'linear-v'; document.querySelector('input[value="am"]').checked = true;
+            }
+            // Trigger events manually
+            freqSlider.dispatchEvent(new Event('input'));
+            ampSlider.dispatchEvent(new Event('input'));
+            polSelect.dispatchEvent(new Event('change'));
+            modRadios.forEach(r => { if(r.checked) r.dispatchEvent(new Event('change')); });
+        }));
+
+        // --- Audio System ---
+        async function initAudio() {
+            if (state.audioContext) return;
+            state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Main carrier oscillator
+            state.oscillator = state.audioContext.createOscillator();
+            state.oscillator.type = 'sine';
+            
+            // Panner for circular polarization
+            state.pannerNode = state.audioContext.createStereoPanner();
+            
+            // Main volume control to prevent clipping
+            state.gainNode = state.audioContext.createGain();
+            state.gainNode.gain.value = 0.3;
+
+            // Modulation setup
+            state.modOsc = state.audioContext.createOscillator();
+            state.modOsc.type = 'sine';
+            state.modOsc.frequency.value = 4; // LFO for modulation
+            
+            state.modGain = state.audioContext.createGain();
+            
+            // Route
+            state.oscillator.connect(state.gainNode);
+            state.gainNode.connect(state.pannerNode);
+            state.pannerNode.connect(state.audioContext.destination);
+            
+            state.oscillator.start();
+            state.modOsc.start();
+            
+            updateAudio();
+            
+            audioBtn.classList.replace('bg-emerald-600', 'bg-slate-700');
+            audioBtn.innerHTML = '<span class="text-emerald-400">Audio Active</span>';
+        }
+
+        audioBtn.addEventListener('click', initAudio);
+
+        function updateAudio() {
+            if (!state.audioContext) return;
+            
+            const baseFreq = 200 + (state.frequency * 100); // Map 0.1-5.0Hz to 210-700Hz roughly
+            
+            // Reset routing
+            state.modOsc.disconnect();
+            state.modGain.disconnect();
+            state.oscillator.disconnect();
+            
+            if (state.modulation === 'none') {
+                state.oscillator.frequency.setTargetAtTime(baseFreq, state.audioContext.currentTime, 0.1);
+                state.gainNode.gain.setTargetAtTime(0.3, state.audioContext.currentTime, 0.1);
+                state.oscillator.connect(state.gainNode);
+            } 
+            else if (state.modulation === 'am') {
+                state.oscillator.frequency.setTargetAtTime(baseFreq, state.audioContext.currentTime, 0.1);
+                state.modOsc.frequency.setTargetAtTime(2, state.audioContext.currentTime, 0.1);
+                
+                // Route LFO -> modGain -> gainNode.gain
+                state.modGain.gain.value = 0.3; 
+                state.modOsc.connect(state.modGain);
+                state.modGain.connect(state.gainNode.gain);
+                
+                state.oscillator.connect(state.gainNode);
+            }
+            else if (state.modulation === 'fm') {
+                // Route LFO -> modGain -> osc.frequency
+                state.modOsc.frequency.setTargetAtTime(5, state.audioContext.currentTime, 0.1);
+                state.modGain.gain.value = 100; // FM deviation
+                
+                state.oscillator.frequency.value = baseFreq;
+                state.gainNode.gain.value = 0.3;
+                
+                state.modOsc.connect(state.modGain);
+                state.modGain.connect(state.oscillator.frequency);
+                
+                state.oscillator.connect(state.gainNode);
+            }
+        }
+
+        // --- 3D Projection Math ---
+        function project(x, y, z) {
+            // Apply yaw (rotation around Y)
+            let x1 = x * Math.cos(state.yaw) - z * Math.sin(state.yaw);
+            let z1 = x * Math.sin(state.yaw) + z * Math.cos(state.yaw);
+            
+            // Apply pitch (rotation around X)
+            let y1 = y * Math.cos(state.pitch) - z1 * Math.sin(state.pitch);
+            let z2 = y * Math.sin(state.pitch) + z1 * Math.cos(state.pitch);
+            
+            // Simple orthographic/isometric projection centered on canvas
+            const cx = canvas.clientWidth / 2;
+            const cy = canvas.clientHeight / 2;
+            
+            // Scale
+            const scale = 1;
+            
+            return {
+                x: cx + x1 * scale,
+                y: cy - y1 * scale,
+                z: z2
+            };
+        }
+
+        function drawLine3D(x1, y1, z1, x2, y2, z2, color, width=1) {
+            const p1 = project(x1, y1, z1);
+            const p2 = project(x2, y2, z2);
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.stroke();
+        }
+
+        function getWaveComponents(z, t) {
+            const k = (2 * Math.PI) / (state.c / state.frequency); // Wavenumber
+            const w = 2 * Math.PI * state.frequency; // Angular frequency
+            
+            let phase = k * z - w * t;
+            let Ex = 0, Ey = 0;
+            
+            let modFactor = 1;
+            if (state.modulation === 'am') {
+                modFactor = 1 + 0.5 * Math.sin(2 * Math.PI * 0.2 * t);
+            } else if (state.modulation === 'fm') {
+                // Actually FM is already in w theoretically, but visually we can distort phase
+                phase += 2 * Math.sin(2 * Math.PI * 0.5 * t);
+            }
+
+            const E0 = state.amplitude * modFactor;
+
+            switch (state.polarization) {
+                case 'linear-v':
+                    Ey = E0 * Math.cos(phase);
+                    break;
+                case 'linear-h':
+                    Ex = E0 * Math.cos(phase);
+                    break;
+                case 'linear-45':
+                    Ex = E0 * Math.cos(phase) * 0.707;
+                    Ey = E0 * Math.cos(phase) * 0.707;
+                    break;
+                case 'rcp':
+                    Ex = E0 * Math.cos(phase);
+                    Ey = E0 * Math.sin(phase);
+                    break;
+                case 'lcp':
+                    Ex = E0 * Math.cos(phase);
+                    Ey = -E0 * Math.sin(phase);
+                    break;
+                case 'elliptical':
+                    Ex = E0 * Math.cos(phase);
+                    Ey = E0 * 0.5 * Math.sin(phase + Math.PI/4);
+                    break;
+            }
+
+            // B is orthogonal to E and z. (E x B is +z direction)
+            // So Bx = -Ey, By = Ex
+            const c_scaled = 1; // Visual scaling for B
+            const Bx = -Ey / c_scaled;
+            const By = Ex / c_scaled;
+
+            return { Ex, Ey, Bx, By, E0 };
+        }
+
+        // --- Render Loop ---
+        function render() {
+            ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+            state.time += 0.016; // Approx 60fps time step
+
+            // Draw Axes
+            const axisL = 400;
+            drawLine3D(0, 0, -axisL, 0, 0, axisL, '#334155', 2); // Z axis
+            drawLine3D(-150, 0, 0, 150, 0, 0, '#334155', 1); // X axis
+            drawLine3D(0, -150, 0, 0, 150, 0, '#334155', 1); // Y axis
+
+            // Draw wave
+            const zStart = -350;
+            const zEnd = 350;
+            const steps = 100;
+            const dz = (zEnd - zStart) / steps;
+
+            let prevP = null;
+            let currentEx = 0, currentEy = 0, currentBx = 0, currentBy = 0, maxE = 0;
+
+            // Arrays to store path for continuous line drawing
+            const ePath = [];
+            const bPath = [];
+
+            for (let i = 0; i <= steps; i++) {
+                const z = zStart + i * dz;
+                const { Ex, Ey, Bx, By, E0 } = getWaveComponents(z, state.time);
+                maxE = E0;
+
+                ePath.push({x: Ex, y: Ey, z: z});
+                bPath.push({x: Bx, y: By, z: z});
+
+                // Draw vectors every N steps
+                if (i % 4 === 0) {
+                    // E vector (Sky)
+                    drawLine3D(0, 0, z, Ex, Ey, z, 'rgba(0, 240, 255, 0.4)', 1);
+                    // B vector (Rose)
+                    drawLine3D(0, 0, z, Bx, By, z, 'rgba(230, 0, 76, 0.4)', 1);
+                }
+
+                if (Math.abs(z) < dz) {
+                    currentEx = Ex; currentEy = Ey; currentBx = Bx; currentBy = By;
+                }
+            }
+
+            // Draw continuous E field line
+            ctx.beginPath();
+            let startedE = false;
+            for(let p of ePath) {
+                const proj = project(p.x, p.y, p.z);
+                if(!startedE) { ctx.moveTo(proj.x, proj.y); startedE = true; }
+                else { ctx.lineTo(proj.x, proj.y); }
+            }
+            ctx.strokeStyle = '#00f0ff'; ctx.lineWidth = 2; ctx.stroke();
+
+            // Draw continuous B field line
+            ctx.beginPath();
+            let startedB = false;
+            for(let p of bPath) {
+                const proj = project(p.x, p.y, p.z);
+                if(!startedB) { ctx.moveTo(proj.x, proj.y); startedB = true; }
+                else { ctx.lineTo(proj.x, proj.y); }
+            }
+            ctx.strokeStyle = '#e6004c'; ctx.lineWidth = 2; ctx.stroke();
+
+            // Draw Poynting Vector at Z=0
+            // S = E x B. In our coordinates, S is along Z.
+            // Visually we can just draw a thick arrow pointing in +Z
+            const sVal = (currentEx * currentBy - currentEy * currentBx);
+            if (sVal > 0) { // Should always be positive for +Z propagating wave
+                const sScale = Math.min(200, sVal * 0.01);
+                drawLine3D(0, 0, 0, 0, 0, sScale, '#ccff00', 4);
+                
+                // Arrowhead
+                const pEnd = project(0, 0, sScale);
+                const pBase1 = project(10, 0, sScale - 20);
+                const pBase2 = project(-10, 0, sScale - 20);
+                const pBase3 = project(0, 10, sScale - 20);
+                const pBase4 = project(0, -10, sScale - 20);
+                
+                ctx.beginPath();
+                ctx.moveTo(pEnd.x, pEnd.y); ctx.lineTo(pBase1.x, pBase1.y);
+                ctx.moveTo(pEnd.x, pEnd.y); ctx.lineTo(pBase2.x, pBase2.y);
+                ctx.moveTo(pEnd.x, pEnd.y); ctx.lineTo(pBase3.x, pBase3.y);
+                ctx.moveTo(pEnd.x, pEnd.y); ctx.lineTo(pBase4.x, pBase4.y);
+                ctx.strokeStyle = '#ccff00'; ctx.stroke();
+            }
+
+            // Update HUD
+            const wavelength = (state.c / state.frequency).toFixed(1);
+            const peakB = (maxE / 3e8).toExponential(2); // Fake real units for show
+            const sAvg = (maxE * maxE / (2 * 377)).toFixed(2); // E^2 / 2Z0
+
+            hudWave.innerText = wavelength + " m";
+            hudFreq.innerText = state.frequency.toFixed(2) + " MHz"; // visual mapping
+            hudE.innerText = maxE.toFixed(1) + " V/m";
+            hudB.innerText = peakB + " T";
+            hudS.innerText = sAvg + " W/m²";
+
+            // Audio Panning based on E-field vector rotation (for circular pol)
+            if (state.audioContext && state.pannerNode) {
+                // Calculate angle of E vector at z=0
+                const angle = Math.atan2(currentEy, currentEx);
+                // Map angle to -1 to 1 for stereo panning
+                let pan = Math.cos(angle);
+                if (state.polarization.startsWith('linear')) {
+                    pan = 0; // Center for linear
+                }
+                state.pannerNode.pan.value = pan;
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        render();
+
+    </script>
+</body>
+</html>

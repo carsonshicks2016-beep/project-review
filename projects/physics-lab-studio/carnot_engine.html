@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carnot Engine & Thermodynamic Cycles</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; overflow-x: hidden; }
+        canvas { display: block; width: 100%; height: 100%; }
+        .slider-thumb { appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #00f0ff; cursor: pointer; }
+        .slider-track { height: 4px; background: #334155; border-radius: 2px; }
+    </style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+</head>
+<body class="bg-slate-950 text-slate-300 font-sans h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center z-10 shadow-lg">
+        <div>
+            <h1 class="text-2xl font-bold text-sky-400">Thermodynamic Engine Simulator</h1>
+            <p class="text-sm text-slate-500">Carnot, Otto, Diesel, and Stirling Cycles</p>
+        </div>
+        <div>
+            <button id="btn-audio" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 shadow-lg shadow-emerald-900/20">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5 10v4a2 2 0 002 2h2.586l3.707 3.707a1 1 0 001.707-.707V4.95a1 1 0 00-1.707-.707L9.586 7.828A2 2 0 018.172 8H7a2 2 0 00-2 2z"></path></svg>
+                Enable Audio
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex overflow-hidden">
+        <!-- Sidebar Controls -->
+        <aside class="w-80 bg-slate-900 border-r border-slate-800 p-5 overflow-y-auto flex flex-col gap-6 shadow-xl z-10">
+            <!-- Controls -->
+            <div class="space-y-4">
+                <h2 class="text-sky-400 font-semibold tracking-wider text-sm uppercase">Engine Parameters</h2>
+                
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <label class="text-slate-400">Hot Reservoir (T_h)</label>
+                        <span id="val-th" class="font-mono text-rose-400">1200 K</span>
+                    </div>
+                    <input type="range" id="slider-th" min="300" max="1500" value="1200" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <label class="text-slate-400">Cold Reservoir (T_c)</label>
+                        <span id="val-tc" class="font-mono text-sky-400">300 K</span>
+                    </div>
+                    <input type="range" id="slider-tc" min="50" max="500" value="300" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <label class="text-slate-400">Engine Speed (RPM)</label>
+                        <span id="val-rpm" class="font-mono text-amber-400">60 RPM</span>
+                    </div>
+                    <input type="range" id="slider-rpm" min="1" max="300" value="60" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <h2 class="text-sky-400 font-semibold tracking-wider text-sm uppercase">Cycle Type</h2>
+                <select id="sel-cycle" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-slate-300 focus:outline-none focus:border-sky-500">
+                    <option value="carnot">Carnot Cycle (Ideal)</option>
+                    <option value="otto">Otto Cycle (Gasoline)</option>
+                    <option value="diesel">Diesel Cycle</option>
+                    <option value="stirling">Stirling Cycle</option>
+                </select>
+            </div>
+
+            <div class="space-y-3">
+                <h2 class="text-sky-400 font-semibold tracking-wider text-sm uppercase">Simulation Mode</h2>
+                <div class="flex gap-2">
+                    <button id="btn-mode-auto" class="flex-1 bg-sky-600 text-white rounded-lg py-1.5 text-sm font-medium">Auto-Run</button>
+                    <button id="btn-mode-step" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg py-1.5 text-sm font-medium">Step Phase</button>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <h2 class="text-sky-400 font-semibold tracking-wider text-sm uppercase">Presets</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="btn-preset bg-slate-800 hover:bg-slate-700 rounded-md py-1.5 text-xs text-slate-300 transition" data-th="373" data-tc="293" data-cycle="carnot">Steam Engine</button>
+                    <button class="btn-preset bg-slate-800 hover:bg-slate-700 rounded-md py-1.5 text-xs text-slate-300 transition" data-th="1200" data-tc="300" data-cycle="otto">Car Engine</button>
+                    <button class="btn-preset bg-slate-800 hover:bg-slate-700 rounded-md py-1.5 text-xs text-slate-300 transition" data-th="150" data-tc="4" data-cycle="carnot">Cryo Engine</button>
+                    <button class="btn-preset bg-slate-800 hover:bg-slate-700 rounded-md py-1.5 text-xs text-slate-300 transition" data-th="1500" data-tc="300" data-cycle="diesel">Heavy Diesel</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main View -->
+        <main class="flex-1 flex flex-col relative overflow-y-auto">
+            
+            <!-- HUD -->
+            <div class="grid grid-cols-5 gap-4 p-4 bg-slate-900/80 border-b border-slate-800 backdrop-blur-sm sticky top-0 z-10">
+                <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 shadow-inner">
+                    <div class="text-xs text-slate-400 mb-1">Carnot Max Efficiency</div>
+                    <div id="hud-eta-max" class="text-2xl font-mono text-sky-400">--%</div>
+                </div>
+                <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 shadow-inner">
+                    <div class="text-xs text-slate-400 mb-1">Theoretical Real Efficiency</div>
+                    <div id="hud-eta-real" class="text-2xl font-mono text-emerald-400">--%</div>
+                </div>
+                <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 shadow-inner">
+                    <div class="text-xs text-slate-400 mb-1">Heat In (Q_h)</div>
+                    <div id="hud-qh" class="text-2xl font-mono text-rose-400">-- J</div>
+                </div>
+                <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 shadow-inner">
+                    <div class="text-xs text-slate-400 mb-1">Heat Out (Q_c)</div>
+                    <div id="hud-qc" class="text-2xl font-mono text-sky-500">-- J</div>
+                </div>
+                <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 shadow-inner">
+                    <div class="text-xs text-slate-400 mb-1">Net Work (W_net)</div>
+                    <div id="hud-wnet" class="text-2xl font-mono text-amber-400">-- J</div>
+                </div>
+            </div>
+
+            <!-- Visualizations -->
+            <div class="flex-1 grid grid-cols-2 grid-rows-2 p-4 gap-4 min-h-[600px]">
+                <!-- Piston -->
+                <div class="bg-slate-900 rounded-2xl border border-slate-800 relative overflow-hidden flex flex-col">
+                    <div class="absolute top-3 left-4 text-sm font-semibold text-slate-400 bg-slate-900/80 px-2 py-1 rounded">Physical Piston</div>
+                    <div id="stroke-label" class="absolute top-3 right-4 text-sm font-bold text-sky-400 bg-slate-900/80 px-3 py-1 rounded shadow">Stroke</div>
+                    <canvas id="canvas-piston" class="flex-1"></canvas>
+                </div>
+                
+                <!-- PV Diagram -->
+                <div class="bg-slate-900 rounded-2xl border border-slate-800 relative overflow-hidden flex flex-col row-span-2">
+                    <div class="absolute top-3 left-4 text-sm font-semibold text-slate-400 bg-slate-900/80 px-2 py-1 rounded">Pressure-Volume (PV) Diagram</div>
+                    <canvas id="canvas-pv" class="flex-1"></canvas>
+                </div>
+
+                <!-- TS Diagram -->
+                <div class="bg-slate-900 rounded-2xl border border-slate-800 relative overflow-hidden flex flex-col">
+                    <div class="absolute top-3 left-4 text-sm font-semibold text-slate-400 bg-slate-900/80 px-2 py-1 rounded">Temperature-Entropy (TS) Diagram</div>
+                    <canvas id="canvas-ts" class="flex-1"></canvas>
+                </div>
+            </div>
+
+            <!-- Explainers -->
+            <div class="grid grid-cols-3 gap-6 p-6 bg-slate-900 border-t border-slate-800">
+                <div class="bg-slate-800/50 p-5 rounded-2xl border border-slate-700/50 hover:bg-slate-800 transition">
+                    <h3 class="text-sky-400 font-bold mb-2 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        The Carnot Limit
+                    </h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        No engine operating between two heat reservoirs can be more efficient than a reversible Carnot engine operating between those same reservoirs. The maximum possible efficiency is given by <span class="font-mono text-sky-300">η = 1 - (T_c / T_h)</span>.
+                    </p>
+                </div>
+                <div class="bg-slate-800/50 p-5 rounded-2xl border border-slate-700/50 hover:bg-slate-800 transition">
+                    <h3 class="text-sky-400 font-bold mb-2 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        Second Law of Thermodynamics
+                    </h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        The Kelvin-Planck statement asserts that it is impossible to construct a device that operates in a cycle and produces no other effect than the extraction of heat from a single reservoir and the performance of an equivalent amount of work. Some waste heat must be rejected!
+                    </p>
+                </div>
+                <div class="bg-slate-800/50 p-5 rounded-2xl border border-slate-700/50 hover:bg-slate-800 transition">
+                    <h3 class="text-sky-400 font-bold mb-2 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path></svg>
+                        Why Higher Temps Matter
+                    </h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        To maximize efficiency, engineers design engines to burn fuels at the highest possible temperature <span class="font-mono text-rose-300">T_h</span> and reject heat at the lowest possible temperature <span class="font-mono text-sky-300">T_c</span>. This is why modern car engines, jet turbines, and rockets use advanced cooling to survive extreme internal combustion temperatures.
+                    </p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // State Configuration
+        const state = {
+            Th: 1200,
+            Tc: 300,
+            rpm: 60,
+            cycle: 'carnot',
+            mode: 'auto',
+            audioEnabled: false,
+            phase: 0, // 0 to 1 over the cycle
+            stroke: 0, // 0 to 3 for the 4 strokes
+            stepStroke: 0,
+            running: true
+        };
+
+        // Constants
+        const R = 8.314; // Ideal gas constant
+        const gamma = 1.4; // Diatomic gas
+        const n = 1; // Moles
+        
+        let audioCtx;
+        let pannerNode;
+        let pistonOsc;
+        let sizzleOsc;
+        let sizzleGain;
+
+        // UI Elements
+        const elTh = document.getElementById('slider-th');
+        const elTc = document.getElementById('slider-tc');
+        const elRpm = document.getElementById('slider-rpm');
+        const valTh = document.getElementById('val-th');
+        const valTc = document.getElementById('val-tc');
+        const valRpm = document.getElementById('val-rpm');
+        const selCycle = document.getElementById('sel-cycle');
+        
+        // Canvas Setup
+        function setupCanvas(id) {
+            const canvas = document.getElementById(id);
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            
+            // Account for internal padding and header offset
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            
+            return { canvas, ctx, w: rect.width, h: rect.height };
+        }
+
+        let canvPiston, canvPV, canvTS;
+
+        function resizeCanvases() {
+            canvPiston = setupCanvas('canvas-piston');
+            canvPV = setupCanvas('canvas-pv');
+            canvTS = setupCanvas('canvas-ts');
+        }
+
+        window.addEventListener('resize', resizeCanvases);
+
+        // Audio Setup
+        document.getElementById('btn-audio').addEventListener('click', (e) => {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Master compression to avoid clipping
+                const compressor = audioCtx.createDynamicsCompressor();
+                compressor.connect(audioCtx.destination);
+                
+                pistonOsc = audioCtx.createOscillator();
+                pistonOsc.type = 'triangle';
+                const pistonGain = audioCtx.createGain();
+                pistonGain.gain.value = 0.1;
+                pistonOsc.connect(pistonGain).connect(compressor);
+                pistonOsc.start();
+
+                sizzleOsc = audioCtx.createOscillator();
+                sizzleOsc.type = 'sawtooth';
+                sizzleGain = audioCtx.createGain();
+                sizzleGain.gain.value = 0;
+                
+                // Filter for sizzle
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'highpass';
+                filter.frequency.value = 2000;
+                sizzleOsc.connect(filter).connect(sizzleGain).connect(compressor);
+                sizzleOsc.start();
+
+                state.audioEnabled = true;
+                e.target.classList.replace('bg-emerald-600', 'bg-slate-700');
+                e.target.innerHTML = 'Audio Enabled';
+            } else {
+                if (audioCtx.state === 'running') {
+                    audioCtx.suspend();
+                    state.audioEnabled = false;
+                    e.target.classList.replace('bg-slate-700', 'bg-emerald-600');
+                    e.target.innerHTML = 'Enable Audio';
+                } else {
+                    audioCtx.resume();
+                    state.audioEnabled = true;
+                    e.target.classList.replace('bg-emerald-600', 'bg-slate-700');
+                    e.target.innerHTML = 'Audio Enabled';
+                }
+            }
+        });
+
+        // Event Listeners
+        elTh.addEventListener('input', (e) => {
+            state.Th = parseFloat(e.target.value);
+            if (state.Th <= state.Tc) { state.Tc = state.Th - 10; elTc.value = state.Tc; valTc.innerText = `${state.Tc} K`; }
+            valTh.innerText = `${state.Th} K`;
+            computeThermodynamics();
+        });
+        elTc.addEventListener('input', (e) => {
+            state.Tc = parseFloat(e.target.value);
+            if (state.Tc >= state.Th) { state.Th = state.Tc + 10; elTh.value = state.Th; valTh.innerText = `${state.Th} K`; }
+            valTc.innerText = `${state.Tc} K`;
+            computeThermodynamics();
+        });
+        elRpm.addEventListener('input', (e) => {
+            state.rpm = parseFloat(e.target.value);
+            valRpm.innerText = `${state.rpm} RPM`;
+        });
+        selCycle.addEventListener('change', (e) => {
+            state.cycle = e.target.value;
+            computeThermodynamics();
+        });
+
+        document.getElementById('btn-mode-auto').addEventListener('click', (e) => {
+            state.mode = 'auto';
+            state.running = true;
+            e.target.classList.replace('bg-slate-700', 'bg-sky-600');
+            e.target.classList.add('text-white');
+            document.getElementById('btn-mode-step').classList.replace('bg-sky-600', 'bg-slate-700');
+        });
+
+        document.getElementById('btn-mode-step').addEventListener('click', (e) => {
+            state.mode = 'step';
+            state.running = false;
+            state.stepStroke = (state.stepStroke + 1) % 4;
+            // animate to next stroke slowly
+            e.target.classList.replace('bg-slate-700', 'bg-sky-600');
+            document.getElementById('btn-mode-auto').classList.replace('bg-sky-600', 'bg-slate-700');
+        });
+
+        document.querySelectorAll('.btn-preset').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const d = e.target.dataset;
+                state.Th = parseFloat(d.th); elTh.value = state.Th; valTh.innerText = `${state.Th} K`;
+                state.Tc = parseFloat(d.tc); elTc.value = state.Tc; valTc.innerText = `${state.Tc} K`;
+                state.cycle = d.cycle; selCycle.value = state.cycle;
+                computeThermodynamics();
+            });
+        });
+
+        // Thermodynamics Logic
+        let cycleData = {};
+
+        function computeThermodynamics() {
+            const Th = state.Th;
+            const Tc = state.Tc;
+            const etaMax = 1 - (Tc / Th);
+            
+            let etaReal = 0;
+            let Qh = 0;
+            let Qc = 0;
+            let W = 0;
+
+            // Simplified points for diagrams
+            let V1, V2, V3, V4, P1, P2, P3, P4, T1, T2, T3, T4;
+            
+            // Assume starting V1 and P1
+            V1 = 0.001; // 1 Liter
+            P1 = (n * R * Th) / V1; // High pressure, high temp
+
+            if (state.cycle === 'carnot') {
+                // 1 -> 2: Isothermal Expansion
+                V2 = V1 * 2;
+                P2 = (n * R * Th) / V2;
+                Qh = n * R * Th * Math.log(V2/V1);
+                
+                // 2 -> 3: Adiabatic Expansion
+                // T2*V2^(g-1) = T3*V3^(g-1) => V3 = V2 * (Th/Tc)^(1/(g-1))
+                V3 = V2 * Math.pow(Th/Tc, 1/(gamma-1));
+                P3 = (n * R * Tc) / V3;
+                
+                // 3 -> 4: Isothermal Compression
+                // Need to close cycle: V1 * Th^(1/g-1) = V4 * Tc^(1/g-1)
+                V4 = V1 * Math.pow(Th/Tc, 1/(gamma-1));
+                P4 = (n * R * Tc) / V4;
+                Qc = n * R * Tc * Math.log(V3/V4);
+
+                W = Qh - Qc;
+                etaReal = etaMax;
+
+                cycleData = {
+                    points: [
+                        {V: V1, P: P1, T: Th, S: 1},
+                        {V: V2, P: P2, T: Th, S: 2},
+                        {V: V3, P: P3, T: Tc, S: 2},
+                        {V: V4, P: P4, T: Tc, S: 1}
+                    ],
+                    Qh, Qc, W
+                };
+            } else if (state.cycle === 'otto') {
+                // Otto: isentropic compression, isochoric heat addition, isentropic expansion, isochoric heat rejection
+                const r = 8; // compression ratio
+                V3 = V1 * 2; // Arbitrary for scale
+                V2 = V3;
+                V1 = V2 / r;
+                V4 = V1;
+                
+                T1 = Tc; 
+                T2 = T1 * Math.pow(r, gamma-1);
+                T3 = Th; 
+                T4 = T3 / Math.pow(r, gamma-1);
+
+                P1 = n * R * T1 / V1;
+                P2 = n * R * T2 / V2;
+                P3 = n * R * T3 / V3;
+                P4 = n * R * T4 / V4;
+
+                Qh = n * (R/(gamma-1)) * (T3 - T2); // Cv(T3-T2)
+                Qc = n * (R/(gamma-1)) * (T4 - T1);
+                W = Qh - Qc;
+                etaReal = 1 - 1/Math.pow(r, gamma-1);
+
+                cycleData = {
+                    points: [
+                        {V: V1, P: P1, T: T1, S: 1},
+                        {V: V2, P: P2, T: T2, S: 1},
+                        {V: V3, P: P3, T: T3, S: 2},
+                        {V: V4, P: P4, T: T4, S: 2}
+                    ], Qh, Qc, W
+                };
+            } else if (state.cycle === 'diesel') {
+                const r = 15;
+                const rc = 2; // cutoff ratio
+                
+                V1 = 0.005;
+                V2 = V1/r;
+                V3 = V2 * rc;
+                V4 = V1;
+
+                T1 = Tc;
+                T2 = T1 * Math.pow(r, gamma-1);
+                T3 = T2 * rc;
+                T4 = T3 * Math.pow(rc/r, gamma-1);
+
+                P1 = n * R * T1 / V1;
+                P2 = n * R * T2 / V2;
+                P3 = P2; // Isobaric
+                P4 = n * R * T4 / V4;
+
+                Qh = n * (gamma * R / (gamma-1)) * (T3 - T2); // Cp
+                Qc = n * (R/(gamma-1)) * (T4 - T1); // Cv
+                W = Qh - Qc;
+                etaReal = W / Qh;
+
+                cycleData = {
+                    points: [
+                        {V: V1, P: P1, T: T1, S: 1},
+                        {V: V2, P: P2, T: T2, S: 1},
+                        {V: V3, P: P3, T: T3, S: 2},
+                        {V: V4, P: P4, T: T4, S: 2.5}
+                    ], Qh, Qc, W
+                };
+            } else if (state.cycle === 'stirling') {
+                V1 = 0.001;
+                V2 = V1 * 3;
+                V3 = V2;
+                V4 = V1;
+
+                P1 = n * R * Th / V1;
+                P2 = n * R * Th / V2;
+                P3 = n * R * Tc / V3;
+                P4 = n * R * Tc / V4;
+
+                Qh = n * R * Th * Math.log(V2/V1);
+                Qc = n * R * Tc * Math.log(V3/V4); // Magnitude
+                W = Qh + Qc; // Qc is negative
+                etaReal = etaMax; // Ideal stirling with perfect regenerator
+
+                cycleData = {
+                    points: [
+                        {V: V1, P: P1, T: Th, S: 1},
+                        {V: V2, P: P2, T: Th, S: 2},
+                        {V: V3, P: P3, T: Tc, S: 2},
+                        {V: V4, P: P4, T: Tc, S: 1}
+                    ], Qh, Qc: -Qc, W
+                };
+            }
+
+            // Update HUD
+            document.getElementById('hud-eta-max').innerText = `${(etaMax*100).toFixed(1)}%`;
+            document.getElementById('hud-eta-real').innerText = `${(etaReal*100).toFixed(1)}%`;
+            document.getElementById('hud-qh').innerText = `${Math.round(cycleData.Qh)} J`;
+            document.getElementById('hud-qc').innerText = `${Math.round(cycleData.Qc)} J`;
+            document.getElementById('hud-wnet').innerText = `${Math.round(cycleData.W)} J`;
+        }
+
+        // Molecules for piston
+        const molecules = Array.from({length: 100}, () => ({
+            x: Math.random(),
+            y: Math.random(),
+            vx: (Math.random() - 0.5) * 0.05,
+            vy: (Math.random() - 0.5) * 0.05
+        }));
+
+        let lastTime = 0;
+        function loop(timestamp) {
+            const dt = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+
+            if (state.running) {
+                const rps = state.rpm / 60;
+                state.phase = (state.phase + rps * dt) % 1;
+                state.stroke = Math.floor(state.phase * 4);
+            } else {
+                // Smooth step
+                const targetPhase = state.stepStroke / 4;
+                // Move towards targetPhase
+                let diff = targetPhase - state.phase;
+                if (diff < 0) diff += 1;
+                if (diff > 0.01) {
+                    state.phase = (state.phase + dt * 0.5) % 1;
+                    state.stroke = Math.floor(state.phase * 4);
+                } else {
+                    state.phase = targetPhase;
+                }
+            }
+
+            drawPiston(dt);
+            drawPV();
+            drawTS();
+            updateAudio();
+
+            requestAnimationFrame(loop);
+        }
+
+        function drawPiston(dt) {
+            if (!canvPiston) return;
+            const ctx = canvPiston.ctx;
+            const w = canvPiston.w;
+            const h = canvPiston.h;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Calculate current volume fraction (0 to 1)
+            // Simulating simple harmonic motion for the piston
+            const volFrac = 0.5 - 0.5 * Math.cos(state.phase * Math.PI * 2); 
+            
+            const pW = w * 0.4;
+            const pH_max = h * 0.7;
+            const pH_min = h * 0.2;
+            const currentH = pH_min + volFrac * (pH_max - pH_min);
+            const cx = w/2;
+            const cy = h/2 + pH_max/2; // bottom fixed
+
+            // Draw Cylinder
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(cx - pW/2, cy - pH_max);
+            ctx.lineTo(cx - pW/2, cy);
+            ctx.lineTo(cx + pW/2, cy);
+            ctx.lineTo(cx + pW/2, cy - pH_max);
+            ctx.stroke();
+
+            // Reservoir Base
+            let strokeName = "";
+            let baseColor = '#1d2b38';
+            
+            if (state.cycle === 'carnot') {
+                if (state.stroke === 0) { strokeName = "Isothermal Exp (Heat In)"; baseColor = '#e11d48'; }
+                else if (state.stroke === 1) { strokeName = "Adiabatic Exp (Cooling)"; baseColor = '#334155'; }
+                else if (state.stroke === 2) { strokeName = "Isothermal Comp (Heat Out)"; baseColor = '#00d4e0'; }
+                else { strokeName = "Adiabatic Comp (Heating)"; baseColor = '#334155'; }
+            } else {
+                strokeName = `Stroke ${state.stroke + 1}`;
+                if (state.stroke === 0) baseColor = '#e11d48';
+                if (state.stroke === 2) baseColor = '#00d4e0';
+            }
+
+            document.getElementById('stroke-label').innerText = strokeName;
+            document.getElementById('stroke-label').style.color = baseColor;
+
+            ctx.fillStyle = baseColor;
+            ctx.fillRect(cx - pW/2 - 10, cy, pW + 20, 15);
+
+            // Draw Piston
+            const pistonY = cy - currentH;
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillRect(cx - pW/2 + 2, pistonY - 20, pW - 4, 20);
+            
+            // Connecting Rod
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(cx, pistonY - 20);
+            ctx.lineTo(cx, pistonY - 60);
+            ctx.stroke();
+
+            // Gas Molecules
+            // T relative to phase (very rough approximation for visual effect)
+            let T_visual = state.stroke === 0 || state.stroke === 3 ? state.Th : state.Tc;
+            const speedMult = T_visual / 300;
+
+            ctx.fillStyle = T_visual > 500 ? '#e6004c' : '#00f0ff';
+            
+            molecules.forEach(m => {
+                m.x += m.vx * speedMult * (dt * 60);
+                m.y += m.vy * speedMult * (dt * 60);
+
+                if (m.x < 0) { m.x = 0; m.vx *= -1; }
+                if (m.x > 1) { m.x = 1; m.vx *= -1; }
+                if (m.y < 0) { m.y = 0; m.vy *= -1; }
+                if (m.y > 1) { m.y = 1; m.vy *= -1; }
+
+                const ax = cx - pW/2 + 4 + m.x * (pW - 8);
+                const ay = pistonY + 4 + m.y * (currentH - 8);
+
+                ctx.beginPath();
+                ctx.arc(ax, ay, 2, 0, Math.PI*2);
+                ctx.fill();
+            });
+        }
+
+        function drawPV() {
+            if (!canvPV || !cycleData.points) return;
+            const ctx = canvPV.ctx;
+            const w = canvPV.w;
+            const h = canvPV.h;
+            ctx.clearRect(0, 0, w, h);
+
+            const pts = cycleData.points;
+            let maxP = 0, maxV = 0, minP = Infinity, minV = Infinity;
+            pts.forEach(p => {
+                if (p.P > maxP) maxP = p.P;
+                if (p.P < minP) minP = p.P;
+                if (p.V > maxV) maxV = p.V;
+                if (p.V < minV) minV = p.V;
+            });
+
+            // Margins
+            const m = 30;
+            
+            const mapX = (v) => m + ((v - minV) / (maxV - minV || 1)) * (w - 2*m);
+            const mapY = (p) => h - m - ((p - minP) / (maxP - minP || 1)) * (h - 2*m);
+
+            // Axes
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(m, m); ctx.lineTo(m, h-m); ctx.lineTo(w-m, h-m);
+            ctx.stroke();
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '10px sans-serif';
+            ctx.fillText("P", 15, m + 10);
+            ctx.fillText("V", w - m - 10, h - m + 15);
+
+            // Cycle Shape
+            ctx.beginPath();
+            ctx.moveTo(mapX(pts[0].V), mapY(pts[0].P));
+            for(let i=1; i<pts.length; i++) {
+                ctx.lineTo(mapX(pts[i].V), mapY(pts[i].P));
+            }
+            ctx.closePath();
+            
+            ctx.fillStyle = 'rgba(0, 240, 255, 0.2)';
+            ctx.fill();
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Current Point (approximated based on phase)
+            // Interpolate between points
+            const totalEdges = pts.length;
+            const scaledPhase = state.phase * totalEdges;
+            const idx = Math.floor(scaledPhase) % totalEdges;
+            const nextIdx = (idx + 1) % totalEdges;
+            const frac = scaledPhase - idx;
+
+            const curV = pts[idx].V + (pts[nextIdx].V - pts[idx].V) * frac;
+            const curP = pts[idx].P + (pts[nextIdx].P - pts[idx].P) * frac;
+
+            ctx.fillStyle = '#e11d48';
+            ctx.beginPath();
+            ctx.arc(mapX(curV), mapY(curP), 5, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        function drawTS() {
+            if (!canvTS || !cycleData.points) return;
+            const ctx = canvTS.ctx;
+            const w = canvTS.w;
+            const h = canvTS.h;
+            ctx.clearRect(0, 0, w, h);
+
+            const pts = cycleData.points;
+            let maxT = 0, maxS = 0, minT = Infinity, minS = Infinity;
+            pts.forEach(p => {
+                if (p.T > maxT) maxT = p.T;
+                if (p.T < minT) minT = p.T;
+                if (p.S > maxS) maxS = p.S;
+                if (p.S < minS) minS = p.S;
+            });
+
+            const m = 30;
+            const mapX = (s) => m + ((s - minS) / (maxS - minS || 1)) * (w - 2*m);
+            const mapY = (t) => h - m - ((t - minT) / (maxT - minT || 1)) * (h - 2*m);
+
+            // Axes
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(m, m); ctx.lineTo(m, h-m); ctx.lineTo(w-m, h-m);
+            ctx.stroke();
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '10px sans-serif';
+            ctx.fillText("T", 15, m + 10);
+            ctx.fillText("S", w - m - 10, h - m + 15);
+
+            // Cycle Shape
+            ctx.beginPath();
+            ctx.moveTo(mapX(pts[0].S), mapY(pts[0].T));
+            for(let i=1; i<pts.length; i++) {
+                ctx.lineTo(mapX(pts[i].S), mapY(pts[i].T));
+            }
+            ctx.closePath();
+            
+            ctx.fillStyle = 'rgba(251, 191, 36, 0.2)';
+            ctx.fill();
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Current Point
+            const totalEdges = pts.length;
+            const scaledPhase = state.phase * totalEdges;
+            const idx = Math.floor(scaledPhase) % totalEdges;
+            const nextIdx = (idx + 1) % totalEdges;
+            const frac = scaledPhase - idx;
+
+            const curS = pts[idx].S + (pts[nextIdx].S - pts[idx].S) * frac;
+            const curT = pts[idx].T + (pts[nextIdx].T - pts[idx].T) * frac;
+
+            ctx.fillStyle = '#e11d48';
+            ctx.beginPath();
+            ctx.arc(mapX(curS), mapY(curT), 5, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        function updateAudio() {
+            if (!state.audioEnabled || !audioCtx) return;
+
+            // Piston sound based on phase
+            // Frequency pulses twice per cycle
+            const pistonFreq = 50 + 100 * Math.abs(Math.sin(state.phase * Math.PI * 2));
+            pistonOsc.frequency.setTargetAtTime(pistonFreq, audioCtx.currentTime, 0.05);
+
+            // Sizzle during heat transfer strokes
+            if (state.cycle === 'carnot' && (state.stroke === 0 || state.stroke === 2)) {
+                sizzleGain.gain.setTargetAtTime(0.05, audioCtx.currentTime, 0.05);
+                sizzleOsc.frequency.setValueAtTime(state.stroke === 0 ? 1000 : 500, audioCtx.currentTime);
+            } else {
+                sizzleGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+            }
+        }
+
+        // Init
+        resizeCanvases();
+        computeThermodynamics();
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>

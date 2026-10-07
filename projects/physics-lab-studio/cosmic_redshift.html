@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Redshift & Metric Expansion</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Fira+Code:wght@400;500&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'Fira Code', monospace; }
+        canvas { touch-action: none; }
+        
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #00f0ff;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen p-4 flex flex-col gap-4">
+
+    <!-- Header -->
+    <header class="flex justify-between items-center px-2">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-100">Cosmic Redshift & Metric Expansion</h1>
+            <p class="text-slate-400 text-sm">Interactive visualization of spacetime expansion</p>
+        </div>
+        <button id="btn-audio" class="bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+            Enable Audio
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex flex-col lg:flex-row gap-4 flex-1">
+        
+        <!-- Canvas Container -->
+        <div class="flex-1 bg-slate-900 border border-slate-800 rounded-2xl relative overflow-hidden flex flex-col min-h-[400px]">
+            <canvas id="sim-canvas" class="w-full h-full absolute inset-0"></canvas>
+            
+            <!-- Floating HUD -->
+            <div class="absolute top-4 left-4 bg-slate-950/80 backdrop-blur border border-slate-800 p-4 rounded-xl flex flex-col gap-2 min-w-[250px] z-10 pointer-events-none">
+                <div class="text-xs text-slate-400 uppercase font-semibold tracking-wider mb-1">Telemetry</div>
+                <div class="flex justify-between">
+                    <span class="text-slate-300">Scale Factor <span class="italic">a(t)</span></span>
+                    <span id="hud-a" class="mono text-sky-400">1.000</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-300">Redshift <span class="italic">z</span></span>
+                    <span id="hud-z" class="mono text-emerald-400">0.000</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-300">Lookback Time</span>
+                    <span id="hud-t" class="mono text-rose-400">0.00 Gyr</span>
+                </div>
+                <div class="h-px bg-slate-800 my-1"></div>
+                <div class="flex justify-between">
+                    <span class="text-slate-300">λ Emitted</span>
+                    <span id="hud-emit" class="mono">400 nm</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-300">λ Observed</span>
+                    <span id="hud-obs" class="mono text-sky-300">400 nm</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-300">Apparent Rec.</span>
+                    <span id="hud-v" class="mono text-amber-400">0.00 c</span>
+                </div>
+            </div>
+            
+            <div class="absolute bottom-4 left-4 right-4 text-center z-10 pointer-events-none">
+                <div id="hud-spectrum" class="inline-block px-4 py-1 rounded-full bg-slate-950/80 backdrop-blur border border-slate-800 text-sm font-semibold tracking-wide shadow-lg transition-colors duration-300">
+                    VISIBLE LIGHT
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Sidebar -->
+        <div class="w-full lg:w-80 bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col gap-6 overflow-y-auto">
+            
+            <!-- Transport Controls -->
+            <div class="flex gap-2">
+                <button id="btn-play" class="flex-1 bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 border border-sky-600/50 py-2 rounded-lg font-semibold transition-colors">Play/Pause</button>
+                <button id="btn-reset" class="px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg font-semibold transition-colors">Reset</button>
+            </div>
+
+            <!-- Time / Redshift Sliders -->
+            <div class="flex flex-col gap-2">
+                <div class="flex justify-between items-end">
+                    <label class="text-sm font-semibold text-slate-300">Lookback Time</label>
+                    <span id="lbl-time" class="text-xs mono text-slate-400">0.0 Gyr</span>
+                </div>
+                <input type="range" id="slider-time" min="0" max="13.79" step="0.01" value="0">
+                <div class="flex justify-between text-[10px] text-slate-500 px-1">
+                    <span>Today</span>
+                    <span>Big Bang</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <div class="flex justify-between items-end">
+                    <label class="text-sm font-semibold text-slate-300">Redshift (z)</label>
+                    <span id="lbl-z" class="text-xs mono text-slate-400">0.0</span>
+                </div>
+                <input type="range" id="slider-z" min="0" max="1100" step="0.1" value="0">
+                <p class="text-[10px] text-slate-500">Logarithmic scale internally for UI</p>
+            </div>
+
+            <div class="h-px bg-slate-800"></div>
+
+            <!-- Settings -->
+            <div class="flex flex-col gap-3">
+                <label class="text-sm font-semibold text-slate-300">Cosmology Model</label>
+                <select id="sel-model" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-slate-200 outline-none focus:border-sky-500">
+                    <option value="lcdm">Standard ΛCDM (Dark Energy)</option>
+                    <option value="matter">Matter-Dominated (Decelerating)</option>
+                    <option value="empty">Empty (Constant Expansion)</option>
+                    <option value="static">Static Universe (No Expansion)</option>
+                </select>
+            </div>
+            
+            <div class="flex flex-col gap-3">
+                <label class="text-sm font-semibold text-slate-300">Display Mode</label>
+                <div class="flex bg-slate-950 rounded-lg p-1 border border-slate-800">
+                    <button id="mode-comoving" class="flex-1 py-1 text-sm rounded-md bg-slate-800 text-white font-medium transition-colors">Comoving</button>
+                    <button id="mode-proper" class="flex-1 py-1 text-sm rounded-md text-slate-400 hover:text-white transition-colors">Proper</button>
+                </div>
+                <p class="text-[10px] text-slate-500 leading-tight">
+                    <strong class="text-slate-400">Comoving:</strong> Space expands, coordinates stay fixed.<br>
+                    <strong class="text-slate-400">Proper:</strong> Coordinates measure physical distance today.
+                </p>
+            </div>
+
+            <div class="h-px bg-slate-800"></div>
+
+            <!-- Presets -->
+            <div class="flex flex-col gap-2">
+                <label class="text-sm font-semibold text-slate-300">Jump To</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded-lg text-slate-300 transition-colors" data-z="-0.001">Andromeda (Blueshift)</button>
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded-lg text-slate-300 transition-colors" data-z="0.5">SN 1a (Dark Energy)</button>
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded-lg text-slate-300 transition-colors" data-z="14.3">JWST Record Galaxy</button>
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded-lg text-slate-300 transition-colors" data-z="1100">CMB (Recombination)</button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Explainer Cards -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <div class="w-10 h-10 rounded-full bg-sky-900/50 flex items-center justify-center text-sky-400 mb-4">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-200 mb-2">Space itself is stretching</h3>
+            <p class="text-sm text-slate-400 leading-relaxed">
+                Cosmological redshift is often confused with the Doppler effect, but they are physically distinct. Galaxies aren't rushing away through pre-existing space; rather, the spacetime metric between them is expanding. As a photon travels, the space it occupies stretches, literally pulling its wavelength apart over billions of years. <span class="text-slate-300 font-mono text-xs">1+z = λ_obs / λ_emit = a(t_now) / a(t_then)</span>
+            </p>
+        </div>
+        
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <div class="w-10 h-10 rounded-full bg-rose-900/50 flex items-center justify-center text-rose-400 mb-4">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-200 mb-2">Faster than light?</h3>
+            <p class="text-sm text-slate-400 leading-relaxed">
+                Hubble's Law states <span class="font-mono text-xs text-slate-300">v = H₀ × d</span>. Beyond the Hubble Sphere (~14 billion light-years), galaxies recede from us faster than light (<span class="font-mono text-xs text-slate-300">v > c</span>). This doesn't violate Special Relativity because SR only forbids objects moving past each other locally faster than <span class="font-mono text-xs text-slate-300">c</span>. The expansion rate is an accumulation of space being created everywhere in between.
+            </p>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <div class="w-10 h-10 rounded-full bg-amber-900/50 flex items-center justify-center text-amber-400 mb-4">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-200 mb-2">The flash of the Big Bang</h3>
+            <p class="text-sm text-slate-400 leading-relaxed">
+                The Cosmic Microwave Background (CMB) at <span class="font-mono text-xs text-slate-300">z ≈ 1100</span> is the oldest light we can see. Emitted 380,000 years after the Big Bang when the universe cooled enough to form atoms, it started as brilliant 3000K orange visible light. Space has stretched by a factor of 1100 since then, cooling the light into invisible 2.7K microwaves we detect today as cosmic static.
+            </p>
+        </div>
+    </section>
+
+    <script>
+        // Cosmology Constants & State
+        const H0 = 70; // km/s/Mpc
+        const O_m = 0.315;
+        const O_L = 0.685;
+        const c_km_s = 299792.458;
+        const H0_Gyr_inv = H0 * 1.0227e-3; // Convert to Gyr^-1
+        const AGE_UNIVERSE = 13.787; // Gyr
+        
+        let state = {
+            t_lookback: 0, // 0 to ~13.8
+            z: 0,
+            a: 1,
+            model: 'lcdm',
+            mode: 'comoving', // 'comoving' or 'proper'
+            isPlaying: false,
+            audioContext: null,
+            oscillator: null,
+            noise: null,
+            gainNode: null,
+            baseWavelength: 400 // nm (blue light)
+        };
+
+        // --- Math & Physics Core ---
+        
+        // Exact solution for flat LCDM: a(t) = (O_m / O_L)^(1/3) * sinh( 1.5 * sqrt(O_L) * H0 * t )^(2/3)
+        // t is cosmic time (0 at big bang, AGE_UNIVERSE today)
+        function calcScaleFactor(t, model) {
+            if (t <= 0) return 0.00001; // Avoid singularity
+            
+            if (model === 'lcdm') {
+                const term = 1.5 * Math.sqrt(O_L) * H0_Gyr_inv * t;
+                return Math.pow(O_m / O_L, 1/3) * Math.pow(Math.sinh(term), 2/3);
+            } else if (model === 'matter') {
+                // a(t) prop to t^(2/3)
+                // Normalize so a(t_today) = 1
+                const t0 = 2 / (3 * H0_Gyr_inv); // age in matter dom
+                return Math.pow(t / t0, 2/3);
+            } else if (model === 'empty') {
+                // a(t) prop to t
+                const t0 = 1 / H0_Gyr_inv;
+                return t / t0;
+            } else if (model === 'static') {
+                return 1.0;
+            }
+            return 1.0;
+        }
+
+        function cosmicTimeFromLookback(t_lookback, model) {
+            if (model === 'lcdm') return Math.max(0.0001, AGE_UNIVERSE - t_lookback);
+            if (model === 'matter') {
+                const t0 = 2 / (3 * H0_Gyr_inv);
+                return Math.max(0.0001, t0 - t_lookback * (t0/AGE_UNIVERSE)); // Scale slider
+            }
+            if (model === 'empty') {
+                const t0 = 1 / H0_Gyr_inv;
+                return Math.max(0.0001, t0 - t_lookback * (t0/AGE_UNIVERSE));
+            }
+            return AGE_UNIVERSE - t_lookback;
+        }
+
+        function lookbackFromCosmicTime(t, model) {
+            if (model === 'lcdm') return Math.max(0, AGE_UNIVERSE - t);
+            if (model === 'matter') {
+                const t0 = 2 / (3 * H0_Gyr_inv);
+                return Math.max(0, (t0 - t) * (AGE_UNIVERSE/t0));
+            }
+            if (model === 'empty') {
+                const t0 = 1 / H0_Gyr_inv;
+                return Math.max(0, (t0 - t) * (AGE_UNIVERSE/t0));
+            }
+            return Math.max(0, AGE_UNIVERSE - t);
+        }
+
+        // Hubble parameter at scale factor a
+        function calcHubble(a, model) {
+            if (model === 'lcdm') {
+                return H0 * Math.sqrt(O_m * Math.pow(a, -3) + O_L);
+            } else if (model === 'matter') {
+                return H0 * Math.sqrt(Math.pow(a, -3));
+            } else if (model === 'empty') {
+                return H0 * Math.pow(a, -1);
+            }
+            return 0; // static
+        }
+
+        // Update physics state from a given lookback time
+        function updatePhysicsFromTime(t_lookback) {
+            state.t_lookback = t_lookback;
+            const t_cosmic = cosmicTimeFromLookback(t_lookback, state.model);
+            
+            const a_t = calcScaleFactor(t_cosmic, state.model);
+            const a_now = calcScaleFactor(cosmicTimeFromLookback(0, state.model), state.model);
+            
+            // Normalize scale factor relative to "today" for the chosen model so a=1 today
+            state.a = a_t / a_now;
+            
+            if (state.model === 'static') {
+                state.a = 1;
+                state.z = 0;
+            } else {
+                state.z = (1.0 / state.a) - 1.0;
+            }
+            
+            if (state.z < -0.99) state.z = -0.99; // cap blueshift
+            
+            updateUI();
+            updateAudio();
+        }
+
+        // Z -> Time inversion mapping (numerical search since exact inversion is tricky for UI performance)
+        function updatePhysicsFromZ(zTarget) {
+            if (state.model === 'static') {
+                updatePhysicsFromTime(0);
+                return;
+            }
+            const aTarget = 1.0 / (1.0 + zTarget);
+            
+            // Binary search for t_cosmic
+            let t_min = 0.0001;
+            let t_max = cosmicTimeFromLookback(0, state.model) * 1.5;
+            let t_mid;
+            
+            const a_now = calcScaleFactor(cosmicTimeFromLookback(0, state.model), state.model);
+
+            for (let i = 0; i < 30; i++) {
+                t_mid = (t_min + t_max) / 2;
+                let a = calcScaleFactor(t_mid, state.model) / a_now;
+                if (a < aTarget) {
+                    t_min = t_mid;
+                } else {
+                    t_max = t_mid;
+                }
+            }
+            
+            const t_lookback = lookbackFromCosmicTime(t_mid, state.model);
+            updatePhysicsFromTime(t_lookback);
+        }
+
+        // --- Visual & Canvas ---
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        
+        function resize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            width = rect.width;
+            height = rect.height;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Particles representing galaxies
+        const galaxies = [];
+        for (let i = 0; i < 400; i++) {
+            galaxies.push({
+                x: (Math.random() - 0.5) * 4000,
+                y: (Math.random() - 0.5) * 4000,
+                size: Math.random() * 2 + 1,
+                color: `rgba(${200 + Math.random()*55}, ${200 + Math.random()*55}, 255, ${0.5 + Math.random()*0.5})`
+            });
+        }
+
+        function getWavelengthColor(wl) {
+            // Very rough mapping of nm to RGB for UI
+            if (wl < 380) return '#a855f7'; // UV / Purple
+            if (wl < 450) return '#3b82f6'; // Blue
+            if (wl < 495) return '#06b6d4'; // Cyan
+            if (wl < 570) return '#22c55e'; // Green
+            if (wl < 590) return '#eab308'; // Yellow
+            if (wl < 620) return '#f97316'; // Orange
+            if (wl < 750) return '#ef4444'; // Red
+            if (wl < 1000000) return '#991b1b'; // IR
+            return '#1d2b38'; // Microwave/Radio (gray/dark)
+        }
+
+        function getSpectrumTextAndColor(wl) {
+            if (wl < 380) return { text: "ULTRAVIOLET", bg: "bg-purple-900/80 text-purple-300 border-purple-800" };
+            if (wl < 450) return { text: "BLUE LIGHT", bg: "bg-blue-900/80 text-blue-300 border-blue-800" };
+            if (wl < 495) return { text: "CYAN LIGHT", bg: "bg-cyan-900/80 text-cyan-300 border-cyan-800" };
+            if (wl < 570) return { text: "GREEN LIGHT", bg: "bg-green-900/80 text-green-300 border-green-800" };
+            if (wl < 590) return { text: "YELLOW LIGHT", bg: "bg-yellow-900/80 text-yellow-300 border-yellow-800" };
+            if (wl < 620) return { text: "ORANGE LIGHT", bg: "bg-orange-900/80 text-orange-300 border-orange-800" };
+            if (wl < 750) return { text: "RED LIGHT", bg: "bg-red-900/80 text-red-300 border-red-800" };
+            if (wl < 3000) return { text: "NEAR INFRARED", bg: "bg-rose-950/80 text-rose-400 border-rose-900" };
+            if (wl < 10000) return { text: "MID INFRARED", bg: "bg-red-950/80 text-red-500 border-red-900" };
+            if (wl < 1e6) return { text: "FAR INFRARED", bg: "bg-slate-900/80 text-slate-400 border-slate-800" };
+            return { text: "MICROWAVE (CMB)", bg: "bg-black/90 text-slate-500 border-slate-700" };
+        }
+
+        let animationTime = 0;
+
+        function render() {
+            ctx.clearRect(0, 0, width, height);
+            
+            const cx = width / 2;
+            const cy = height / 2;
+            
+            // Grid spacing base
+            const baseSpacing = 50;
+            
+            // Determine scale based on mode
+            // Comoving: grid stays fixed, we draw it statically
+            // Proper: grid expands physically
+            const visualScale = state.mode === 'proper' ? state.a : 1.0;
+            const gridSpacing = baseSpacing * visualScale;
+            
+            // Draw expanding space grid
+            ctx.strokeStyle = state.mode === 'proper' ? 'rgba(0, 240, 255, 0.15)' : 'rgba(148, 163, 184, 0.15)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            
+            const numLinesX = Math.ceil(width / gridSpacing) + 2;
+            const numLinesY = Math.ceil(height / gridSpacing) + 2;
+            
+            const offsetX = (cx * (1 - visualScale)) % gridSpacing;
+            const offsetY = (cy * (1 - visualScale)) % gridSpacing;
+            
+            for (let i = -numLinesX; i <= numLinesX; i++) {
+                let x = cx + i * gridSpacing;
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
+            }
+            for (let i = -numLinesY; i <= numLinesY; i++) {
+                let y = cy + i * gridSpacing;
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+            }
+            ctx.stroke();
+
+            // Draw galaxies
+            galaxies.forEach(g => {
+                let gx = cx + g.x * visualScale;
+                let gy = cy + g.y * visualScale;
+                
+                // Wrap around for nice visualization
+                gx = (gx % 10000 + 10000) % 10000;
+                gy = (gy % 10000 + 10000) % 10000;
+                
+                // Keep within bounds-ish for drawing
+                let dx = gx - cx;
+                let dy = gy - cy;
+                
+                // Toroidal wrap visually
+                dx = ((dx + 5000) % 10000) - 5000;
+                dy = ((dy + 5000) % 10000) - 5000;
+                
+                ctx.fillStyle = g.color;
+                ctx.beginPath();
+                ctx.arc(cx + dx, cy + dy, g.size * (state.mode === 'proper' ? 1 : 1), 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw Central Observer (Us)
+            ctx.fillStyle = '#00f0ff';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.5)';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Draw a photon traveling and stretching
+            // Physical wavelength: lambda_emit * a(t)
+            const obsWl = state.baseWavelength * (1 + Math.max(0, state.z));
+            const photonColor = getWavelengthColor(obsWl);
+            
+            animationTime += 0.05;
+            
+            ctx.strokeStyle = photonColor;
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            
+            const waveLengthVisual = Math.max(10, Math.min(300, 20 * (1 + state.z)));
+            const amplitude = 15;
+            
+            // Draw wave passing by observer
+            for(let x = -200; x <= 200; x+=2) {
+                let y = cy + 100 + Math.sin((x / waveLengthVisual) * Math.PI * 2 - animationTime * 3) * amplitude;
+                if(x === -200) ctx.moveTo(cx + x, y);
+                else ctx.lineTo(cx + x, y);
+            }
+            ctx.stroke();
+
+            // Glow effect for wave
+            ctx.strokeStyle = photonColor + '40'; // add transparency
+            ctx.lineWidth = 8;
+            ctx.stroke();
+
+            requestAnimationFrame(render);
+        }
+
+        // --- Audio Context ---
+        document.getElementById('btn-audio').addEventListener('click', () => {
+            if (!state.audioContext) {
+                state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Main osc
+                state.oscillator = state.audioContext.createOscillator();
+                state.oscillator.type = 'sine';
+                
+                // Sub osc for bass
+                const subOsc = state.audioContext.createOscillator();
+                subOsc.type = 'triangle';
+                
+                // Noise for CMB static
+                const bufferSize = state.audioContext.sampleRate * 2;
+                const buffer = state.audioContext.createBuffer(1, bufferSize, state.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                state.noise = state.audioContext.createBufferSource();
+                state.noise.buffer = buffer;
+                state.noise.loop = true;
+                
+                const noiseFilter = state.audioContext.createBiquadFilter();
+                noiseFilter.type = 'lowpass';
+                noiseFilter.frequency.value = 1000;
+                
+                state.gainNode = state.audioContext.createGain();
+                state.noiseGain = state.audioContext.createGain();
+                state.subGain = state.audioContext.createGain();
+                
+                state.oscillator.connect(state.gainNode);
+                subOsc.connect(state.subGain);
+                state.subGain.connect(state.gainNode);
+                
+                state.noise.connect(noiseFilter);
+                noiseFilter.connect(state.noiseGain);
+                state.noiseGain.connect(state.gainNode);
+                
+                state.gainNode.connect(state.audioContext.destination);
+                
+                state.oscillator.start();
+                subOsc.start();
+                state.noise.start();
+                
+                state.subOsc = subOsc;
+                
+                updateAudio();
+                
+                document.getElementById('btn-audio').classList.replace('bg-sky-600', 'bg-emerald-600');
+                document.getElementById('btn-audio').classList.replace('hover:bg-sky-500', 'hover:bg-emerald-500');
+                document.getElementById('btn-audio').innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c-1.105 0-2-.895-2-2s.895-2 2-2 2 .895 2 2-.895 2-2 2zm12-3c-1.105 0-2-.895-2-2s.895-2 2-2 2 .895 2 2-.895 2-2 2z"></path></svg> Audio Active`;
+            } else {
+                if (state.audioContext.state === 'suspended') {
+                    state.audioContext.resume();
+                }
+            }
+        });
+
+        function updateAudio() {
+            if (!state.audioContext) return;
+            
+            // Map wavelength to frequency physically (inversely proportional)
+            // Base: 400nm -> 800 Hz (just an arbitrary anchor for UI)
+            // f_obs = f_emit / (1+z)
+            const f_emit = 800;
+            let f_obs = f_emit / (1 + state.z);
+            
+            // Ensure frequency doesn't go below AudioContext bounds, though we will mute it if it's too low
+            const validFreq = Math.max(1, f_obs);
+            
+            state.oscillator.frequency.setTargetAtTime(validFreq, state.audioContext.currentTime, 0.1);
+            state.subOsc.frequency.setTargetAtTime(validFreq / 2, state.audioContext.currentTime, 0.1);
+            
+            // Mix logic:
+            // High z -> low frequency, fade out main osc, fade in sub osc, fade in noise (CMB)
+            let volMain = 0.5;
+            let volSub = 0.0;
+            let volNoise = 0.0;
+            
+            if (state.z < 10) {
+                volMain = 0.5;
+                volSub = state.z / 10 * 0.5;
+            } else if (state.z < 100) {
+                volMain = 0.5 * (1 - (state.z - 10) / 90);
+                volSub = 0.5;
+                volNoise = ((state.z - 10) / 90) * 0.1;
+            } else {
+                volMain = 0;
+                volSub = 0.5 * Math.max(0, 1 - (state.z - 100) / 900);
+                volNoise = 0.1 + Math.min(0.2, ((state.z - 100) / 900) * 0.2);
+            }
+            
+            if (state.z > 1000) {
+                // CMB dominance
+                volNoise = 0.3;
+            }
+
+            state.gainNode.gain.setTargetAtTime(volMain, state.audioContext.currentTime, 0.1);
+            state.subGain.gain.setTargetAtTime(volSub, state.audioContext.currentTime, 0.1);
+            state.noiseGain.gain.setTargetAtTime(volNoise, state.audioContext.currentTime, 0.1);
+        }
+
+
+        // --- UI Interactions ---
+
+        // Map slider value (0-100 linear) to z (0 to 1100 logarithmic-ish)
+        function sliderToZ(val) {
+            if (val <= 0) return 0;
+            // Map 0-100 to 0-1100 exponentially
+            // y = a * exp(b * x) + c
+            // To pass through (0,0), (50, 10), (100, 1100)
+            // Simpler: piece-wise or simple power law
+            return Math.pow(val / 100, 3) * 1100;
+        }
+
+        function zToSlider(z) {
+            if (z <= 0) return 0;
+            return Math.pow(z / 1100, 1/3) * 100;
+        }
+
+        const sliderTime = document.getElementById('slider-time');
+        const sliderZ = document.getElementById('slider-z');
+        
+        // We use a linear slider in UI for Z but map it non-linearly to make low-z visible
+        // Actually, html slider is 0 to 1100 step 0.1.
+        // Let's modify sliderZ to be 0 to 100 internally for event handling
+        sliderZ.min = 0;
+        sliderZ.max = 100;
+        sliderZ.step = 0.1;
+
+        sliderTime.addEventListener('input', (e) => {
+            if (state.model === 'static') {
+                e.target.value = 0;
+                return;
+            }
+            updatePhysicsFromTime(parseFloat(e.target.value));
+        });
+
+        sliderZ.addEventListener('input', (e) => {
+            if (state.model === 'static') {
+                e.target.value = 0;
+                return;
+            }
+            const targetZ = sliderToZ(parseFloat(e.target.value));
+            updatePhysicsFromZ(targetZ);
+        });
+
+        document.getElementById('sel-model').addEventListener('change', (e) => {
+            state.model = e.target.value;
+            // Re-eval current state
+            updatePhysicsFromTime(state.t_lookback);
+        });
+
+        document.getElementById('mode-comoving').addEventListener('click', (e) => {
+            state.mode = 'comoving';
+            e.target.classList.replace('text-slate-400', 'text-white');
+            e.target.classList.add('bg-slate-800');
+            document.getElementById('mode-proper').classList.remove('bg-slate-800', 'text-white');
+            document.getElementById('mode-proper').classList.add('text-slate-400');
+        });
+
+        document.getElementById('mode-proper').addEventListener('click', (e) => {
+            state.mode = 'proper';
+            e.target.classList.replace('text-slate-400', 'text-white');
+            e.target.classList.add('bg-slate-800');
+            document.getElementById('mode-comoving').classList.remove('bg-slate-800', 'text-white');
+            document.getElementById('mode-comoving').classList.add('text-slate-400');
+        });
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const z = parseFloat(e.target.dataset.z);
+                state.model = 'lcdm';
+                document.getElementById('sel-model').value = 'lcdm';
+                updatePhysicsFromZ(z);
+            });
+        });
+
+        let playInterval;
+        document.getElementById('btn-play').addEventListener('click', () => {
+            state.isPlaying = !state.isPlaying;
+            const btn = document.getElementById('btn-play');
+            if (state.isPlaying) {
+                btn.classList.replace('bg-sky-600/20', 'bg-sky-600/60');
+                playInterval = setInterval(() => {
+                    let newTime = state.t_lookback + 0.02;
+                    if (newTime > AGE_UNIVERSE * 0.99) newTime = 0; // loop
+                    updatePhysicsFromTime(newTime);
+                }, 33);
+            } else {
+                btn.classList.replace('bg-sky-600/60', 'bg-sky-600/20');
+                clearInterval(playInterval);
+            }
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            state.model = 'lcdm';
+            document.getElementById('sel-model').value = 'lcdm';
+            updatePhysicsFromTime(0);
+        });
+
+        function updateUI() {
+            // Update HUD
+            document.getElementById('hud-a').innerText = state.a.toFixed(4);
+            document.getElementById('hud-z').innerText = state.z.toFixed(4);
+            document.getElementById('hud-t').innerText = state.t_lookback.toFixed(2) + ' Gyr';
+            
+            const wl_obs = state.baseWavelength * (1 + Math.max(0, state.z));
+            document.getElementById('hud-obs').innerText = wl_obs > 1e6 ? (wl_obs/1e6).toFixed(2) + ' mm' : Math.round(wl_obs) + ' nm';
+            
+            // Apparent recession speed v = H_0 * d
+            // Approximate apparent v / c
+            let v_c = 0;
+            if (state.z > 0) {
+                // Approximate relation for v/c in FLRW at low z, but for high z we can just show H * d
+                // Using exact definition v = H0 * d_proper today, which implies d_proper = \int c dt / a(t)
+                // We'll use a rough approximation v/c ≈ z for z<1, and v/c > 1 for z>1.4
+                // A simplified empirical fit for UI purposes for LCDM:
+                v_c = state.z;
+                if(state.model === 'lcdm') {
+                     if (state.z > 1.4) v_c = 1.0 + (state.z - 1.4) * 0.5; // rough visual indication > c
+                     if (state.z > 10) v_c = 3.2 + Math.log10(state.z); 
+                }
+            } else if (state.z < 0) {
+                v_c = state.z;
+            }
+            document.getElementById('hud-v').innerText = v_c.toFixed(2) + ' c';
+            
+            // Update spectrum badge
+            const spec = getSpectrumTextAndColor(wl_obs);
+            const badge = document.getElementById('hud-spectrum');
+            badge.innerText = spec.text;
+            badge.className = `inline-block px-4 py-1 rounded-full text-sm font-semibold tracking-wide shadow-lg transition-colors duration-300 ${spec.bg}`;
+
+            // Update sliders safely
+            if (document.activeElement !== sliderTime) {
+                sliderTime.value = state.t_lookback;
+            }
+            if (document.activeElement !== sliderZ) {
+                sliderZ.value = zToSlider(state.z);
+            }
+            
+            document.getElementById('lbl-time').innerText = state.t_lookback.toFixed(2) + ' Gyr';
+            document.getElementById('lbl-z').innerText = state.z.toFixed(2);
+        }
+
+        // Init
+        updatePhysicsFromTime(0);
+        requestAnimationFrame(render);
+
+    </script>
+</body>
+</html>

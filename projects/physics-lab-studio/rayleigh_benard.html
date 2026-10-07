@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rayleigh–Bénard Convection Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { margin: 0; overflow-x: hidden; background-color: #0b1217; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+        .hud-panel { background: rgba(17, 26, 34, 0.8); backdrop-filter: blur(8px); border: 1px solid #1d2b38; }
+        #canvas-container { position: relative; width: 100%; height: 60vh; min-height: 400px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        canvas { display: block; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .preset-btn { transition: all 0.2s; }
+        .preset-btn:hover { background-color: #00f0ff; color: #0b1217; }
+        
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #00f0ff;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200">
+
+    <div class="fixed top-4 left-4 z-10 w-80 hud-panel rounded-2xl p-4 shadow-xl">
+        <h1 class="text-xl font-bold text-sky-400 mb-2">Rayleigh-Bénard Convection</h1>
+        
+        <div class="mb-4">
+            <button id="btn-audio" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold transition-colors">
+                Initialize Audio
+            </button>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-400 mb-1">Temperature Diff (ΔT): <span id="val-dt" class="text-sky-300 font-mono">10</span> °C</label>
+                <input type="range" id="slider-dt" min="0" max="100" step="0.1" value="10">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-400 mb-1">Layer Thickness (d): <span id="val-d" class="text-sky-300 font-mono">2.0</span> cm</label>
+                <input type="range" id="slider-d" min="0.5" max="10" step="0.1" value="2.0">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-400 mb-1">Fluid Type:</label>
+                <select id="select-fluid" class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-sm text-slate-200">
+                    <option value="water">Water (Visc: 1e-6 m²/s)</option>
+                    <option value="air">Air</option>
+                    <option value="oil">Cooking Oil</option>
+                    <option value="honey">Honey</option>
+                    <option value="solar">Solar Plasma</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-400 mb-1">View Mode:</label>
+                <select id="select-view" class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-sm text-slate-200">
+                    <option value="combined">Particles + Heatmap</option>
+                    <option value="heatmap">Temperature Heatmap</option>
+                    <option value="particles">Particles Only</option>
+                    <option value="vectors">Velocity Vectors</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-slate-800">
+            <h3 class="text-xs uppercase tracking-wider text-slate-500 mb-2">Presets</h3>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <button class="preset-btn bg-slate-800 border border-slate-700 rounded py-1" onclick="loadPreset('conduction')">Conduction</button>
+                <button class="preset-btn bg-slate-800 border border-slate-700 rounded py-1" onclick="loadPreset('onset')">Onset (Critical)</button>
+                <button class="preset-btn bg-slate-800 border border-slate-700 rounded py-1" onclick="loadPreset('stable')">Stable Rolls</button>
+                <button class="preset-btn bg-slate-800 border border-slate-700 rounded py-1" onclick="loadPreset('vigorous')">Vigorous Plumes</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="fixed top-4 right-4 z-10 w-72 hud-panel rounded-2xl p-4 shadow-xl">
+        <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">Telemetry Data</h2>
+        <div class="space-y-2 font-mono text-sm">
+            <div class="flex justify-between">
+                <span class="text-slate-500">Rayleigh No (Ra):</span>
+                <span id="out-ra" class="text-sky-400 font-bold">0</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">Ra / Ra_c:</span>
+                <span id="out-ratio" class="text-amber-400">0.00</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">State:</span>
+                <span id="out-state" class="text-emerald-400">Conduction</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">Max Velocity:</span>
+                <span id="out-vel" class="text-rose-400">0.0 mm/s</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+    <div class="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6 pb-20">
+        <div class="hud-panel p-5 rounded-2xl">
+            <div class="flex items-center mb-3">
+                <div class="w-8 h-8 rounded-full bg-sky-500/20 flex items-center justify-center mr-3">
+                    <span class="text-sky-400 font-bold">1</span>
+                </div>
+                <h3 class="font-semibold text-lg text-slate-200">The Rayleigh Number</h3>
+            </div>
+            <p class="text-sm text-slate-400 leading-relaxed">
+                The Rayleigh number (Ra) measures the ratio of buoyancy forces (which drive fluid motion) to viscous and thermal dissipation forces (which resist motion). When Ra is below a critical threshold (~1708), viscosity wins and heat transfers via pure conduction. Above it, buoyancy takes over, creating convection cells.
+            </p>
+        </div>
+
+        <div class="hud-panel p-5 rounded-2xl">
+            <div class="flex items-center mb-3">
+                <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center mr-3">
+                    <span class="text-amber-400 font-bold">2</span>
+                </div>
+                <h3 class="font-semibold text-lg text-slate-200">Bénard Cells</h3>
+            </div>
+            <p class="text-sm text-slate-400 leading-relaxed">
+                As the instability triggers, the fluid self-organizes into counter-rotating rolls to maximize heat transfer efficiency. In a 3D fluid, these often form beautiful hexagonal honeycomb patterns (Bénard cells), where warm fluid rises in the center and sinks at the edges.
+            </p>
+        </div>
+
+        <div class="hud-panel p-5 rounded-2xl">
+            <div class="flex items-center mb-3">
+                <div class="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center mr-3">
+                    <span class="text-rose-400 font-bold">3</span>
+                </div>
+                <h3 class="font-semibold text-lg text-slate-200">Universal Physics</h3>
+            </div>
+            <p class="text-sm text-slate-400 leading-relaxed">
+                This exact same physics applies across vastly different scales. From heating a pot of miso soup on the stove, to atmospheric thermals that birds ride, to the churning mantle of the Earth driving plate tectonics, and even the granular surface of the Sun (solar granulation).
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Physics constants & fluid properties
+        const GRAVITY = 9.81;
+        const RA_CRIT = 1708;
+        
+        const fluids = {
+            water: { beta: 2.1e-4, nu: 1.0e-6, alpha: 1.4e-7, name: "Water" },
+            air: { beta: 3.4e-3, nu: 1.5e-5, alpha: 2.2e-5, name: "Air" },
+            oil: { beta: 7.0e-4, nu: 5.0e-5, alpha: 8.0e-8, name: "Cooking Oil" },
+            honey: { beta: 5.0e-4, nu: 1.0e-2, alpha: 1.0e-7, name: "Honey" },
+            solar: { beta: 1e-4, nu: 1e-3, alpha: 1e-2, name: "Solar Plasma" } // Very approximate for visual demo
+        };
+
+        let currentFluid = fluids.water;
+        let deltaT = 10;
+        let depth = 0.02; // 2 cm
+
+        // State
+        let Ra = 0;
+        let amplitude = 0;
+        let time = 0;
+        const k = Math.PI; // wave number
+
+        // DOM elements
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        
+        const ui = {
+            dtSlider: document.getElementById('slider-dt'),
+            dtVal: document.getElementById('val-dt'),
+            dSlider: document.getElementById('slider-d'),
+            dVal: document.getElementById('val-d'),
+            fluidSelect: document.getElementById('select-fluid'),
+            viewSelect: document.getElementById('select-view'),
+            outRa: document.getElementById('out-ra'),
+            outRatio: document.getElementById('out-ratio'),
+            outState: document.getElementById('out-state'),
+            outVel: document.getElementById('out-vel'),
+            btnAudio: document.getElementById('btn-audio')
+        };
+
+        // Resize handling
+        let width, height;
+        let dpr = window.devicePixelRatio || 1;
+        let simWidth = 800;
+        let simHeight = 300;
+        
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            const cw = container.clientWidth;
+            const ch = container.clientHeight;
+            
+            // Keep aspect ratio
+            const aspect = 800 / 300;
+            let w = cw * 0.9;
+            let h = w / aspect;
+            if (h > ch * 0.9) {
+                h = ch * 0.9;
+                w = h * aspect;
+            }
+            
+            canvas.style.width = `${w}px`;
+            canvas.style.height = `${h}px`;
+            
+            width = w * dpr;
+            height = h * dpr;
+            canvas.width = width;
+            canvas.height = height;
+            
+            simWidth = w;
+            simHeight = h;
+            
+            initParticles();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // Particles
+        let particles = [];
+        const NUM_PARTICLES = 1200;
+        
+        function initParticles() {
+            particles = [];
+            for(let i=0; i<NUM_PARTICLES; i++) {
+                particles.push({
+                    x: Math.random(), // normalized 0 to 1
+                    y: Math.random(), // normalized 0 to 1
+                    life: Math.random()
+                });
+            }
+        }
+
+        // Velocity field function (Cellular Stream Function)
+        function getVelocity(x, y, t) {
+            if (amplitude <= 0) return { vx: 0, vy: 0 };
+            
+            // Map normalized x (0 to 1) to physical domain to create ~4 rolls
+            const px = x * 4 * Math.PI; 
+            const pz = y * Math.PI; // y is 0 (bottom) to 1 (top)
+            
+            // Stream function gradients
+            // Flow fluctuates slightly with time if Ra is very high
+            const chaoticMod = Ra > 50000 ? 1 + 0.2 * Math.sin(t * 2 + px) : 1;
+            const A = amplitude * chaoticMod;
+            
+            // Physical velocities
+            const vx = -A * Math.sin(pz) * Math.cos(px);
+            const vz = A * Math.cos(pz) * Math.sin(px);
+            
+            return { vx, vy: vz }; // vy corresponds to z (up/down)
+        }
+
+        function getTemperature(x, y, t) {
+            // Background conduction profile: linear from bottom to top
+            let T = 1.0 - y; // 1 at bottom, 0 at top
+            
+            if (amplitude > 0) {
+                const px = x * 4 * Math.PI;
+                const pz = y * Math.PI;
+                const chaoticMod = Ra > 50000 ? Math.sin(t*3 + y*10) * 0.1 : 0;
+                // Temperature perturbation
+                const T_pert = (amplitude * 0.5) * Math.sin(pz) * Math.cos(px) * (1 + chaoticMod);
+                T += T_pert;
+            }
+            
+            return Math.max(0, Math.min(1, T)); // Clamp 0 to 1
+        }
+
+        // Color mapping
+        function getHeatColor(t) {
+            // t from 0 (cold) to 1 (hot)
+            // blue -> cyan -> yellow -> red
+            if (t < 0.25) {
+                const r = t * 4;
+                return [0, Math.floor(255 * r), 255];
+            } else if (t < 0.5) {
+                const r = (t - 0.25) * 4;
+                return [0, 255, Math.floor(255 * (1 - r))];
+            } else if (t < 0.75) {
+                const r = (t - 0.5) * 4;
+                return [Math.floor(255 * r), 255, 0];
+            } else {
+                const r = (t - 0.75) * 4;
+                return [255, Math.floor(255 * (1 - r)), 0];
+            }
+        }
+
+        // Heatmap rendering
+        let offscreenCanvas, offCtx;
+        function renderHeatmap() {
+            if (!offscreenCanvas) {
+                offscreenCanvas = document.createElement('canvas');
+                offscreenCanvas.width = 200; // Low res for blur performance
+                offscreenCanvas.height = 75;
+                offCtx = offscreenCanvas.getContext('2d');
+            }
+            
+            const w = offscreenCanvas.width;
+            const h = offscreenCanvas.height;
+            const imgData = offCtx.createImageData(w, h);
+            const data = imgData.data;
+            
+            let idx = 0;
+            for (let y = 0; y < h; y++) {
+                const ny = 1.0 - (y / (h - 1)); // 0 at bottom, 1 at top
+                for (let x = 0; x < w; x++) {
+                    const nx = x / (w - 1);
+                    const T = getTemperature(nx, ny, time);
+                    const color = getHeatColor(T);
+                    data[idx++] = color[0];
+                    data[idx++] = color[1];
+                    data[idx++] = color[2];
+                    data[idx++] = 255;
+                }
+            }
+            offCtx.putImageData(imgData, 0, 0);
+            
+            ctx.save();
+            ctx.scale(dpr, dpr);
+            // Draw heatmap stretched with smoothing
+            ctx.imageSmoothingEnabled = true;
+            ctx.drawImage(offscreenCanvas, 0, 0, simWidth, simHeight);
+            ctx.restore();
+        }
+
+        // Update Physics
+        function updatePhysics(dt) {
+            // Recalculate Ra
+            const beta = currentFluid.beta;
+            const nu = currentFluid.nu;
+            const alpha = currentFluid.alpha;
+            
+            Ra = (GRAVITY * beta * deltaT * Math.pow(depth, 3)) / (nu * alpha);
+            
+            // Calculate amplitude based on supercriticality
+            if (Ra > RA_CRIT) {
+                const supercritical = (Ra - RA_CRIT) / RA_CRIT;
+                amplitude = Math.sqrt(supercritical) * 0.05; // Scaling factor for visual velocity
+                if (Ra > 50000) {
+                    amplitude *= 1.5; // Extra boost for chaotic
+                }
+            } else {
+                // Decay existing amplitude smoothly to 0
+                amplitude *= 0.95; 
+                if (amplitude < 0.001) amplitude = 0;
+            }
+
+            // Update particles
+            const speedScale = 0.5 * dt; // dt is around 0.016
+            
+            for (let p of particles) {
+                if (amplitude > 0) {
+                    const v = getVelocity(p.x, p.y, time);
+                    
+                    // Euler integration
+                    p.x += v.vx * speedScale;
+                    p.y += v.vy * speedScale; // vy represents z (up/down)
+                    
+                    // Boundary conditions
+                    if (p.x < 0) p.x += 1;
+                    if (p.x > 1) p.x -= 1;
+                    
+                    if (p.y <= 0) { p.y = 0; p.vy = 0; }
+                    if (p.y >= 1) { p.y = 1; p.vy = 0; }
+                }
+                
+                // Add some random brownian motion based on temperature
+                const localT = getTemperature(p.x, p.y, time);
+                const jitter = (localT * 0.002 + 0.0005);
+                p.x += (Math.random() - 0.5) * jitter;
+                p.y += (Math.random() - 0.5) * jitter;
+                
+                // Keep in bounds
+                if (p.x < 0) p.x += 1;
+                if (p.x > 1) p.x -= 1;
+                if (p.y < 0) p.y = 0;
+                if (p.y > 1) p.y = 1;
+
+                p.life -= 0.01;
+                if (p.life < 0) {
+                    p.x = Math.random();
+                    p.y = Math.random();
+                    p.life = 1.0;
+                }
+            }
+            
+            updateAudio();
+            updateUI();
+        }
+
+        // Main Loop
+        let lastTime = 0;
+        function loop(timestamp) {
+            const dt = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+            if (dt > 0.1) { // limit jump on tab switch
+                requestAnimationFrame(loop);
+                return;
+            }
+            time += dt;
+
+            updatePhysics(dt);
+            
+            // Clear
+            ctx.fillStyle = '#111a22';
+            ctx.fillRect(0, 0, width, height);
+            
+            const viewMode = ui.viewSelect.value;
+            
+            if (viewMode === 'heatmap' || viewMode === 'combined') {
+                renderHeatmap();
+            }
+            
+            ctx.save();
+            ctx.scale(dpr, dpr);
+
+            // Draw particles
+            if (viewMode === 'particles' || viewMode === 'combined') {
+                ctx.fillStyle = viewMode === 'combined' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(100, 200, 255, 0.8)';
+                for (let p of particles) {
+                    const px = p.x * simWidth;
+                    const py = (1 - p.y) * simHeight; // invert Y for canvas
+                    
+                    ctx.beginPath();
+                    ctx.arc(px, py, viewMode === 'combined' ? 1.5 : 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // Draw velocity vectors
+            if (viewMode === 'vectors') {
+                ctx.strokeStyle = '#00f0ff';
+                ctx.lineWidth = 1.5;
+                const stepsX = 20;
+                const stepsY = 8;
+                for (let i=1; i<stepsX; i++) {
+                    for (let j=1; j<stepsY; j++) {
+                        const nx = i/stepsX;
+                        const ny = j/stepsY;
+                        const v = getVelocity(nx, ny, time);
+                        
+                        const px = nx * simWidth;
+                        const py = (1 - ny) * simHeight;
+                        
+                        const mag = Math.sqrt(v.vx*v.vx + v.vy*v.vy);
+                        if (mag > 0.001) {
+                            ctx.beginPath();
+                            ctx.moveTo(px, py);
+                            // Scale vector length for visibility
+                            const vx_draw = v.vx * simWidth * 2;
+                            const vy_draw = -v.vy * simHeight * 2; // - because canvas Y is down
+                            
+                            ctx.lineTo(px + vx_draw, py + vy_draw);
+                            ctx.stroke();
+                            
+                            // Arrowhead
+                            ctx.fillStyle = '#00f0ff';
+                            ctx.beginPath();
+                            ctx.arc(px + vx_draw, py + vy_draw, 2, 0, Math.PI*2);
+                            ctx.fill();
+                        }
+                    }
+                }
+            }
+
+            // Draw boundaries
+            ctx.fillStyle = '#ef4444'; // Hot bottom
+            ctx.fillRect(0, simHeight - 4, simWidth, 4);
+            ctx.fillStyle = '#3b82f6'; // Cold top
+            ctx.fillRect(0, 0, simWidth, 4);
+
+            ctx.restore();
+
+            requestAnimationFrame(loop);
+        }
+
+        // UI Interactions
+        ui.dtSlider.addEventListener('input', (e) => {
+            deltaT = parseFloat(e.target.value);
+            ui.dtVal.innerText = deltaT.toFixed(1);
+        });
+
+        ui.dSlider.addEventListener('input', (e) => {
+            const d_cm = parseFloat(e.target.value);
+            depth = d_cm / 100; // convert to m
+            ui.dVal.innerText = d_cm.toFixed(1);
+        });
+
+        ui.fluidSelect.addEventListener('change', (e) => {
+            currentFluid = fluids[e.target.value];
+        });
+
+        function updateUI() {
+            const raExp = Ra.toExponential(2);
+            ui.outRa.innerText = raExp;
+            
+            const ratio = Ra / RA_CRIT;
+            ui.outRatio.innerText = ratio.toFixed(2);
+            
+            if (ratio < 1) {
+                ui.outRatio.className = "text-slate-400";
+                ui.outState.innerText = "Pure Conduction";
+                ui.outState.className = "text-slate-400";
+            } else if (ratio < 1.1) {
+                ui.outRatio.className = "text-amber-400";
+                ui.outState.innerText = "Critical Onset";
+                ui.outState.className = "text-amber-400";
+            } else if (ratio < 20) {
+                ui.outRatio.className = "text-emerald-400";
+                ui.outState.innerText = "Steady Rolls";
+                ui.outState.className = "text-emerald-400";
+            } else {
+                ui.outRatio.className = "text-rose-400";
+                ui.outState.innerText = "Chaotic Plumes";
+                ui.outState.className = "text-rose-400";
+            }
+
+            // Estimate physical velocity in mm/s
+            // amplitude is a normalized scalar, approximate mapping
+            const physVel = (amplitude * (currentFluid.nu / depth) * 1000 * 1000); 
+            ui.outVel.innerText = physVel.toFixed(1) + " mm/s";
+        }
+
+        window.loadPreset = function(preset) {
+            if (preset === 'conduction') {
+                ui.fluidSelect.value = 'water';
+                currentFluid = fluids.water;
+                deltaT = 4.0;
+                depth = 0.02; // 2cm
+            } else if (preset === 'onset') {
+                ui.fluidSelect.value = 'water';
+                currentFluid = fluids.water;
+                deltaT = 8.8; // around Ra=1750
+                depth = 0.02;
+            } else if (preset === 'stable') {
+                ui.fluidSelect.value = 'oil';
+                currentFluid = fluids.oil;
+                deltaT = 30;
+                depth = 0.02;
+            } else if (preset === 'vigorous') {
+                ui.fluidSelect.value = 'air';
+                currentFluid = fluids.air;
+                deltaT = 60;
+                depth = 0.05; // 5cm
+            }
+
+            ui.dtSlider.value = deltaT;
+            ui.dtVal.innerText = deltaT.toFixed(1);
+            ui.dSlider.value = depth * 100;
+            ui.dVal.innerText = (depth * 100).toFixed(1);
+        };
+
+        // Audio System
+        let audioCtx;
+        let masterGain;
+        let humOsc, rollOsc, noiseSrc, noiseFilter, noiseGain;
+
+        ui.btnAudio.addEventListener('click', () => {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                masterGain = audioCtx.createGain();
+                masterGain.connect(audioCtx.destination);
+                masterGain.gain.value = 0.2; // Keep it low
+
+                // Hum (conduction / base)
+                humOsc = audioCtx.createOscillator();
+                humOsc.type = 'sine';
+                humOsc.frequency.value = 55; // Low hum
+                const humGain = audioCtx.createGain();
+                humGain.gain.value = 0.1;
+                humOsc.connect(humGain);
+                humGain.connect(masterGain);
+                humOsc.start();
+
+                // Roll tone (harmonics for convection)
+                rollOsc = audioCtx.createOscillator();
+                rollOsc.type = 'triangle';
+                rollOsc.frequency.value = 110;
+                const rollGainNode = audioCtx.createGain();
+                rollGainNode.gain.value = 0;
+                rollOsc.connect(rollGainNode);
+                rollGainNode.connect(masterGain);
+                rollOsc.start();
+                rollOsc.gainNode = rollGainNode;
+
+                // Turbulence noise
+                const bufferSize = audioCtx.sampleRate * 2;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                
+                noiseSrc = audioCtx.createBufferSource();
+                noiseSrc.buffer = buffer;
+                noiseSrc.loop = true;
+                
+                noiseFilter = audioCtx.createBiquadFilter();
+                noiseFilter.type = 'lowpass';
+                noiseFilter.frequency.value = 200;
+                
+                noiseGain = audioCtx.createGain();
+                noiseGain.gain.value = 0;
+                
+                noiseSrc.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(masterGain);
+                noiseSrc.start();
+
+                ui.btnAudio.innerText = "Audio Active 🔊";
+                ui.btnAudio.className = "w-full py-2 bg-slate-800 text-sky-400 border border-sky-400 rounded-lg font-semibold cursor-default";
+            }
+        });
+
+        function updateAudio() {
+            if (!audioCtx) return;
+
+            const ratio = Ra / RA_CRIT;
+            
+            // Map ratio to audio parameters
+            if (ratio > 1) {
+                const supercrit = Math.min(ratio - 1, 30) / 30; // normalized 0 to 1 for sound shaping
+                
+                // Rhythmic circulation tone
+                const rollVol = Math.min(supercrit * 0.3, 0.4);
+                // modulate freq slightly with time
+                rollOsc.frequency.setTargetAtTime(110 + Math.sin(time*2) * 5 + supercrit*50, audioCtx.currentTime, 0.1);
+                rollOsc.gainNode.gain.setTargetAtTime(rollVol, audioCtx.currentTime, 0.1);
+
+                // Turbulence noise
+                if (ratio > 5) {
+                    const turb = Math.min((ratio - 5) / 50, 1.0);
+                    noiseGain.gain.setTargetAtTime(turb * 0.4, audioCtx.currentTime, 0.1);
+                    noiseFilter.frequency.setTargetAtTime(200 + turb * 800, audioCtx.currentTime, 0.1);
+                } else {
+                    noiseGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.2);
+                }
+            } else {
+                rollOsc.gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.2);
+                noiseGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.2);
+            }
+        }
+
+        // Start
+        resizeCanvas();
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>

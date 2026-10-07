@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eddy Current Brake Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b1217; /* slate-950 */
+            color: #f8fafc;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 1rem;
+        }
+
+        .hud-panel {
+            background-color: rgba(17, 26, 34, 0.8); /* slate-900 */
+            backdrop-filter: blur(10px);
+            border: 1px solid #1d2b38; /* slate-800 */
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b1217;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1d2b38;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+        
+        input[type=range] {
+            accent-color: #00f0ff;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col lg:flex-row p-4 gap-4 h-screen max-h-screen">
+        
+        <!-- Left Sidebar: Controls -->
+        <aside class="w-full lg:w-80 flex flex-col gap-4 overflow-y-auto pr-2">
+            
+            <div class="hud-panel p-5 rounded-2xl">
+                <h1 class="text-xl font-bold mb-4 text-sky-400">Eddy Current Brake Simulator</h1>
+                
+                <div class="space-y-4">
+                    <button id="btnInitAudio" class="w-full py-3 bg-rose-500 hover:bg-rose-600 rounded-xl font-bold transition-colors">
+                        Enable Audio & Start
+                    </button>
+
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Tube Material</label>
+                        <select id="selMaterial" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-sky-400">
+                            <option value="plastic">Plastic (No Damping)</option>
+                            <option value="stainless">Stainless Steel (Weak)</option>
+                            <option value="aluminum">Aluminum (Strong)</option>
+                            <option value="copper" selected>Copper (Extreme)</option>
+                            <option value="superconductor">Superconductor (Levitation)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between mb-1 text-sm text-slate-400">
+                            <label>Magnet Strength (B0)</label>
+                            <span id="valB0" class="mono text-sky-400">1.0 T</span>
+                        </div>
+                        <input type="range" id="sliderB0" min="0.1" max="2.0" step="0.1" value="1.0" class="w-full">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between mb-1 text-sm text-slate-400">
+                            <label>Magnet Mass</label>
+                            <span id="valMass" class="mono text-sky-400">50 g</span>
+                        </div>
+                        <input type="range" id="sliderMass" min="10" max="200" step="5" value="50" class="w-full">
+                    </div>
+
+                    <div class="flex items-center justify-between bg-slate-800 p-3 rounded-lg border border-slate-700">
+                        <span class="text-sm font-semibold">Vertical Slit (Cut Tube)</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggleSlit" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between bg-slate-800 p-3 rounded-lg border border-slate-700">
+                        <span class="text-sm font-semibold">Dual Comparison Mode</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggleDual" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
+                        </label>
+                    </div>
+
+                    <div class="pt-2">
+                        <button id="btnDrop" class="w-full py-3 bg-sky-500 hover:bg-sky-400 rounded-xl font-bold text-slate-950 transition-colors shadow-[0_0_15px_rgba(56,189,248,0.5)]">
+                            DROP MAGNET
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live HUD -->
+            <div class="hud-panel p-4 rounded-2xl flex-grow flex flex-col">
+                <h2 class="text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider">Live Telemetry</h2>
+                
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <span class="text-slate-400">Velocity (v)</span>
+                        <span id="hudV" class="mono font-bold text-sky-400">0.00 m/s</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <span class="text-slate-400">Acceleration (a)</span>
+                        <span id="hudA" class="mono font-bold text-emerald-400">0.00 m/s²</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <span class="text-slate-400">Grav. Force (F_g)</span>
+                        <span id="hudFg" class="mono font-bold text-amber-400">0.00 N</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <span class="text-slate-400">Braking Force (F_b)</span>
+                        <span id="hudFb" class="mono font-bold text-rose-400">0.00 N</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <span class="text-slate-400">Eddy Heat (P)</span>
+                        <span id="hudP" class="mono font-bold text-orange-500">0.00 W</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Fall Time</span>
+                        <span id="hudTime" class="mono font-bold text-slate-200">0.00 s</span>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Center: Canvas Area -->
+        <div class="flex-grow flex flex-col gap-4 relative">
+            <div class="hud-panel rounded-2xl flex-grow relative overflow-hidden">
+                <canvas id="simCanvas"></canvas>
+            </div>
+            
+            <!-- Bottom Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 h-48">
+                <div class="hud-panel p-4 rounded-2xl overflow-y-auto">
+                    <h3 class="text-sky-400 font-bold mb-2 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Lenz's Law
+                    </h3>
+                    <p class="text-sm text-slate-300 leading-relaxed">
+                        "Nature abhors a change in flux." As the magnet falls, its changing magnetic field induces swirling eddy currents in the conducting tube walls. These currents create their own magnetic field that exactly opposes the magnet's motion, generating a powerful upward braking force.
+                    </p>
+                </div>
+                
+                <div class="hud-panel p-4 rounded-2xl overflow-y-auto">
+                    <h3 class="text-rose-400 font-bold mb-2 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"></path></svg>
+                        Kinetic to Heat
+                    </h3>
+                    <p class="text-sm text-slate-300 leading-relaxed">
+                        Where does the falling kinetic energy go? It is converted directly into heat! The induced currents face electrical resistance in the metal tube (Ohm's Law: P = I²R). The mechanical energy is dissipated as Joule heating in the tube walls.
+                    </p>
+                </div>
+
+                <div class="hud-panel p-4 rounded-2xl overflow-y-auto">
+                    <h3 class="text-emerald-400 font-bold mb-2 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.95 11.95 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        Applications
+                    </h3>
+                    <p class="text-sm text-slate-300 leading-relaxed">
+                        This isn't just a party trick. Eddy current brakes are frictionless, wear-free, and their stopping power scales with speed. They are used in the emergency brakes of Shinkansen bullet trains, high-speed roller coasters, and magnetic rowing machines.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Physics Constants & Properties
+        const G = 9.81; // m/s^2
+        const TUBE_LENGTH_M = 1.0; // 1 meter tube
+        const CONDUCTIVITY = {
+            plastic: 0,
+            stainless: 1.45e6,
+            aluminum: 3.5e7,
+            copper: 5.96e7,
+            superconductor: 1e12
+        };
+
+        const COLORS = {
+            plastic: '#e2e8f0', // slate-200
+            stainless: '#94a3b8', // slate-400
+            aluminum: '#cbd5e1', // slate-300
+            copper: '#d97757', // copper-ish
+            superconductor: '#8b5cf6', // violet-500
+            bg: '#0b1217'
+        };
+
+        // State variables
+        let audioCtx = null;
+        let mainOsc = null;
+        let mainGain = null;
+        let hissOsc = null;
+        let hissFilter = null;
+        let hissGain = null;
+        let isAudioEnabled = false;
+
+        let canvas, ctx;
+        let width, height;
+
+        let animationId;
+        let lastTime = 0;
+        
+        let simState = {
+            running: false,
+            time: 0,
+            
+            // Magnet A (Main)
+            yA: 0, // position in meters (0 to TUBE_LENGTH_M)
+            vA: 0, // velocity m/s
+            aA: 0, // acceleration m/s^2
+            fbA: 0, // braking force
+            fgA: 0, // gravity force
+            pA: 0,  // power dissipated
+            hitBottomA: false,
+
+            // Magnet B (Reference Plastic)
+            yB: 0,
+            vB: 0,
+            aB: 0,
+            hitBottomB: false
+        };
+
+        // UI Elements
+        const selMaterial = document.getElementById('selMaterial');
+        const sliderB0 = document.getElementById('sliderB0');
+        const valB0 = document.getElementById('valB0');
+        const sliderMass = document.getElementById('sliderMass');
+        const valMass = document.getElementById('valMass');
+        const toggleSlit = document.getElementById('toggleSlit');
+        const toggleDual = document.getElementById('toggleDual');
+        const btnDrop = document.getElementById('btnDrop');
+        const btnInitAudio = document.getElementById('btnInitAudio');
+
+        const hudV = document.getElementById('hudV');
+        const hudA = document.getElementById('hudA');
+        const hudFg = document.getElementById('hudFg');
+        const hudFb = document.getElementById('hudFb');
+        const hudP = document.getElementById('hudP');
+        const hudTime = document.getElementById('hudTime');
+
+        // Init
+        function init() {
+            canvas = document.getElementById('simCanvas');
+            ctx = canvas.getContext('2d');
+            
+            resize();
+            window.addEventListener('resize', resize);
+            
+            // Listeners
+            sliderB0.addEventListener('input', (e) => valB0.textContent = Number(e.target.value).toFixed(1) + ' T');
+            sliderMass.addEventListener('input', (e) => valMass.textContent = e.target.value + ' g');
+            
+            btnDrop.addEventListener('click', startDrop);
+            btnInitAudio.addEventListener('click', initAudio);
+
+            // Initial render
+            drawSim();
+        }
+
+        function resize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            // Handle high DPI displays
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            width = rect.width;
+            height = rect.height;
+            if(!simState.running) drawSim();
+        }
+
+        function initAudio() {
+            if (audioCtx) return;
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+                
+                // Main hum (velocity dependent)
+                mainOsc = audioCtx.createOscillator();
+                mainOsc.type = 'triangle';
+                
+                mainGain = audioCtx.createGain();
+                mainGain.gain.value = 0;
+                
+                mainOsc.connect(mainGain);
+                mainGain.connect(audioCtx.destination);
+                mainOsc.start();
+
+                // Hiss for heating (power dependent)
+                // White noise buffer
+                const bufferSize = audioCtx.sampleRate * 2; // 2 seconds of noise
+                const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = Math.random() * 2 - 1;
+                }
+
+                hissOsc = audioCtx.createBufferSource();
+                hissOsc.buffer = noiseBuffer;
+                hissOsc.loop = true;
+
+                hissFilter = audioCtx.createBiquadFilter();
+                hissFilter.type = 'bandpass';
+                hissFilter.frequency.value = 1000;
+                hissFilter.Q.value = 1;
+
+                hissGain = audioCtx.createGain();
+                hissGain.gain.value = 0;
+
+                hissOsc.connect(hissFilter);
+                hissFilter.connect(hissGain);
+                hissGain.connect(audioCtx.destination);
+                hissOsc.start();
+
+                isAudioEnabled = true;
+                btnInitAudio.textContent = "Audio Enabled";
+                btnInitAudio.classList.remove('bg-rose-500', 'hover:bg-rose-600');
+                btnInitAudio.classList.add('bg-emerald-500', 'hover:bg-emerald-600');
+                
+            } catch (e) {
+                console.error('Audio initialization failed', e);
+            }
+        }
+
+        function playThud(volume = 1.0) {
+            if (!isAudioEnabled) return;
+            
+            const t = audioCtx.currentTime;
+            
+            const osc = audioCtx.createOscillator();
+            osc.type = 'sine';
+            
+            const gain = audioCtx.createGain();
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            // Pitch envelope
+            osc.frequency.setValueAtTime(150, t);
+            osc.frequency.exponentialRampToValueAtTime(0.01, t + 0.1);
+            
+            // Amplitude envelope
+            gain.gain.setValueAtTime(volume * 0.5, t); // Prevent clipping
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+            
+            osc.start(t);
+            osc.stop(t + 0.1);
+        }
+
+        function startDrop() {
+            simState.running = true;
+            simState.time = 0;
+            simState.yA = 0;
+            simState.vA = 0;
+            simState.aA = G;
+            simState.hitBottomA = false;
+            
+            simState.yB = 0;
+            simState.vB = 0;
+            simState.aB = G;
+            simState.hitBottomB = false;
+
+            lastTime = performance.now();
+            cancelAnimationFrame(animationId);
+            animationLoop(lastTime);
+        }
+
+        function updatePhysics(dt) {
+            const m = parseFloat(sliderMass.value) / 1000; // kg
+            const B0 = parseFloat(sliderB0.value); // Tesla
+            const material = selMaterial.value;
+            let sigma = CONDUCTIVITY[material];
+            
+            if (toggleSlit.checked) {
+                sigma *= 0.02; // Slit drastically reduces eddy currents
+            }
+
+            // Geometry factor for braking force: k ~ volume of tube affected.
+            // Tuning k so that copper gives ~ a few cm/s terminal velocity for typical mass.
+            const k = 1.5e-8; // arbitrary scaling factor to make visual physics feel right
+            
+            let dampingCoeff = k * B0 * B0 * sigma;
+
+            if (material === 'superconductor') {
+                // Perfect levitation / immense damping
+                dampingCoeff = 1000;
+            }
+
+            // Tube A (Main)
+            if (!simState.hitBottomA) {
+                simState.fgA = m * G;
+                simState.fbA = dampingCoeff * simState.vA;
+                
+                simState.aA = (simState.fgA - simState.fbA) / m;
+                simState.vA += simState.aA * dt;
+                simState.yA += simState.vA * dt;
+                
+                simState.pA = simState.fbA * simState.vA; // Mechanical power dissipated = Fb * v
+                
+                if (simState.yA >= TUBE_LENGTH_M) {
+                    simState.yA = TUBE_LENGTH_M;
+                    simState.hitBottomA = true;
+                    // Impact volume relative to velocity
+                    let vol = Math.min(simState.vA / 5, 1.0);
+                    playThud(vol);
+                    simState.vA = 0;
+                    simState.aA = 0;
+                }
+            } else {
+                simState.fbA = simState.fgA; // Holding it at rest
+                simState.pA = 0;
+            }
+
+            // Tube B (Plastic Reference)
+            if (toggleDual.checked && !simState.hitBottomB) {
+                simState.aB = G; // Free fall
+                simState.vB += simState.aB * dt;
+                simState.yB += simState.vB * dt;
+
+                if (simState.yB >= TUBE_LENGTH_M) {
+                    simState.yB = TUBE_LENGTH_M;
+                    simState.hitBottomB = true;
+                    playThud(1.0);
+                    simState.vB = 0;
+                    simState.aB = 0;
+                }
+            }
+        }
+
+        function updateAudio() {
+            if (!isAudioEnabled) return;
+
+            if (simState.hitBottomA) {
+                mainGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+                hissGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+            } else {
+                // Pitch based on velocity
+                let baseFreq = 50 + (simState.vA * 50);
+                mainOsc.frequency.setTargetAtTime(baseFreq, audioCtx.currentTime, 0.1);
+                
+                // Volume of hum based on braking force
+                let humVol = Math.min(simState.fbA / 2, 0.3); // Normalize
+                if(selMaterial.value === 'plastic') humVol = 0.05; // just wind noise
+                mainGain.gain.setTargetAtTime(humVol, audioCtx.currentTime, 0.1);
+
+                // Heat sizzle based on power
+                let sizzleVol = Math.min(simState.pA / 5, 0.2);
+                hissGain.gain.setTargetAtTime(sizzleVol, audioCtx.currentTime, 0.1);
+                
+                // Filter frequency shifts with speed
+                hissFilter.frequency.setTargetAtTime(400 + simState.vA * 200, audioCtx.currentTime, 0.1);
+            }
+        }
+
+        function updateHUD() {
+            hudV.textContent = simState.vA.toFixed(2) + ' m/s';
+            hudA.textContent = simState.aA.toFixed(2) + ' m/s²';
+            hudFg.textContent = simState.fgA.toFixed(2) + ' N';
+            hudFb.textContent = simState.fbA.toFixed(2) + ' N';
+            hudP.textContent = simState.pA.toFixed(2) + ' W';
+            hudTime.textContent = simState.time.toFixed(2) + ' s';
+            
+            // Color updates
+            hudFb.className = `mono font-bold ${simState.fbA > simState.fgA * 0.9 ? 'text-emerald-400' : 'text-rose-400'}`;
+            hudV.className = `mono font-bold ${simState.vA > 2 ? 'text-rose-400' : 'text-sky-400'}`;
+        }
+
+        function drawSim() {
+            ctx.clearRect(0, 0, width, height);
+
+            const dual = toggleDual.checked;
+            const matA = selMaterial.value;
+            const matB = 'plastic';
+
+            const tubeWidth = 60;
+            const tubeHeight = height * 0.8;
+            const topY = height * 0.1;
+            
+            // Compute positions
+            const centerX = width / 2;
+            let xA = dual ? centerX - 80 : centerX;
+            let xB = dual ? centerX + 80 : -999;
+
+            // Draw Tubes
+            drawTube(xA, topY, tubeWidth, tubeHeight, matA, toggleSlit.checked);
+            if(dual) drawTube(xB, topY, tubeWidth, tubeHeight, matB, false);
+
+            // Draw Magnets
+            if (simState.running || simState.hitBottomA) {
+                let pyA = topY + (simState.yA / TUBE_LENGTH_M) * tubeHeight;
+                drawMagnet(xA, pyA);
+                
+                // Draw magnetic field lines and eddy currents for A
+                if(simState.vA > 0.01 && !simState.hitBottomA) {
+                    drawEddyCurrents(xA, pyA, tubeWidth, simState.fbA);
+                }
+
+                if (dual) {
+                    let pyB = topY + (simState.yB / TUBE_LENGTH_M) * tubeHeight;
+                    drawMagnet(xB, pyB);
+                }
+            } else {
+                // Initial position above tube
+                drawMagnet(xA, topY - 30);
+                if(dual) drawMagnet(xB, topY - 30);
+            }
+        }
+
+        function drawTube(x, y, w, h, material, isSlit) {
+            const hw = w / 2;
+            
+            // Tube Back (Inner)
+            ctx.fillStyle = '#1d2b38';
+            ctx.fillRect(x - hw, y, w, h);
+
+            // Tube Front (semi transparent)
+            ctx.fillStyle = COLORS[material];
+            ctx.globalAlpha = material === 'plastic' ? 0.2 : 0.6;
+            ctx.fillRect(x - hw, y, w, h);
+            ctx.globalAlpha = 1.0;
+
+            // Borders
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x - hw, y, w, h);
+            
+            // Top and bottom openings
+            ctx.fillStyle = '#0b1217';
+            ctx.beginPath();
+            ctx.ellipse(x, y, hw, 10, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.ellipse(x, y + h, hw, 10, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Slit
+            if (isSlit) {
+                ctx.fillStyle = '#0b1217';
+                ctx.fillRect(x - 3, y, 6, h);
+            }
+
+            // Label
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '12px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText(material.toUpperCase(), x, y + h + 25);
+        }
+
+        function drawMagnet(x, y) {
+            const w = 40;
+            const h = 20;
+            const hw = w / 2;
+            const hh = h / 2;
+
+            // North pole (Red)
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(x - hw, y - hh, w, hh);
+            
+            // South pole (Blue)
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillRect(x - hw, y, w, hh);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '10px bold Inter';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('N', x, y - hh/2);
+            ctx.fillText('S', x, y + hh/2);
+        }
+
+        function drawEddyCurrents(x, y, w, forceMagnitude) {
+            if(forceMagnitude < 0.01) return;
+            
+            ctx.save();
+            // Scale intensity by force
+            let intensity = Math.min(forceMagnitude / 2, 1.0);
+            
+            // Swirling rings below the magnet (opposing field)
+            const numRings = 3;
+            for(let i=1; i<=numRings; i++) {
+                ctx.beginPath();
+                let ry = y + 10 + i * 15;
+                let rx = w/2 + 5;
+                ctx.ellipse(x, ry, rx, 5, 0, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(0, 240, 255, ${intensity * (1 - i/4)})`; // sky-400
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Add tiny arrows
+                ctx.fillStyle = `rgba(0, 240, 255, ${intensity})`;
+                ctx.beginPath();
+                ctx.moveTo(x + rx, ry);
+                ctx.lineTo(x + rx - 5, ry - 3);
+                ctx.lineTo(x + rx - 5, ry + 3);
+                ctx.fill();
+            }
+
+            // Upward braking force vector
+            ctx.beginPath();
+            ctx.moveTo(x, y - 20);
+            ctx.lineTo(x, y - 20 - intensity * 50);
+            ctx.strokeStyle = '#ccff00'; // emerald-400
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // Vector arrowhead
+            ctx.beginPath();
+            ctx.moveTo(x, y - 20 - intensity * 50 - 5);
+            ctx.lineTo(x - 5, y - 20 - intensity * 50 + 5);
+            ctx.lineTo(x + 5, y - 20 - intensity * 50 + 5);
+            ctx.fillStyle = '#ccff00';
+            ctx.fill();
+
+            // Heating glow if power is high
+            if (simState.pA > 0.1) {
+                let heatScale = Math.min(simState.pA / 5, 1.0);
+                const grad = ctx.createRadialGradient(x, y, 10, x, y, 60);
+                grad.addColorStop(0, `rgba(249, 115, 22, ${heatScale * 0.5})`); // orange
+                grad.addColorStop(1, 'rgba(249, 115, 22, 0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(x - 80, y - 80, 160, 160);
+            }
+
+            ctx.restore();
+        }
+
+        function animationLoop(timestamp) {
+            if (!simState.running) return;
+
+            let dt = (timestamp - lastTime) / 1000;
+            // Cap dt to avoid explosive physics if tab is backgrounded
+            if (dt > 0.05) dt = 0.05; 
+            
+            lastTime = timestamp;
+
+            if (!simState.hitBottomA || (toggleDual.checked && !simState.hitBottomB)) {
+                simState.time += dt;
+            } else {
+                // Both finished
+                simState.running = false;
+                if(isAudioEnabled) {
+                    mainGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+                    hissGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+                }
+            }
+
+            updatePhysics(dt);
+            updateAudio();
+            updateHUD();
+            drawSim();
+
+            if (simState.running) {
+                animationId = requestAnimationFrame(animationLoop);
+            }
+        }
+
+        // Run
+        window.onload = init;
+    </script>
+</body>
+</html>

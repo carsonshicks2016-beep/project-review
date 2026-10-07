@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adiabatic Lapse Rate & Atmospheric Convection Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        input[type=range] {
+            accent-color: #00f0ff;
+        }
+        .hud-panel {
+            background-color: rgba(17, 26, 34, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid #1d2b38;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 h-screen w-screen overflow-hidden flex flex-col font-sans">
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-row overflow-hidden">
+        
+        <!-- Sidebar Controls -->
+        <div class="w-80 flex flex-col gap-4 p-4 hud-panel border-r border-slate-800 overflow-y-auto z-10">
+            <h1 class="text-xl font-bold text-sky-400">AtmoSimulator</h1>
+            <p class="text-xs text-slate-400 mb-2">Thermodynamics & Lapse Rates</p>
+
+            <button id="start-audio" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm font-semibold transition-colors">
+                Enable Audio & Start
+            </button>
+
+            <!-- Mode Selection -->
+            <div class="space-y-2 mt-2">
+                <label class="text-sm font-semibold text-slate-300">Simulation Mode</label>
+                <div class="flex gap-2">
+                    <button class="mode-btn flex-1 py-1 px-2 bg-sky-600 rounded text-sm" data-mode="free">Free Updraft</button>
+                    <button class="mode-btn flex-1 py-1 px-2 bg-slate-700 rounded text-sm" data-mode="mountain">Mountain</button>
+                </div>
+            </div>
+
+            <!-- Presets -->
+            <div class="space-y-2">
+                <label class="text-sm font-semibold text-slate-300">Presets</label>
+                <select id="preset-select" class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-sm text-slate-200">
+                    <option value="fair">Fair Weather Cumulus</option>
+                    <option value="desert">Desert Dry Air</option>
+                    <option value="severe">Severe Thunderstorm</option>
+                    <option value="chinook">Mountain Rain Shadow</option>
+                </select>
+            </div>
+
+            <hr class="border-slate-800 my-2">
+
+            <!-- Sliders -->
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between text-sm">
+                        <label>Surface Temp (T₀)</label>
+                        <span id="val-t0" class="font-mono text-sky-300">20 °C</span>
+                    </div>
+                    <input type="range" id="slider-t0" min="-10" max="40" value="20" step="0.5" class="w-full">
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-sm">
+                        <label>Surface RH</label>
+                        <span id="val-rh" class="font-mono text-sky-300">50 %</span>
+                    </div>
+                    <input type="range" id="slider-rh" min="10" max="95" value="50" step="1" class="w-full">
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-sm">
+                        <label>Env. Lapse Rate (ELR)</label>
+                        <span id="val-elr" class="font-mono text-sky-300">6.5 °C/km</span>
+                    </div>
+                    <input type="range" id="slider-elr" min="2" max="12" value="6.5" step="0.1" class="w-full">
+                </div>
+
+                <hr class="border-slate-800 my-2">
+
+                <div>
+                    <div class="flex justify-between text-sm">
+                        <label class="text-emerald-400 font-bold">Parcel Altitude</label>
+                        <span id="val-alt" class="font-mono text-emerald-300">0 m</span>
+                    </div>
+                    <input type="range" id="slider-alt" min="0" max="10000" value="0" step="10" class="w-full">
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- Canvas Area & HUD -->
+        <div class="flex-1 relative">
+            <canvas id="sim-canvas" class="absolute inset-0 w-full h-full"></canvas>
+            
+            <!-- Live Readouts HUD -->
+            <div class="absolute top-4 right-4 hud-panel p-4 rounded-2xl w-64 shadow-lg pointer-events-none">
+                <h2 class="text-sm font-bold text-slate-200 border-b border-slate-700 pb-2 mb-2">Telemetry</h2>
+                <div class="grid grid-cols-2 gap-y-2 text-xs">
+                    <div class="text-slate-400">Parcel Temp</div>
+                    <div id="hud-tp" class="text-right font-mono text-sky-300">-- °C</div>
+                    
+                    <div class="text-slate-400">Env Temp</div>
+                    <div id="hud-te" class="text-right font-mono text-slate-300">-- °C</div>
+                    
+                    <div class="text-slate-400">Pressure</div>
+                    <div id="hud-p" class="text-right font-mono text-slate-300">-- hPa</div>
+
+                    <div class="text-slate-400">Humidity</div>
+                    <div id="hud-rh" class="text-right font-mono text-sky-300">-- %</div>
+
+                    <div class="text-slate-400">LCL Base</div>
+                    <div id="hud-lcl" class="text-right font-mono text-emerald-400">-- m</div>
+
+                    <div class="text-slate-400">Stability</div>
+                    <div id="hud-stab" class="text-right font-bold text-amber-400">--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Explainer Cards -->
+    <div class="h-48 hud-panel border-t border-slate-800 grid grid-cols-3 gap-4 p-4 overflow-y-auto shrink-0 z-10">
+        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+            <h3 class="font-bold text-sky-400 mb-1 text-sm">1. Expansion & Cooling</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+                As an air parcel rises, atmospheric pressure drops. By the First Law of Thermodynamics, the parcel expands. Doing work to expand against the surrounding air consumes internal energy, causing its temperature to drop. For dry air, this is the <strong>Dry Adiabatic Lapse Rate (~9.8 °C/km)</strong>.
+            </p>
+        </div>
+        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+            <h3 class="font-bold text-emerald-400 mb-1 text-sm">2. Condensation & Latent Heat</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Cooler air holds less water vapor. At the <strong>Lifting Condensation Level (LCL)</strong>, relative humidity hits 100%. Vapor condenses into liquid (clouds), releasing latent heat. This warms the parcel, reducing the cooling rate to the <strong>Saturated Adiabatic Lapse Rate (~4-6 °C/km)</strong>.
+            </p>
+        </div>
+        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+            <h3 class="font-bold text-rose-400 mb-1 text-sm">3. Topography & Rain Shadow</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+                When mountains force air upwards (orographic lift), it often rains out its moisture. As the dried air descends the leeward slope, it warms at the faster dry rate (9.8 °C/km). It arrives at the bottom significantly warmer and drier than it started—a <strong>Chinook or Foehn wind</strong>.
+            </p>
+        </div>
+    </div>
+
+<script>
+/**
+ * Physics Constants & Math
+ */
+const g = 9.80665; // m/s^2
+const c_p = 1004; // J/(kg*K)
+const R_d = 287.058; // J/(kg*K)
+const L_v = 2.5e6; // J/kg
+const epsilon = 0.622;
+const P0 = 1013.25; // hPa
+
+const DALR = g / c_p * 1000; // ~9.76 C/km
+
+// Saturation vapor pressure (hPa) given T in Celsius (Clausius-Clapeyron approx)
+function e_s(T_c) {
+    return 6.112 * Math.exp((17.67 * T_c) / (T_c + 243.5));
+}
+
+// Dew point (Celsius) given vapor pressure (hPa)
+function dew_point(e) {
+    let num = 243.5 * Math.log(e / 6.112);
+    let den = 17.67 - Math.log(e / 6.112);
+    return num / den;
+}
+
+// MALR (C/km) given T in Kelvin, P in hPa
+function get_MALR(T_k, P_hPa) {
+    let T_c = T_k - 273.15;
+    let es = e_s(T_c);
+    let rs = (epsilon * es) / (P_hPa - es);
+    
+    let num = g * (1 + (L_v * rs) / (R_d * T_k));
+    let den = c_p + (Math.pow(L_v, 2) * rs * epsilon) / (R_d * Math.pow(T_k, 2));
+    return (num / den) * 1000; // to C/km
+}
+
+// Standard atmosphere pressure approx at altitude z (m)
+function pressure_at(z) {
+    // using scale height approx ~ 8.4 km
+    return P0 * Math.exp(-z / 8400); 
+}
+
+/**
+ * State & Elements
+ */
+let state = {
+    audioEnabled: false,
+    mode: 'free', // 'free' or 'mountain'
+    T0: 20,
+    RH: 50,
+    ELR: 6.5,
+    altitude: 0, // 0 to 10000 m
+    
+    // Calculated
+    LCL: 0,
+    Td0: 0,
+    parcel_T: 20,
+    env_T: 20,
+    parcel_RH: 50,
+    cape: 0,
+    stability: 'Neutral',
+    
+    // Mountain state
+    mountainX: 0 // 0 to 1 (progress over mountain)
+};
+
+const els = {
+    t0: document.getElementById('slider-t0'),
+    rh: document.getElementById('slider-rh'),
+    elr: document.getElementById('slider-elr'),
+    alt: document.getElementById('slider-alt'),
+    valT0: document.getElementById('val-t0'),
+    valRh: document.getElementById('val-rh'),
+    valElr: document.getElementById('val-elr'),
+    valAlt: document.getElementById('val-alt'),
+    preset: document.getElementById('preset-select'),
+    startBtn: document.getElementById('start-audio'),
+    modeBtns: document.querySelectorAll('.mode-btn'),
+    canvas: document.getElementById('sim-canvas'),
+    
+    hudTp: document.getElementById('hud-tp'),
+    hudTe: document.getElementById('hud-te'),
+    hudP: document.getElementById('hud-p'),
+    hudRh: document.getElementById('hud-rh'),
+    hudLcl: document.getElementById('hud-lcl'),
+    hudStab: document.getElementById('hud-stab')
+};
+
+const ctx = els.canvas.getContext('2d');
+let cw, ch;
+
+/**
+ * Audio System
+ */
+let audioCtx = null;
+let windNoise, rainNoise, thunderNoise;
+let windGain, rainGain, thunderGain, filter;
+
+function initAudio() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    const bufferSize = audioCtx.sampleRate * 2; // 2 seconds
+    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+    }
+
+    // Wind
+    windNoise = audioCtx.createBufferSource();
+    windNoise.buffer = noiseBuffer;
+    windNoise.loop = true;
+    let windFilter = audioCtx.createBiquadFilter();
+    windFilter.type = 'lowpass';
+    windGain = audioCtx.createGain();
+    windGain.gain.value = 0;
+    windNoise.connect(windFilter);
+    windFilter.connect(windGain);
+    windGain.connect(audioCtx.destination);
+    windNoise.start();
+
+    // Rain
+    rainNoise = audioCtx.createBufferSource();
+    rainNoise.buffer = noiseBuffer;
+    rainNoise.loop = true;
+    let rainFilter = audioCtx.createBiquadFilter();
+    rainFilter.type = 'highpass';
+    rainFilter.frequency.value = 2000;
+    rainGain = audioCtx.createGain();
+    rainGain.gain.value = 0;
+    rainNoise.connect(rainFilter);
+    rainFilter.connect(rainGain);
+    rainGain.connect(audioCtx.destination);
+    rainNoise.start();
+
+    // Thunder
+    thunderNoise = audioCtx.createBufferSource();
+    thunderNoise.buffer = noiseBuffer;
+    thunderNoise.loop = true;
+    let thunderFilter = audioCtx.createBiquadFilter();
+    thunderFilter.type = 'lowpass';
+    thunderFilter.frequency.value = 150;
+    thunderGain = audioCtx.createGain();
+    thunderGain.gain.value = 0;
+    thunderNoise.connect(thunderFilter);
+    thunderFilter.connect(thunderGain);
+    thunderGain.connect(audioCtx.destination);
+    thunderNoise.start();
+
+    state.audioEnabled = true;
+    els.startBtn.style.display = 'none';
+}
+
+function updateAudio() {
+    if (!state.audioEnabled) return;
+    
+    // Wind: Decreases as altitude increases (pressure drops)
+    let p_ratio = pressure_at(state.altitude) / P0;
+    windGain.gain.setTargetAtTime(p_ratio * 0.15, audioCtx.currentTime, 0.1);
+    
+    // Rain: Only if above LCL and in cloud
+    if (state.altitude >= state.LCL && state.LCL > 0) {
+        let intensity = Math.min(1, (state.altitude - state.LCL) / 2000);
+        rainGain.gain.setTargetAtTime(intensity * 0.1, audioCtx.currentTime, 0.1);
+    } else {
+        rainGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+    }
+    
+    // Thunder: If unstable
+    if (state.cape > 1000) {
+        let rumble = (state.cape - 1000) / 3000;
+        rumble = Math.min(1, rumble);
+        thunderGain.gain.setTargetAtTime(rumble * 0.2, audioCtx.currentTime, 0.1);
+    } else {
+        thunderGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+    }
+}
+
+/**
+ * Core Logic
+ */
+function updatePhysics() {
+    state.T0 = parseFloat(els.t0.value);
+    state.RH = parseFloat(els.rh.value);
+    state.ELR = parseFloat(els.elr.value);
+    state.altitude = parseFloat(els.alt.value);
+    
+    // Surface dew point
+    let e_s_surface = e_s(state.T0);
+    let e_surface = (state.RH / 100) * e_s_surface;
+    state.Td0 = dew_point(e_surface);
+    
+    // Exact LCL calculation (approx z = 125 * (T - Td))
+    state.LCL = 125 * (state.T0 - state.Td0);
+    if (state.LCL < 0) state.LCL = 0;
+
+    // Calc parcel T at current altitude
+    let dz = 100; // step size for integration
+    let Tp = state.T0;
+    let P = P0;
+    
+    // We integrate to find the state at current altitude
+    // For mountain mode, the leeward side descents matter. 
+    // We'll calculate the full path if in mountain mode, but for HUD just local state.
+    
+    let path = [];
+    let current_z = 0;
+    let env_cape_integral = 0;
+    
+    for (let z = 0; z <= 10000; z += dz) {
+        let Te = state.T0 - (state.ELR * z / 1000);
+        
+        let p_z = pressure_at(z);
+        let inCloud = z >= state.LCL;
+        
+        if (z > 0) {
+            if (inCloud) {
+                let T_k = Tp + 273.15;
+                let malr = get_MALR(T_k, p_z);
+                Tp -= (malr * dz / 1000);
+            } else {
+                Tp -= (DALR * dz / 1000);
+            }
+        }
+        
+        path.push({z, Tp, Te, inCloud});
+        
+        if (Math.abs(z - state.altitude) < dz/2) {
+            state.parcel_T = Tp;
+            state.env_T = Te;
+            if (inCloud) state.parcel_RH = 100;
+            else {
+                let current_es = e_s(Tp);
+                // mixing ratio roughly constant below LCL
+                let e_current = e_surface * (p_z / P0);
+                state.parcel_RH = Math.min(100, (e_current / current_es) * 100);
+            }
+        }
+        
+        // CAPE simple integration
+        if (Tp > Te && inCloud) {
+            env_cape_integral += g * ((Tp - Te + 273.15) / (Te + 273.15)) * dz;
+        }
+    }
+    
+    state.cape = env_cape_integral;
+    
+    if (state.cape > 1500) state.stability = 'Convective Instability';
+    else if (state.cape > 500) state.stability = 'Marginally Unstable';
+    else if (state.ELR < 5) state.stability = 'Stable / Inversion';
+    else state.stability = 'Neutral / Stable';
+
+    updateHUD();
+    updateAudio();
+}
+
+function updateHUD() {
+    els.valT0.innerText = state.T0.toFixed(1) + ' °C';
+    els.valRh.innerText = state.RH.toFixed(0) + ' %';
+    els.valElr.innerText = state.ELR.toFixed(1) + ' °C/km';
+    els.valAlt.innerText = state.altitude.toFixed(0) + ' m';
+
+    els.hudTp.innerText = state.parcel_T.toFixed(1) + ' °C';
+    els.hudTe.innerText = state.env_T.toFixed(1) + ' °C';
+    els.hudP.innerText = pressure_at(state.altitude).toFixed(0) + ' hPa';
+    els.hudRh.innerText = state.parcel_RH.toFixed(0) + ' %';
+    els.hudLcl.innerText = state.LCL.toFixed(0) + ' m';
+    
+    els.hudStab.innerText = state.stability;
+    if (state.cape > 1500) els.hudStab.className = "text-right font-bold text-rose-400";
+    else if (state.ELR < 5) els.hudStab.className = "text-right font-bold text-sky-400";
+    else els.hudStab.className = "text-right font-bold text-amber-400";
+}
+
+/**
+ * Rendering
+ */
+function resize() {
+    let rect = els.canvas.parentElement.getBoundingClientRect();
+    let dpr = window.devicePixelRatio || 1;
+    cw = rect.width;
+    ch = rect.height;
+    els.canvas.width = cw * dpr;
+    els.canvas.height = ch * dpr;
+    ctx.scale(dpr, dpr);
+}
+window.addEventListener('resize', resize);
+
+// Mountain shape function
+function mountainHeight(x_pct) {
+    // x_pct from 0 to 1
+    // Gaussian-like mountain peak at 0.5
+    let peak = 4000; // 4000m mountain
+    let spread = 0.05;
+    return peak * Math.exp(-Math.pow(x_pct - 0.5, 2) / spread);
+}
+
+function draw() {
+    ctx.clearRect(0, 0, cw, ch);
+    
+    // Background sky gradient
+    let skyGrad = ctx.createLinearGradient(0, 0, 0, ch);
+    skyGrad.addColorStop(0, '#111a22'); // dark high alt
+    skyGrad.addColorStop(1, '#00f0ff'); // sky blue low alt
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, cw, ch);
+    
+    // Map altitude (0-10000) to y (ch - 0)
+    const mapY = (z) => ch - (z / 10000) * ch;
+
+    // Draw LCL Line
+    let yLCL = mapY(state.LCL);
+    ctx.beginPath();
+    ctx.moveTo(0, yLCL);
+    ctx.lineTo(cw, yLCL);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.setLineDash([5, 5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('LCL (Cloud Base)', 10, yLCL - 5);
+
+    // Draw clouds above LCL
+    if (state.LCL < 10000) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.fillRect(0, 0, cw, yLCL);
+        
+        // Thunderstorm visuals
+        if (state.cape > 1500) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.fillRect(0, 0, cw, yLCL);
+            if (Math.random() < 0.05) { // lightning flash
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.fillRect(0, 0, cw, ch);
+            }
+        }
+    }
+
+    let parcelX = cw / 2;
+    let parcelY = mapY(state.altitude);
+
+    if (state.mode === 'mountain') {
+        // Draw mountain
+        ctx.beginPath();
+        ctx.moveTo(0, ch);
+        for(let x=0; x<=cw; x+=10) {
+            let z = mountainHeight(x / cw);
+            ctx.lineTo(x, mapY(z));
+        }
+        ctx.lineTo(cw, ch);
+        ctx.fillStyle = '#1d2b38';
+        ctx.fill();
+        ctx.strokeStyle = '#334155';
+        ctx.stroke();
+
+        // Calculate parcel position along x based on altitude mapping?
+        // Actually, in mountain mode, it's better if slider controls X position.
+        // Let's adapt: If mountain mode, 'altitude' slider controls X progression (0 to 10000 map to 0 to 1).
+        let x_pct = state.altitude / 10000; 
+        parcelX = x_pct * cw;
+        
+        // Actual altitude of parcel is max of mountain height and some trajectory.
+        // Assuming air flows over the mountain.
+        let m_z = mountainHeight(x_pct);
+        // Let's force parcel altitude to follow mountain if it's surface air
+        parcelY = mapY(m_z + 200); // slightly above ground
+        
+        // Override state.altitude for HUD (hacky but visually works for demo)
+        state.altitude = m_z + 200;
+        updatePhysics(); // re-eval with new alt, creates a tiny feedback loop but safe because altitude is input here.
+    }
+
+    // Draw Parcel
+    ctx.beginPath();
+    ctx.arc(parcelX, parcelY, 15, 0, Math.PI*2);
+    ctx.fillStyle = state.parcel_RH >= 100 ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 240, 255, 0.5)';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Parcel Label
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.parcel_T.toFixed(0) + '°', parcelX, parcelY + 4);
+    ctx.textAlign = 'left'; // reset
+
+    requestAnimationFrame(draw);
+}
+
+/**
+ * Event Listeners
+ */
+els.startBtn.addEventListener('click', () => {
+    initAudio();
+});
+
+els.t0.addEventListener('input', updatePhysics);
+els.rh.addEventListener('input', updatePhysics);
+els.elr.addEventListener('input', updatePhysics);
+els.alt.addEventListener('input', updatePhysics);
+
+els.modeBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        els.modeBtns.forEach(b => {
+            b.classList.remove('bg-sky-600');
+            b.classList.add('bg-slate-700');
+        });
+        e.target.classList.remove('bg-slate-700');
+        e.target.classList.add('bg-sky-600');
+        state.mode = e.target.dataset.mode;
+        updatePhysics();
+    });
+});
+
+els.preset.addEventListener('change', (e) => {
+    switch(e.target.value) {
+        case 'fair':
+            els.t0.value = 25; els.rh.value = 60; els.elr.value = 6.5;
+            break;
+        case 'desert':
+            els.t0.value = 35; els.rh.value = 15; els.elr.value = 8;
+            break;
+        case 'severe':
+            els.t0.value = 30; els.rh.value = 85; els.elr.value = 9;
+            break;
+        case 'chinook':
+            els.t0.value = 15; els.rh.value = 80; els.elr.value = 5;
+            document.querySelector('[data-mode="mountain"]').click();
+            break;
+    }
+    updatePhysics();
+});
+
+// Init
+setTimeout(() => {
+    resize();
+    updatePhysics();
+    draw();
+}, 100);
+
+</script>
+</body>
+</html>

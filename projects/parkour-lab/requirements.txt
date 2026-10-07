@@ -1,0 +1,11 @@
+gymnasium[mujoco]>=1.2,<2
+stable-baselines3>=2.7,<3
+tensorboard
+imageio
+imageio-ffmpeg
+matplotlib
+pyyaml
+streamlit>=1.50,<2
+plotly>=6,<8
+pandas>=2.2,<4
+psutil>=6,<8

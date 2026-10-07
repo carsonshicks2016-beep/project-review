@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Double Slit Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; }
+        .hud-font { font-family: 'Courier New', Courier, monospace; }
+        input[type=range] { accent-color: #00d4e0; }
+        canvas { touch-action: none; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 h-screen flex flex-col overflow-hidden">
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center z-10 shrink-0">
+        <div>
+            <h1 class="text-2xl font-bold text-sky-400">Double Slit & Quantum Wave-Particle Duality</h1>
+            <p class="text-sm text-slate-400 mt-1">Interference, Measurement, and Decoherence</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <button id="btnAudio" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium transition-colors border border-slate-700">
+                Enable Audio
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex overflow-hidden">
+        <!-- Visualization Area -->
+        <div class="flex-1 relative flex flex-col p-4 gap-4">
+            <!-- Canvas Container -->
+            <div class="flex-1 relative bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl" id="canvas-container">
+                <canvas id="sim-canvas" class="absolute inset-0 w-full h-full"></canvas>
+                
+                <!-- HUD Overlays -->
+                <div class="absolute top-4 left-4 bg-slate-950/80 backdrop-blur border border-slate-800 p-3 rounded-xl pointer-events-none">
+                    <h3 class="text-xs text-slate-400 uppercase tracking-wider mb-2">Live Telemetry</h3>
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm hud-font">
+                        <div class="text-slate-400">Total Particles:</div>
+                        <div id="hud-particles" class="text-emerald-400 text-right">0</div>
+                        <div class="text-slate-400">Firing Rate:</div>
+                        <div id="hud-rate" class="text-sky-400 text-right">0 /s</div>
+                        <div class="text-slate-400">Wavelength λ:</div>
+                        <div id="hud-lambda" class="text-sky-400 text-right">0 nm</div>
+                        <div class="text-slate-400">Fringe Spacing:</div>
+                        <div id="hud-spacing" class="text-sky-400 text-right">0 mm</div>
+                        <div class="text-slate-400 mt-2">Decoherence D:</div>
+                        <div id="hud-decoherence" class="text-amber-400 text-right mt-2">0%</div>
+                        <div class="text-slate-400">Visibility:</div>
+                        <div id="hud-visibility" class="text-amber-400 text-right">100%</div>
+                    </div>
+                </div>
+
+                <div class="absolute top-4 right-4 bg-slate-950/80 backdrop-blur border border-slate-800 p-3 rounded-xl pointer-events-none">
+                    <h3 class="text-xs text-slate-400 uppercase tracking-wider mb-2">System State</h3>
+                    <div id="state-indicator" class="text-emerald-400 font-bold hud-font">PURE WAVE (SUPERPOSITION)</div>
+                    <div class="mt-2 text-xs text-slate-500 max-w-[200px]" id="state-desc">
+                        Particles exhibit wave-like interference. Which-way information is entirely unknown.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Explainer Cards -->
+            <div class="h-48 grid grid-cols-3 gap-4 shrink-0">
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 overflow-y-auto">
+                    <h3 class="text-sky-400 font-semibold mb-2">1. Single-Particle Interference</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Even when fired one by one, each particle passes through <strong>both</strong> slits simultaneously as a probability wave ψ(x). 
+                        It interferes with itself! The interference pattern only emerges statistically over time as thousands of individual particles land on the screen according to the probability distribution P(x) = |ψ₁ + ψ₂|².
+                    </p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 overflow-y-auto">
+                    <h3 class="text-rose-400 font-semibold mb-2">2. The Measurement Problem</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        If we place a detector at the slits to see <em>which way</em> the particle goes, the quantum superposition is destroyed. 
+                        The wavefunction "collapses" into a definite state. The probability becomes classical: P(x) = P₁ + P₂. The interference fringes instantly vanish, replaced by two classical particle bands.
+                    </p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 overflow-y-auto">
+                    <h3 class="text-amber-400 font-semibold mb-2">3. Decoherence & The Born Rule</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        The Born Rule gives the probability density. When a measurement is partially certain (Decoherence parameter D), the equation is:
+                        <br><span class="hud-font text-sky-300">P(x) = P₁ + P₂ + 2(1-D)√(P₁P₂)cos(kΔr)</span>
+                        <br>D=0 means pure wave (fringes). D=1 means pure particle (no fringes). This smooth transition is quantum decoherence.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Sidebar -->
+        <div class="w-80 bg-slate-900 border-l border-slate-800 flex flex-col p-4 overflow-y-auto shrink-0 z-10">
+            <h2 class="text-lg font-bold text-white mb-4 uppercase tracking-wider">Experiment Controls</h2>
+            
+            <div class="space-y-6">
+                <!-- Particle Type -->
+                <div class="space-y-2">
+                    <label class="text-sm text-slate-400 font-medium">Particle Source</label>
+                    <select id="ctrl-particle" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-sky-500">
+                        <option value="photon">Photons (Light)</option>
+                        <option value="electron">Electrons</option>
+                        <option value="neutron">Neutrons</option>
+                        <option value="buckyball">C60 Buckyballs</option>
+                    </select>
+                </div>
+
+                <!-- Detector (Measurement) -->
+                <div class="space-y-2 p-3 bg-slate-950/80 rounded-lg border border-slate-800">
+                    <div class="flex justify-between">
+                        <label class="text-sm text-slate-400 font-medium">Which-Way Detector (D)</label>
+                        <span id="val-detector" class="text-sm text-amber-400 font-bold hud-font">0%</span>
+                    </div>
+                    <input type="range" id="ctrl-detector" min="0" max="1" step="0.01" value="0" class="w-full">
+                    <div class="flex justify-between text-xs text-slate-500">
+                        <span>Wave</span>
+                        <span>Particle</span>
+                    </div>
+                </div>
+
+                <!-- Geometry -->
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <label class="text-sm text-slate-400 font-medium">Slit Separation (d)</label>
+                        <span id="val-separation" class="text-sm text-sky-400 font-bold hud-font">30 μm</span>
+                    </div>
+                    <input type="range" id="ctrl-separation" min="10" max="100" step="1" value="30" class="w-full">
+                </div>
+
+                <!-- Firing Rate -->
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <label class="text-sm text-slate-400 font-medium">Firing Rate</label>
+                        <span id="val-rate" class="text-sm text-sky-400 font-bold hud-font">100 /s</span>
+                    </div>
+                    <input type="range" id="ctrl-rate" min="1" max="1000" step="1" value="100" class="w-full">
+                </div>
+
+                <!-- Actions -->
+                <div class="space-y-2 pt-2 border-t border-slate-800">
+                    <div class="flex gap-2">
+                        <button id="btn-fire-continuous" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white py-2 rounded-lg font-medium transition-colors">
+                            Start Firing
+                        </button>
+                        <button id="btn-fire-single" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg font-medium transition-colors border border-slate-700">
+                            Fire 1
+                        </button>
+                    </div>
+                    <button id="btn-reset" class="w-full bg-slate-800 hover:bg-rose-900/50 text-white py-2 rounded-lg font-medium transition-colors border border-slate-700 hover:border-rose-800 mt-2 text-rose-400 hover:text-rose-300">
+                        Clear Detector Screen
+                    </button>
+                </div>
+
+                <!-- Presets -->
+                <div class="space-y-2 pt-2 border-t border-slate-800">
+                    <label class="text-sm text-slate-400 font-medium">Presets</label>
+                    <div class="grid grid-cols-1 gap-2">
+                        <button class="preset-btn text-left px-3 py-2 text-sm bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg transition-colors" data-preset="photon-wave">
+                            Single-Photon Interference
+                        </button>
+                        <button class="preset-btn text-left px-3 py-2 text-sm bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg transition-colors" data-preset="bullets">
+                            Classical Bullets (D=100%)
+                        </button>
+                        <button class="preset-btn text-left px-3 py-2 text-sm bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg transition-colors" data-preset="electron">
+                            High-Res Electron Diffraction
+                        </button>
+                        <button class="preset-btn text-left px-3 py-2 text-sm bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg transition-colors" data-preset="bucky">
+                            Buckyball Superposition
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- Physics Engine & State ---
+        const state = {
+            particleType: 'photon',
+            detector: 0, // D parameter [0, 1]
+            slitSeparation: 30, // μm
+            slitWidth: 5, // μm
+            distanceL: 1.0, // m (Screen distance, fixed for scaling)
+            firingRate: 100, // particles/s
+            isFiring: false,
+            totalParticles: 0,
+            
+            // Scaled wavelengths for visualization purposes
+            wavelengths: {
+                photon: 500, // nm
+                electron: 50, // nm (scaled up for visibility)
+                neutron: 10,  // nm (scaled up)
+                buckyball: 2  // nm (scaled up)
+            }
+        };
+
+        const screenData = new Array(1000).fill(0); // Bins for histogram
+        let maxScreenVal = 1;
+        const flyingParticles = [];
+
+        // --- Audio System ---
+        let audioCtx;
+        let masterGain;
+        let humOsc, humGain;
+
+        function initAudio() {
+            if (audioCtx) return;
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.2;
+            masterGain.connect(audioCtx.destination);
+
+            // Detector hum
+            humOsc = audioCtx.createOscillator();
+            humOsc.type = 'sawtooth';
+            humOsc.frequency.value = 60;
+            humGain = audioCtx.createGain();
+            humGain.gain.value = 0;
+            humOsc.connect(humGain);
+            humGain.connect(masterGain);
+            humOsc.start();
+        }
+
+        function playDetectionSound(x_norm) {
+            if (!audioCtx) return;
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            // Map position to pitch (harmonic scale)
+            // x_norm is -1 to 1
+            const baseFreq = 440;
+            // Pentatonic scale mapping roughly
+            const freqMultiplier = Math.pow(2, x_norm * 2); 
+            osc.frequency.value = baseFreq * freqMultiplier;
+            
+            if (state.particleType === 'photon') osc.type = 'sine';
+            else if (state.particleType === 'electron') osc.type = 'triangle';
+            else osc.type = 'square';
+            
+            osc.connect(gain);
+            gain.connect(masterGain);
+            
+            osc.start();
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function updateAudioHum() {
+            if (!humGain) return;
+            humGain.gain.setTargetAtTime(state.detector * 0.15, audioCtx.currentTime, 0.1);
+            humOsc.frequency.setTargetAtTime(60 + state.detector * 60, audioCtx.currentTime, 0.1);
+        }
+
+        // --- Probability Distribution Math ---
+        // x in mm
+        function getProbability(x) {
+            const lambda = state.wavelengths[state.particleType] * 1e-6; // mm
+            const d = state.slitSeparation * 1e-3; // mm
+            const a = state.slitWidth * 1e-3; // mm
+            const L = state.distanceL * 1000; // mm
+
+            const theta = x / L; // small angle approx
+            
+            // Single slit envelope P1 and P2 (assume roughly same envelope for both)
+            let alpha = Math.PI * a * theta / lambda;
+            let envelope = 1;
+            if (Math.abs(alpha) > 1e-6) {
+                envelope = Math.pow(Math.sin(alpha) / alpha, 2);
+            }
+
+            // Interference term
+            const delta_r = d * theta; // path difference
+            const k = 2 * Math.PI / lambda;
+            const phase = k * delta_r;
+
+            // P(x) = P1 + P2 + 2(1-D)sqrt(P1 P2)cos(phase)
+            // Assuming P1 ≈ P2 ≈ envelope/2
+            const P1 = envelope / 2;
+            const P2 = envelope / 2;
+            
+            const prob = P1 + P2 + 2 * (1 - state.detector) * Math.sqrt(P1 * P2) * Math.cos(phase);
+            return prob;
+        }
+
+        function samplePosition() {
+            // Rejection sampling
+            while (true) {
+                const x = (Math.random() * 2 - 1) * 20; // -20mm to 20mm
+                const p = getProbability(x);
+                if (Math.random() * 2 < p) {
+                    return x;
+                }
+            }
+        }
+
+        // --- Rendering ---
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        let dpr = window.devicePixelRatio || 1;
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function draw() {
+            const w = canvas.width / dpr;
+            const h = canvas.height / dpr;
+
+            // Clear background
+            ctx.fillStyle = '#111a22'; // slate-950
+            ctx.fillRect(0, 0, w, h);
+
+            const sourceX = w * 0.1;
+            const barrierX = w * 0.4;
+            const screenX = w * 0.9;
+            const centerY = h / 2;
+
+            // Draw theoretical curve
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.3)'; // sky-400
+            ctx.lineWidth = 2;
+            for (let y = 0; y < h; y++) {
+                const mapX = ((y - centerY) / (h / 2)) * 20; // map screen y to mm
+                const prob = getProbability(mapX);
+                const plotX = screenX + prob * w * 0.05;
+                if (y === 0) ctx.moveTo(plotX, y);
+                else ctx.lineTo(plotX, y);
+            }
+            ctx.stroke();
+
+            // Draw Source
+            ctx.fillStyle = '#00f0ff';
+            ctx.beginPath();
+            ctx.arc(sourceX, centerY, 8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw Barrier
+            ctx.fillStyle = '#475569';
+            const slitPixelGap = state.slitSeparation * 2;
+            const slitPixelWidth = 10;
+            ctx.fillRect(barrierX - 5, 0, 10, centerY - slitPixelGap/2 - slitPixelWidth/2); // top
+            ctx.fillRect(barrierX - 5, centerY - slitPixelGap/2 + slitPixelWidth/2, 10, slitPixelGap - slitPixelWidth); // middle
+            ctx.fillRect(barrierX - 5, centerY + slitPixelGap/2 + slitPixelWidth/2, 10, h - (centerY + slitPixelGap/2 + slitPixelWidth/2)); // bottom
+
+            // Detector Visual
+            if (state.detector > 0) {
+                ctx.fillStyle = `rgba(245, 158, 11, ${state.detector * 0.8})`; // amber-500
+                ctx.fillRect(barrierX - 10, centerY - slitPixelGap/2 - 15, 20, 10);
+                ctx.fillRect(barrierX - 10, centerY + slitPixelGap/2 + 5, 20, 10);
+                
+                // Beam indicating measurement
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(245, 158, 11, ${state.detector * 0.5})`;
+                ctx.moveTo(barrierX, centerY - slitPixelGap/2);
+                ctx.lineTo(barrierX + 30, centerY - slitPixelGap/2);
+                ctx.moveTo(barrierX, centerY + slitPixelGap/2);
+                ctx.lineTo(barrierX + 30, centerY + slitPixelGap/2);
+                ctx.stroke();
+            }
+
+            // Draw Screen Histogram
+            ctx.fillStyle = '#b3e600'; // emerald-500
+            for (let i = 0; i < screenData.length; i++) {
+                if (screenData[i] > 0) {
+                    const y = (i / screenData.length) * h;
+                    const barWidth = (screenData[i] / maxScreenVal) * (w * 0.1);
+                    ctx.fillRect(screenX, y, barWidth, h / screenData.length + 1);
+                }
+            }
+
+            // Draw Screen Line
+            ctx.strokeStyle = '#334155'; // slate-700
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(screenX, 0);
+            ctx.lineTo(screenX, h);
+            ctx.stroke();
+
+            // Draw Particles
+            ctx.fillStyle = '#e2e8f0';
+            for (let i = flyingParticles.length - 1; i >= 0; i--) {
+                const p = flyingParticles[i];
+                p.progress += p.speed;
+
+                let px, py;
+                if (p.progress < 0.5) {
+                    // Source to barrier
+                    const t = p.progress * 2;
+                    px = sourceX + (barrierX - sourceX) * t;
+                    // Go to a random slit
+                    const targetY = centerY + (p.slit === 0 ? -slitPixelGap/2 : slitPixelGap/2);
+                    py = centerY + (targetY - centerY) * t;
+                } else {
+                    // Barrier to screen
+                    const t = (p.progress - 0.5) * 2;
+                    px = barrierX + (screenX - barrierX) * t;
+                    const startY = centerY + (p.slit === 0 ? -slitPixelGap/2 : slitPixelGap/2);
+                    const targetY = centerY + (p.targetX / 20) * (h / 2);
+                    
+                    if (state.detector < 0.5) {
+                        // Wave behavior - appears to come from everywhere
+                        py = startY + (targetY - startY) * t;
+                        // Add some spread to simulate wave packet
+                        py += Math.sin(t * Math.PI * 10) * 10 * (1-t);
+                    } else {
+                        // Particle behavior - straight line from measured slit
+                        py = startY + (targetY - startY) * t;
+                    }
+                }
+
+                ctx.beginPath();
+                ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (p.progress >= 1) {
+                    // Hit screen
+                    const bin = Math.floor(((p.targetX / 20) * 0.5 + 0.5) * screenData.length);
+                    if (bin >= 0 && bin < screenData.length) {
+                        screenData[bin]++;
+                        if (screenData[bin] > maxScreenVal) maxScreenVal = screenData[bin];
+                    }
+                    playDetectionSound(p.targetX / 20);
+                    flyingParticles.splice(i, 1);
+                    state.totalParticles++;
+                }
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        // --- Logic Loop ---
+        let lastTime = performance.now();
+        let particleAccumulator = 0;
+
+        function updateLogic() {
+            const now = performance.now();
+            const dt = (now - lastTime) / 1000;
+            lastTime = now;
+
+            if (state.isFiring) {
+                particleAccumulator += state.firingRate * dt;
+                while (particleAccumulator >= 1) {
+                    fireParticle();
+                    particleAccumulator -= 1;
+                }
+            }
+
+            updateHUD();
+            requestAnimationFrame(updateLogic);
+        }
+
+        function fireParticle() {
+            flyingParticles.push({
+                progress: 0,
+                speed: 0.01 + Math.random() * 0.005, // Randomize speed slightly
+                targetX: samplePosition(),
+                slit: Math.random() > 0.5 ? 0 : 1 // 0: top, 1: bottom
+            });
+        }
+
+        function resetScreen() {
+            screenData.fill(0);
+            maxScreenVal = 1;
+            state.totalParticles = 0;
+            flyingParticles.length = 0;
+        }
+
+        function updateHUD() {
+            document.getElementById('hud-particles').textContent = state.totalParticles;
+            document.getElementById('hud-rate').textContent = state.firingRate + ' /s';
+            document.getElementById('hud-lambda').textContent = state.wavelengths[state.particleType] + ' nm';
+            
+            const lambda = state.wavelengths[state.particleType] * 1e-6; // mm
+            const d = state.slitSeparation * 1e-3; // mm
+            const L = state.distanceL * 1000; // mm
+            const spacing = (lambda * L) / d;
+            document.getElementById('hud-spacing').textContent = spacing.toFixed(2) + ' mm';
+            
+            document.getElementById('hud-decoherence').textContent = Math.round(state.detector * 100) + '%';
+            
+            // V = (I_max - I_min) / (I_max + I_min) roughly proportional to 1-D
+            const vis = (1 - state.detector) * 100;
+            document.getElementById('hud-visibility').textContent = Math.round(vis) + '%';
+
+            // State indicator
+            const ind = document.getElementById('state-indicator');
+            const desc = document.getElementById('state-desc');
+            if (state.detector === 0) {
+                ind.textContent = "PURE WAVE (SUPERPOSITION)";
+                ind.className = "text-emerald-400 font-bold hud-font";
+                desc.textContent = "Particles exhibit wave-like interference. Which-way information is entirely unknown.";
+            } else if (state.detector === 1) {
+                ind.textContent = "PURE PARTICLE (COLLAPSED)";
+                ind.className = "text-rose-400 font-bold hud-font";
+                desc.textContent = "Definite slit path measured. Superposition destroyed. Interference vanishes.";
+            } else {
+                ind.textContent = "PARTIAL DECOHERENCE";
+                ind.className = "text-amber-400 font-bold hud-font";
+                desc.textContent = "Partial which-way information. Fringes blur as wavefunction partially collapses.";
+            }
+        }
+
+        // --- Event Listeners ---
+        document.getElementById('btnAudio').addEventListener('click', () => {
+            initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            document.getElementById('btnAudio').classList.add('hidden');
+        });
+
+        document.getElementById('ctrl-particle').addEventListener('change', (e) => {
+            state.particleType = e.target.value;
+            resetScreen();
+        });
+
+        document.getElementById('ctrl-detector').addEventListener('input', (e) => {
+            state.detector = parseFloat(e.target.value);
+            document.getElementById('val-detector').textContent = Math.round(state.detector * 100) + '%';
+            updateAudioHum();
+            resetScreen();
+        });
+
+        document.getElementById('ctrl-separation').addEventListener('input', (e) => {
+            state.slitSeparation = parseInt(e.target.value);
+            document.getElementById('val-separation').textContent = state.slitSeparation + ' μm';
+            resetScreen();
+        });
+
+        document.getElementById('ctrl-rate').addEventListener('input', (e) => {
+            state.firingRate = parseInt(e.target.value);
+            document.getElementById('val-rate').textContent = state.firingRate + ' /s';
+        });
+
+        const btnFireCont = document.getElementById('btn-fire-continuous');
+        btnFireCont.addEventListener('click', () => {
+            state.isFiring = !state.isFiring;
+            if (state.isFiring) {
+                btnFireCont.textContent = 'Stop Firing';
+                btnFireCont.classList.replace('bg-sky-600', 'bg-rose-600');
+                btnFireCont.classList.replace('hover:bg-sky-500', 'hover:bg-rose-500');
+            } else {
+                btnFireCont.textContent = 'Start Firing';
+                btnFireCont.classList.replace('bg-rose-600', 'bg-sky-600');
+                btnFireCont.classList.replace('hover:bg-rose-500', 'hover:bg-sky-500');
+            }
+        });
+
+        document.getElementById('btn-fire-single').addEventListener('click', () => {
+            fireParticle();
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', resetScreen);
+
+        // Presets
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const p = e.target.dataset.preset;
+                if (p === 'photon-wave') {
+                    document.getElementById('ctrl-particle').value = 'photon';
+                    document.getElementById('ctrl-detector').value = 0;
+                    document.getElementById('ctrl-rate').value = 5;
+                } else if (p === 'bullets') {
+                    document.getElementById('ctrl-detector').value = 1;
+                    document.getElementById('ctrl-rate').value = 1000;
+                } else if (p === 'electron') {
+                    document.getElementById('ctrl-particle').value = 'electron';
+                    document.getElementById('ctrl-detector').value = 0;
+                    document.getElementById('ctrl-separation').value = 10;
+                } else if (p === 'bucky') {
+                    document.getElementById('ctrl-particle').value = 'buckyball';
+                    document.getElementById('ctrl-detector').value = 0;
+                    document.getElementById('ctrl-separation').value = 10;
+                    document.getElementById('ctrl-rate').value = 50;
+                }
+                
+                // Trigger change events
+                document.getElementById('ctrl-particle').dispatchEvent(new Event('change'));
+                document.getElementById('ctrl-detector').dispatchEvent(new Event('input'));
+                document.getElementById('ctrl-separation').dispatchEvent(new Event('input'));
+                document.getElementById('ctrl-rate').dispatchEvent(new Event('input'));
+            });
+        });
+
+        // Start loops
+        requestAnimationFrame(draw);
+        requestAnimationFrame(updateLogic);
+
+    </script>
+</body>
+</html>

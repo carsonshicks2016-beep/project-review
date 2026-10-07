@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acoustic Levitation Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#151e2e',
+                            900: '#111a22',
+                            950: '#0b1217',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .data-readout { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+        canvas { touch-action: none; }
+        input[type="range"] {
+            accent-color: #00f0ff;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen flex flex-col items-center py-6 px-4">
+
+    <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        <!-- Main Canvas Area -->
+        <div class="lg:col-span-3 flex flex-col gap-4">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col shadow-slate-950/50 relative overflow-hidden">
+                <div class="flex justify-between items-center mb-4 z-10">
+                    <h1 class="text-2xl font-bold text-slate-100 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Acoustic Levitation Simulator
+                    </h1>
+                    <div class="flex gap-2">
+                        <button id="btn-audio" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-sky-400 rounded-lg transition border border-slate-700 flex items-center gap-2 font-medium">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                            </svg>
+                            Enable Audio
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="relative w-full aspect-video bg-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-inner">
+                    <canvas id="sim-canvas" class="absolute inset-0 w-full h-full"></canvas>
+                    
+                    <!-- Overlays -->
+                    <div class="absolute top-4 left-4 bg-slate-900/80 backdrop-blur border border-slate-700 rounded-lg p-3 text-sm z-10">
+                        <div class="font-bold text-slate-300 mb-1 border-b border-slate-700 pb-1">Standing Wave Stats</div>
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+                            <span class="text-slate-400">Frequency:</span>
+                            <span class="data-readout text-sky-400 text-right" id="disp-freq">1000 Hz</span>
+                            <span class="text-slate-400">Wavelength (λ):</span>
+                            <span class="data-readout text-sky-400 text-right" id="disp-wave">34.3 cm</span>
+                            <span class="text-slate-400">Nodes:</span>
+                            <span class="data-readout text-sky-400 text-right" id="disp-nodes">2</span>
+                        </div>
+                    </div>
+
+                    <div class="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-slate-700 rounded-lg p-3 text-sm z-10">
+                        <div class="font-bold text-slate-300 mb-1 border-b border-slate-700 pb-1">Levitation Condition</div>
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+                            <span class="text-slate-400">Force Ratio:</span>
+                            <span class="data-readout text-emerald-400 text-right" id="disp-ratio">1.5x</span>
+                            <span class="text-slate-400">Max Diameter:</span>
+                            <span class="data-readout text-sky-400 text-right" id="disp-maxd">2.4 mm</span>
+                            <span class="text-slate-400">Status:</span>
+                            <span class="data-readout text-emerald-400 font-bold text-right" id="disp-status">STABLE</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Explainer Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-8 h-8 rounded-full bg-sky-900/50 flex items-center justify-center text-sky-400">
+                            1
+                        </div>
+                        <h3 class="font-bold text-slate-200">Standing Waves</h3>
+                    </div>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        When two identical sound waves travel in opposite directions, they interfere to form a <strong>standing wave</strong>. 
+                        The pattern doesn't appear to move. It has <em>nodes</em> (points of zero pressure change) and <em>antinodes</em> (points of maximum pressure change).
+                    </p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-8 h-8 rounded-full bg-sky-900/50 flex items-center justify-center text-sky-400">
+                            2
+                        </div>
+                        <h3 class="font-bold text-slate-200">Acoustic Radiation</h3>
+                    </div>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Sound waves exert a small physical force called <em>acoustic radiation pressure</em>. 
+                        In a standing wave, the Gor'kov potential describes how particles are pushed away from pressure antinodes and trapped at the nodes, forming a potential well.
+                    </p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-8 h-8 rounded-full bg-sky-900/50 flex items-center justify-center text-sky-400">
+                            3
+                        </div>
+                        <h3 class="font-bold text-slate-200">Applications</h3>
+                    </div>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Acoustic levitation enables <strong>containerless processing</strong>. It's used in pharmaceuticals to create pure amorphous drugs, in studying fluid dynamics without solid boundaries, and in handling hazardous or highly reactive materials.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Sidebar -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col gap-6 shadow-xl h-fit">
+            <div>
+                <h2 class="text-lg font-bold text-slate-100 border-b border-slate-800 pb-2 mb-4">Parameters</h2>
+            </div>
+            
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between">
+                    <label class="text-sm text-slate-400">Frequency <span class="text-xs">(Hz)</span></label>
+                    <span class="text-sm font-medium text-sky-400 data-readout" id="val-freq">1000</span>
+                </div>
+                <input type="range" id="ctrl-freq" min="200" max="2000" step="10" value="1000" class="w-full">
+                <div class="flex justify-between mt-1">
+                    <button id="btn-40k" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-300 transition">Realistic (40 kHz)</button>
+                    <button id="btn-audible" class="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-300 transition">Audible (1 kHz)</button>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between">
+                    <label class="text-sm text-slate-400">Acoustic Power</label>
+                    <span class="text-sm font-medium text-sky-400 data-readout" id="val-power">50%</span>
+                </div>
+                <input type="range" id="ctrl-power" min="0" max="100" step="1" value="50" class="w-full">
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between">
+                    <label class="text-sm text-slate-400">Speaker Separation <span class="text-xs">(cm)</span></label>
+                    <span class="text-sm font-medium text-sky-400 data-readout" id="val-sep">30</span>
+                </div>
+                <input type="range" id="ctrl-sep" min="5" max="50" step="0.5" value="30" class="w-full">
+            </div>
+
+            <hr class="border-slate-800">
+
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between">
+                    <label class="text-sm text-slate-400">Particle Radius <span class="text-xs">(mm)</span></label>
+                    <span class="text-sm font-medium text-sky-400 data-readout" id="val-radius">2.0</span>
+                </div>
+                <input type="range" id="ctrl-radius" min="0.1" max="10" step="0.1" value="2.0" class="w-full">
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between">
+                    <label class="text-sm text-slate-400">Particle Material</label>
+                </div>
+                <select id="ctrl-density" class="bg-slate-950 border border-slate-700 text-sm rounded-lg p-2 text-slate-200 outline-none focus:border-sky-500">
+                    <option value="30">Styrofoam (30 kg/m³)</option>
+                    <option value="1000" selected>Water Droplet (1000 kg/m³)</option>
+                    <option value="2700">Aluminum (2700 kg/m³)</option>
+                </select>
+                <div class="flex justify-between mt-1">
+                    <span class="text-xs text-slate-500">Density:</span>
+                    <span class="text-xs text-slate-400 data-readout" id="val-density">1000 kg/m³</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between">
+                    <label class="text-sm text-slate-400">Num Particles</label>
+                    <span class="text-sm font-medium text-sky-400 data-readout" id="val-num">5</span>
+                </div>
+                <input type="range" id="ctrl-num" min="1" max="10" step="1" value="5" class="w-full">
+            </div>
+            
+        </div>
+    </div>
+
+<script>
+// Physics Constants
+const c = 343; // Speed of sound in air (m/s)
+const rho_air = 1.225; // Density of air (kg/m3)
+const g = 9.81; // Gravity (m/s2)
+const MAX_PRESSURE = 3000; // Max acoustic pressure amplitude in Pa
+
+// State
+let state = {
+    frequency: 1000, // Hz
+    power: 0.5, // 0 to 1
+    separation: 0.3, // meters
+    particleRadius: 0.002, // meters
+    particleDensity: 1000, // kg/m3
+    numParticles: 5,
+    isRealistic: false,
+    particles: [],
+    time: 0
+};
+
+// Canvas Setup
+const canvas = document.getElementById('sim-canvas');
+const ctx = canvas.getContext('2d');
+let cw, ch;
+
+function resize() {
+    const parent = canvas.parentElement;
+    cw = parent.clientWidth;
+    ch = parent.clientHeight;
+    // Retina support
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = cw * dpr;
+    canvas.height = ch * dpr;
+    ctx.scale(dpr, dpr);
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Audio Setup
+let audioCtx = null;
+let oscLeft = null;
+let oscRight = null;
+let masterGain = null;
+let isAudioEnabled = false;
+
+document.getElementById('btn-audio').addEventListener('click', () => {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = audioCtx.createGain();
+        masterGain.connect(audioCtx.destination);
+        masterGain.gain.value = 0;
+        
+        oscLeft = audioCtx.createOscillator();
+        oscRight = audioCtx.createOscillator();
+        
+        const panLeft = audioCtx.createStereoPanner();
+        panLeft.pan.value = -0.5;
+        const panRight = audioCtx.createStereoPanner();
+        panRight.pan.value = 0.5;
+        
+        oscLeft.connect(panLeft).connect(masterGain);
+        oscRight.connect(panRight).connect(masterGain);
+        
+        oscLeft.start();
+        oscRight.start();
+        
+        isAudioEnabled = true;
+        document.getElementById('btn-audio').classList.replace('text-sky-400', 'text-emerald-400');
+        document.getElementById('btn-audio').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg> Audio Active`;
+    } else {
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        } else {
+            audioCtx.suspend();
+        }
+    }
+});
+
+function playDropSound() {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
+    
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+    
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.1);
+}
+
+// Particle Class
+class Particle {
+    constructor(targetX) {
+        this.x = targetX;
+        this.y = ch / 2;
+        this.vy = 0;
+        this.targetX = targetX;
+        this.isFallen = false;
+        this.jitter = Math.random() * Math.PI * 2;
+    }
+}
+
+// Init Particles
+function initParticles() {
+    const lambda = c / state.frequency;
+    const k = 2 * Math.PI / lambda;
+    let nodes = [];
+    let x = 0;
+    while (x <= state.separation) {
+        if (x > 0.01 && x < state.separation - 0.01) {
+            nodes.push(x);
+        }
+        x += lambda / 2;
+    }
+    
+    if (nodes.length === 0) nodes = [state.separation / 2];
+    
+    state.particles = [];
+    const nToCreate = Math.min(state.numParticles, nodes.length * 3);
+    
+    for (let i = 0; i < nToCreate; i++) {
+        const nodeIdx = i % nodes.length;
+        state.particles.push(new Particle(nodes[nodeIdx]));
+    }
+}
+initParticles();
+
+// UI Controllers
+const els = {
+    freq: document.getElementById('ctrl-freq'),
+    power: document.getElementById('ctrl-power'),
+    sep: document.getElementById('ctrl-sep'),
+    radius: document.getElementById('ctrl-radius'),
+    density: document.getElementById('ctrl-density'),
+    num: document.getElementById('ctrl-num'),
+    
+    vFreq: document.getElementById('val-freq'),
+    vPower: document.getElementById('val-power'),
+    vSep: document.getElementById('val-sep'),
+    vRadius: document.getElementById('val-radius'),
+    vDensity: document.getElementById('val-density'),
+    vNum: document.getElementById('val-num'),
+    
+    dFreq: document.getElementById('disp-freq'),
+    dWave: document.getElementById('disp-wave'),
+    dNodes: document.getElementById('disp-nodes'),
+    dRatio: document.getElementById('disp-ratio'),
+    dMaxD: document.getElementById('disp-maxd'),
+    dStatus: document.getElementById('disp-status')
+};
+
+function updateState() {
+    if (!state.isRealistic) {
+        state.frequency = parseFloat(els.freq.value);
+    }
+    state.power = parseFloat(els.power.value) / 100;
+    state.separation = parseFloat(els.sep.value) / 100;
+    state.particleRadius = parseFloat(els.radius.value) / 1000;
+    state.particleDensity = parseFloat(els.density.value);
+    
+    if (state.numParticles !== parseInt(els.num.value) || 
+        Math.abs(state.lastSep - state.separation) > 0.01 || 
+        Math.abs(state.lastFreq - state.frequency) > 1) {
+        state.numParticles = parseInt(els.num.value);
+        initParticles();
+        state.lastSep = state.separation;
+        state.lastFreq = state.frequency;
+    }
+
+    els.vFreq.textContent = state.frequency;
+    els.vPower.textContent = els.power.value + '%';
+    els.vSep.textContent = els.sep.value;
+    els.vRadius.textContent = els.radius.value;
+    els.vDensity.textContent = els.density.options[els.density.selectedIndex].text.split('(')[1].replace(')','');
+    els.vNum.textContent = state.numParticles;
+
+    const lambda = c / state.frequency;
+    const numNodes = Math.floor(state.separation / (lambda / 2)) + 1;
+    
+    els.dFreq.textContent = state.frequency >= 1000 ? (state.frequency/1000).toFixed(1) + ' kHz' : state.frequency + ' Hz';
+    els.dWave.textContent = (lambda * 100).toFixed(1) + ' cm';
+    els.dNodes.textContent = numNodes;
+
+    const P = state.power * MAX_PRESSURE; // Amplitude
+    const k = 2 * Math.PI / lambda;
+    const vol = (4/3) * Math.PI * Math.pow(state.particleRadius, 3);
+    const mass = vol * state.particleDensity;
+    const weight = mass * g;
+    
+    const F_ac_max = (5/6) * Math.PI * Math.pow(state.particleRadius, 3) * k * (P*P) / (rho_air * c*c);
+    
+    const ratio = weight === 0 ? 0 : F_ac_max / weight;
+    els.dRatio.textContent = ratio.toFixed(2) + 'x';
+    
+    if (ratio > 1) {
+        els.dRatio.className = "data-readout text-right text-emerald-400";
+        els.dStatus.textContent = "STABLE";
+        els.dStatus.className = "data-readout text-right font-bold text-emerald-400";
+    } else {
+        els.dRatio.className = "data-readout text-right text-rose-400";
+        els.dStatus.textContent = "FALLING";
+        els.dStatus.className = "data-readout text-right font-bold text-rose-400";
+    }
+
+    const max_d_rayleigh = lambda / 3;
+    els.dMaxD.textContent = (max_d_rayleigh * 1000).toFixed(1) + ' mm';
+
+    if (isAudioEnabled) {
+        let f = state.frequency;
+        if (state.isRealistic) f = 1000;
+        oscLeft.frequency.setTargetAtTime(f, audioCtx.currentTime, 0.1);
+        oscRight.frequency.setTargetAtTime(f, audioCtx.currentTime, 0.1);
+        
+        let vol = state.power * 0.1;
+        if (state.isRealistic) vol = 0;
+        masterGain.gain.setTargetAtTime(vol, audioCtx.currentTime, 0.1);
+    }
+}
+
+els.freq.addEventListener('input', updateState);
+els.power.addEventListener('input', updateState);
+els.sep.addEventListener('input', updateState);
+els.radius.addEventListener('input', updateState);
+els.density.addEventListener('change', updateState);
+els.num.addEventListener('input', updateState);
+
+document.getElementById('btn-40k').addEventListener('click', () => {
+    state.isRealistic = true;
+    state.frequency = 40000;
+    els.freq.disabled = true;
+    els.freq.classList.add('opacity-50');
+    updateState();
+});
+document.getElementById('btn-audible').addEventListener('click', () => {
+    state.isRealistic = false;
+    els.freq.disabled = false;
+    els.freq.classList.remove('opacity-50');
+    updateState();
+});
+
+// Render Loop
+function draw() {
+    ctx.clearRect(0, 0, cw, ch);
+    state.time += 0.016; // Approx 60fps
+
+    const padX = 100;
+    const simW = cw - padX * 2;
+    const pixelsPerMeter = simW / state.separation;
+
+    // Draw speakers
+    ctx.fillStyle = '#1d2b38';
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 2;
+    
+    const spkH = 120;
+    const spkW = 30;
+    
+    ctx.fillRect(padX - spkW, ch/2 - spkH/2, spkW, spkH);
+    ctx.strokeRect(padX - spkW, ch/2 - spkH/2, spkW, spkH);
+    
+    ctx.fillRect(padX + simW, ch/2 - spkH/2, spkW, spkH);
+    ctx.strokeRect(padX + simW, ch/2 - spkH/2, spkW, spkH);
+
+    for(let i=0; i<5; i++) {
+        ctx.beginPath();
+        ctx.moveTo(padX, ch/2 - spkH/2 + 20 + i*20);
+        ctx.lineTo(padX, ch/2 - spkH/2 + 20 + i*20 + 10);
+        ctx.strokeStyle = '#475569';
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(padX + simW, ch/2 - spkH/2 + 20 + i*20);
+        ctx.lineTo(padX + simW, ch/2 - spkH/2 + 20 + i*20 + 10);
+        ctx.stroke();
+    }
+
+    const lambda = c / state.frequency;
+    const k = 2 * Math.PI / lambda;
+    
+    const visualOmega = state.isRealistic ? 20 : 10;
+    const t = state.time * visualOmega;
+    
+    const amp = (ch/4) * state.power;
+    
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    for (let i = 0; i <= simW; i++) {
+        const x_m = i / pixelsPerMeter;
+        const y = amp * 2 * Math.abs(Math.sin(k * x_m));
+        if (i === 0) {
+            ctx.moveTo(padX + i, ch/2 - y);
+        } else {
+            ctx.lineTo(padX + i, ch/2 - y);
+        }
+    }
+    for (let i = simW; i >= 0; i--) {
+        const x_m = i / pixelsPerMeter;
+        const y = amp * 2 * Math.abs(Math.sin(k * x_m));
+        ctx.lineTo(padX + i, ch/2 + y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.8)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i <= simW; i++) {
+        const x_m = i / pixelsPerMeter;
+        const y = amp * 2 * Math.sin(k * x_m) * Math.cos(t);
+        if (i === 0) {
+            ctx.moveTo(padX + i, ch/2 - y);
+        } else {
+            ctx.lineTo(padX + i, ch/2 - y);
+        }
+    }
+    ctx.stroke();
+
+    for (let i = 0; i <= simW; i++) {
+        const x_m = i / pixelsPerMeter;
+        if (Math.abs(Math.sin(k * x_m)) < 0.05) {
+            ctx.fillStyle = 'rgba(230, 0, 76, 0.5)';
+            ctx.beginPath();
+            ctx.arc(padX + i, ch/2, 3, 0, Math.PI*2);
+            ctx.fill();
+        }
+    }
+
+    const P = state.power * MAX_PRESSURE; 
+    const ratio = ((5/8) * k * (P*P) / (rho_air * c*c * state.particleDensity * g));
+    const isStable = ratio > 1;
+
+    const visualRadius = Math.max(2, state.particleRadius * 1000 * 2);
+
+    state.particles.forEach(p => {
+        let minDiff = Infinity;
+        let closestNode = 0;
+        let x = 0;
+        while (x <= state.separation) {
+            if (x > 0.01 && x < state.separation - 0.01) {
+                const diff = Math.abs(x - p.targetX);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    closestNode = x;
+                }
+            }
+            x += lambda / 2;
+        }
+        
+        p.targetX += (closestNode - p.targetX) * 0.1;
+        
+        const px = padX + p.targetX * pixelsPerMeter;
+        
+        if (isStable) {
+            if (p.isFallen) {
+                p.y = ch/2;
+                p.vy = 0;
+                p.isFallen = false;
+            }
+            
+            p.jitter += 0.1;
+            const yOffset = Math.sin(p.jitter) * 2;
+            p.y = ch/2 + yOffset;
+            
+        } else {
+            if (!p.isFallen) {
+                p.vy += 0.5;
+                p.y += p.vy;
+                if (p.y > ch) {
+                    p.isFallen = true;
+                    if (Math.random() > 0.5) playDropSound();
+                }
+            }
+        }
+
+        if (p.y < ch + 20) {
+            ctx.beginPath();
+            
+            if (state.particleDensity < 500) {
+                ctx.fillStyle = '#f8fafc';
+            } else if (state.particleDensity < 2000) {
+                ctx.fillStyle = 'rgba(186, 230, 253, 0.8)';
+                ctx.strokeStyle = '#00f0ff';
+                ctx.lineWidth = 1;
+            } else {
+                ctx.fillStyle = '#94a3b8';
+            }
+            
+            ctx.arc(px, p.y, visualRadius, 0, Math.PI*2);
+            ctx.fill();
+            if (state.particleDensity > 500 && state.particleDensity < 2000) ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.arc(px - visualRadius*0.3, p.y - visualRadius*0.3, visualRadius*0.3, 0, Math.PI*2);
+            ctx.fill();
+        }
+    });
+    
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px monospace';
+    ctx.fillText('0 cm', padX - 10, ch/2 + spkH/2 + 20);
+    ctx.fillText((state.separation * 100).toFixed(0) + ' cm', padX + simW - 20, ch/2 + spkH/2 + 20);
+
+    requestAnimationFrame(draw);
+}
+
+updateState();
+requestAnimationFrame(draw);
+
+</script>
+</body>
+</html>

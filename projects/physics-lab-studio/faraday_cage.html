@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faraday Cage & Electrostatic Shielding Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: #0b1217; color: #f8fafc; margin: 0; overflow-x: hidden; }
+        .hud-panel { background: rgba(17, 26, 34, 0.8); backdrop-filter: blur(8px); border: 1px solid #1d2b38; border-radius: 1rem; }
+        canvas { display: block; width: 100%; height: 100%; object-fit: cover; }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        input[type=range] { accent-color: #00f0ff; }
+    </style>
+</head>
+<body class="h-screen flex flex-col text-slate-200">
+    <!-- Header -->
+    <header class="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center z-10 relative">
+        <div>
+            <h1 class="text-2xl font-bold text-sky-400">Faraday Cage & Electrostatic Shielding Simulator</h1>
+            <p class="text-sm text-slate-400">Interactive physics & sonification of electrostatic equilibrium</p>
+        </div>
+        <button id="btn-audio" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium transition-colors">
+            Initialize Audio
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 relative flex overflow-hidden">
+        <!-- Canvas Container -->
+        <div class="absolute inset-0 z-0 bg-slate-950">
+            <canvas id="sim-canvas"></canvas>
+        </div>
+
+        <!-- Left Controls -->
+        <div class="z-10 w-80 m-4 flex flex-col gap-4 pointer-events-none">
+            <div class="hud-panel p-4 pointer-events-auto flex flex-col gap-4 shadow-lg">
+                <h2 class="text-lg font-semibold text-sky-400 border-b border-slate-700 pb-2">Simulation Controls</h2>
+                
+                <div>
+                    <label class="block text-sm mb-1 flex justify-between">
+                        <span>External E-Field (kV/m)</span>
+                        <span id="val-efield" class="mono text-sky-300">50</span>
+                    </label>
+                    <input type="range" id="slider-efield" min="0" max="100" value="50" class="w-full">
+                </div>
+
+                <div>
+                    <label class="block text-sm mb-1">Cage Geometry</label>
+                    <select id="sel-geometry" class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-sm">
+                        <option value="solid">Solid Metal Cylinder</option>
+                        <option value="mesh_coarse">Coarse Wire Mesh</option>
+                        <option value="mesh_fine">Fine Metal Mesh</option>
+                        <option value="car">Car Frame</option>
+                        <option value="airplane">Airplane Fuselage</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm mb-1 flex justify-between">
+                        <span>Enclosure Door Open (%)</span>
+                        <span id="val-door" class="mono text-amber-300">0</span>
+                    </label>
+                    <input type="range" id="slider-door" min="0" max="100" value="0" class="w-full accent-amber-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm mb-1">Test Object Inside</label>
+                    <select id="sel-object" class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-sm">
+                        <option value="radio">AM/FM Radio</option>
+                        <option value="electrometer">Sensitive Electrometer</option>
+                        <option value="person">Human Passenger</option>
+                        <option value="phone">Smartphone</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm mb-1">View Mode</label>
+                    <select id="sel-view" class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-sm">
+                        <option value="field_lines">Electric Field Lines</option>
+                        <option value="heatmap">E-Field Magnitude Heatmap</option>
+                        <option value="equipotential">Equipotential Contours</option>
+                    </select>
+                </div>
+                
+                <button id="btn-lightning" class="mt-2 py-3 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <span>⚡</span> Fire Lightning Zap
+                </button>
+            </div>
+        </div>
+
+        <!-- Right HUD -->
+        <div class="z-10 w-72 m-4 ml-auto flex flex-col gap-4 pointer-events-none">
+            <div class="hud-panel p-4 pointer-events-auto shadow-lg">
+                <h2 class="text-lg font-semibold text-emerald-400 border-b border-slate-700 pb-2 mb-3">Live Telemetry</h2>
+                
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">E_ext (kV/m)</span>
+                        <span id="hud-ext" class="mono text-white font-medium">50.0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">E_int (V/m)</span>
+                        <span id="hud-int" class="mono text-white font-medium">0.0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Shielding (dB)</span>
+                        <span id="hud-atten" class="mono text-white font-medium">120.0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Max σ (μC/m²)</span>
+                        <span id="hud-sigma" class="mono text-white font-medium">0.44</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Cage Potential (kV)</span>
+                        <span id="hud-pot" class="mono text-white font-medium">0.0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Explainers -->
+    <footer class="bg-slate-900 border-t border-slate-800 p-4 z-10 relative">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                <h3 class="text-sky-400 font-semibold mb-2 flex items-center gap-2">
+                    <span class="text-xl">🧲</span> Gauss's Law & Charges
+                </h3>
+                <p class="text-sm text-slate-300 leading-relaxed">
+                    Inside a conductor in electrostatic equilibrium, the net electric field is zero. By Gauss's Law (∮ E · dA = Q_enclosed / ε0), this means the enclosed charge must be zero. Any excess charge resides entirely on the outer surface, redistributing instantly to cancel external fields.
+                </p>
+            </div>
+            <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                <h3 class="text-emerald-400 font-semibold mb-2 flex items-center gap-2">
+                    <span class="text-xl">✈️</span> Lightning Safety
+                </h3>
+                <p class="text-sm text-slate-300 leading-relaxed">
+                    Airplanes and cars act as partial Faraday cages. When struck by lightning (millions of volts), the current travels along the conductive exterior skin to the ground or air, leaving the interior and its passengers perfectly safe with zero internal electric field.
+                </p>
+            </div>
+            <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                <h3 class="text-amber-400 font-semibold mb-2 flex items-center gap-2">
+                    <span class="text-xl">📻</span> Aperture Cutoff (Meshes)
+                </h3>
+                <p class="text-sm text-slate-300 leading-relaxed">
+                    A Faraday cage doesn't need to be solid metal! A wire mesh works if the holes are significantly smaller than the wavelength of the electromagnetic wave. This is why a microwave oven door has a mesh: it blocks ~12cm microwaves but lets ~500nm visible light pass through.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Simulation Script -->
+    <script>
+        // --- State ---
+        const state = {
+            extEField: 50, // kV/m
+            geometry: 'solid',
+            doorOpen: 0, // 0 to 1
+            testObject: 'radio',
+            viewMode: 'field_lines',
+            lightningActive: false,
+            lightningTime: 0,
+            
+            // Derived
+            intEField: 0,
+            shieldingDb: 120,
+            maxSigma: 0,
+            cagePotential: 0
+        };
+
+        // --- Audio System ---
+        let audioCtx;
+        let radioOsc, radioGain, radioFilter;
+        let staticNoise, staticGain;
+        let lightningNoise, lightningGain;
+        
+        const initAudio = () => {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Radio sound (simple tune simulation)
+            radioOsc = audioCtx.createOscillator();
+            radioOsc.type = 'sawtooth';
+            
+            radioFilter = audioCtx.createBiquadFilter();
+            radioFilter.type = 'lowpass';
+            radioFilter.Q.value = 1;
+            
+            radioGain = audioCtx.createGain();
+            radioGain.gain.value = 0; // muted initially
+            
+            radioOsc.connect(radioFilter);
+            radioFilter.connect(radioGain);
+            radioGain.connect(audioCtx.destination);
+            radioOsc.start();
+            
+            // Simple sequencer for radio tune
+            let noteIdx = 0;
+            const notes = [440, 493.88, 523.25, 587.33, 659.25, 587.33, 523.25, 493.88];
+            setInterval(() => {
+                if(!audioCtx || audioCtx.state !== 'running') return;
+                radioOsc.frequency.setValueAtTime(notes[noteIdx], audioCtx.currentTime);
+                noteIdx = (noteIdx + 1) % notes.length;
+            }, 250);
+
+            // Static noise
+            const bufferSize = audioCtx.sampleRate * 2;
+            const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+            staticNoise = audioCtx.createBufferSource();
+            staticNoise.buffer = noiseBuffer;
+            staticNoise.loop = true;
+            
+            staticGain = audioCtx.createGain();
+            staticGain.gain.value = 0;
+            staticNoise.connect(staticGain);
+            staticGain.connect(audioCtx.destination);
+            staticNoise.start();
+
+            // Lightning noise (synthesized per strike)
+            lightningGain = audioCtx.createGain();
+            lightningGain.gain.value = 0;
+            lightningGain.connect(audioCtx.destination);
+            
+            // Master comp
+            const comp = audioCtx.createDynamicsCompressor();
+            radioGain.disconnect();
+            staticGain.disconnect();
+            lightningGain.disconnect();
+            radioGain.connect(comp);
+            staticGain.connect(comp);
+            lightningGain.connect(comp);
+            comp.connect(audioCtx.destination);
+            
+            document.getElementById('btn-audio').classList.replace('bg-emerald-600', 'bg-slate-700');
+            document.getElementById('btn-audio').classList.replace('hover:bg-emerald-500', 'hover:bg-slate-600');
+            document.getElementById('btn-audio').innerText = 'Audio Active';
+            document.getElementById('btn-audio').disabled = true;
+        };
+
+        const triggerLightningAudio = () => {
+            if (!audioCtx) return;
+            
+            const osc = audioCtx.createOscillator();
+            osc.type = 'sawtooth';
+            
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(1000, audioCtx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+            
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(lightningGain);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+            
+            // noise layer
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = staticNoise.buffer;
+            const noiseFilter = audioCtx.createBiquadFilter();
+            noiseFilter.type = 'lowpass';
+            noiseFilter.frequency.value = 8000;
+            const noiseGain = audioCtx.createGain();
+            noiseGain.gain.setValueAtTime(2, audioCtx.currentTime);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            
+            noise.connect(noiseFilter);
+            noiseFilter.connect(noiseGain);
+            noiseGain.connect(lightningGain);
+            noise.start();
+            noise.stop(audioCtx.currentTime + 0.4);
+        };
+
+        const updateAudio = () => {
+            if (!audioCtx) return;
+            
+            const isRadio = (state.testObject === 'radio' || state.testObject === 'phone');
+            
+            if (isRadio && state.extEField > 0) {
+                // Determine signal quality based on shielding
+                // Shielding dB: 0 = no shielding (perfect signal), 120 = perfect shielding
+                // Normalizing 0-120 to a usable range
+                
+                let attenuation = state.shieldingDb / 120; // 0 to 1 (1 is highly shielded)
+                
+                // Radio volume and filter
+                let radioVol = 1.0 - Math.pow(attenuation, 0.5); 
+                radioGain.gain.setTargetAtTime(Math.max(0, radioVol * 0.3), audioCtx.currentTime, 0.1);
+                
+                radioFilter.frequency.setTargetAtTime(Math.max(200, 5000 - attenuation * 4800), audioCtx.currentTime, 0.1);
+                
+                // Static volume
+                let staticVol = Math.pow(attenuation, 2) * 0.1; // Gets static-y as signal drops
+                staticVol = Math.min(staticVol, 0.1); // cap static
+                if(attenuation > 0.95) staticVol = 0; // complete silence if perfectly shielded
+                staticGain.gain.setTargetAtTime(staticVol, audioCtx.currentTime, 0.1);
+            } else {
+                radioGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+                staticGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+            }
+        };
+
+        // --- Physics & Logic ---
+        const calcPhysics = () => {
+            // Base shielding depends on geometry
+            let baseShielding = 120; // dB
+            switch(state.geometry) {
+                case 'solid': baseShielding = 140; break;
+                case 'mesh_fine': baseShielding = 80; break;
+                case 'car': baseShielding = 60; break;
+                case 'airplane': baseShielding = 100; break;
+                case 'mesh_coarse': baseShielding = 40; break;
+            }
+
+            // Door opening drastically reduces shielding
+            let doorPenalty = Math.pow(state.doorOpen, 2) * baseShielding; 
+            
+            state.shieldingDb = Math.max(0, baseShielding - doorPenalty);
+            
+            if (state.shieldingDb > 100) state.shieldingDb = 120; // saturate for UI
+            
+            // Calculate internal E-field
+            // Attenuation in linear scale: A = 10^(dB/20)
+            let attenuationLinear = Math.pow(10, state.shieldingDb / 20);
+            state.intEField = (state.extEField * 1000) / attenuationLinear; // V/m
+            
+            if(state.intEField < 0.01) state.intEField = 0;
+
+            // Surface charge density (σ = ε0 * E)
+            const e0 = 8.854e-12;
+            state.maxSigma = (state.extEField * 1000) * e0 * 1e6; // μC/m²
+
+            state.cagePotential = state.lightningActive ? (Math.random() * 500 + 1000) : 0;
+            
+            updateHUD();
+            updateAudio();
+        };
+
+        // --- Rendering ---
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        let dpr = window.devicePixelRatio || 1;
+        
+        const resize = () => {
+            canvas.width = canvas.clientWidth * dpr;
+            canvas.height = canvas.clientHeight * dpr;
+            ctx.scale(dpr, dpr);
+        };
+        window.addEventListener('resize', resize);
+        resize();
+
+        const draw = (time) => {
+            const w = canvas.clientWidth;
+            const h = canvas.clientHeight;
+            const cx = w / 2;
+            const cy = h / 2;
+            const r = Math.min(w, h) * 0.25;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Draw Background Heatmap if active
+            if (state.viewMode === 'heatmap') {
+                const imgData = ctx.createImageData(w * dpr, h * dpr);
+                // Simplify: just draw radial gradients to simulate heatmap
+                ctx.save();
+                ctx.fillStyle = '#0b1217';
+                ctx.fillRect(0,0,w,h);
+                
+                // External field
+                let extIntensity = state.extEField / 100;
+                let gradient = ctx.createLinearGradient(0, 0, w, 0);
+                gradient.addColorStop(0, `rgba(0, 212, 224, ${extIntensity * 0.3})`);
+                gradient.addColorStop(1, `rgba(0, 212, 224, ${extIntensity * 0.3})`);
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, w, h);
+
+                // Cage interior masked out
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+                
+                // Add internal leakage
+                if(state.intEField > 0) {
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                    let intIntensity = Math.min(1, state.intEField / 1000);
+                    ctx.fillStyle = `rgba(0, 212, 224, ${intIntensity * 0.5})`;
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+            }
+
+            // Draw E-Field Lines
+            if (state.viewMode === 'field_lines') {
+                ctx.strokeStyle = `rgba(0, 212, 224, ${Math.max(0.1, state.extEField/100)})`;
+                ctx.lineWidth = 1.5;
+                const numLines = 15;
+                const spacing = h / numLines;
+                
+                for(let i=0; i<=numLines; i++) {
+                    let y = i * spacing;
+                    ctx.beginPath();
+                    
+                    // Left side
+                    for(let x=0; x<w; x+=10) {
+                        let dx = x - cx;
+                        let dy = y - cy;
+                        let dist = Math.sqrt(dx*dx + dy*dy);
+                        
+                        // Deflection logic
+                        if (dist < r * 1.5 && dist > r * 0.9) {
+                            let angle = Math.atan2(dy, dx);
+                            // Push lines around the cage
+                            let force = (r*1.5 - dist) / (r*0.5);
+                            let newY = y + force * Math.sign(dy) * 20;
+                            if(x===0) ctx.moveTo(x, newY);
+                            else ctx.lineTo(x, newY);
+                        } else if (dist <= r * 0.9) {
+                            // Inside cage
+                            if (state.intEField > 10) {
+                                // Field penetrates
+                                ctx.lineTo(x, y);
+                            } else {
+                                // Break line
+                                ctx.moveTo(x, y);
+                            }
+                        } else {
+                            if(x===0) ctx.moveTo(x, y);
+                            else ctx.lineTo(x, y);
+                        }
+                    }
+                    ctx.stroke();
+                }
+            }
+
+            // Draw Cage
+            ctx.save();
+            ctx.translate(cx, cy);
+            
+            // Rotate for door opening at top right
+            ctx.rotate(-Math.PI / 4);
+            
+            ctx.beginPath();
+            let openAngle = state.doorOpen * Math.PI * 0.5; // Up to 90 deg open
+            ctx.arc(0, 0, r, openAngle/2, Math.PI * 2 - openAngle/2);
+            
+            ctx.lineWidth = 8;
+            if(state.geometry.includes('mesh')) {
+                ctx.setLineDash([5, 5]);
+            }
+            ctx.strokeStyle = state.lightningActive ? '#fff' : '#64748b';
+            ctx.stroke();
+            
+            // Surface Charges (if ext field > 0)
+            if (state.extEField > 0) {
+                ctx.font = '14px monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // Negative on left (entering), Positive on right (exiting)
+                // We rotated by -PI/4, so left is roughly angle 5PI/4, right is PI/4
+                
+                // Draw charges around the perimeter
+                let numCharges = Math.floor((state.extEField / 100) * 20);
+                for(let i=0; i<numCharges; i++) {
+                    let angleLeft = Math.PI - 0.5 + (Math.random());
+                    let angleRight = 0 - 0.5 + (Math.random());
+                    
+                    // Unrotate angles for drawing
+                    let dXLeft = Math.cos(angleLeft - Math.PI/4) * (r + 15);
+                    let dYLeft = Math.sin(angleLeft - Math.PI/4) * (r + 15);
+                    
+                    let dXRight = Math.cos(angleRight - Math.PI/4) * (r + 15);
+                    let dYRight = Math.sin(angleRight - Math.PI/4) * (r + 15);
+                    
+                    ctx.fillStyle = '#ef4444'; // Neg
+                    ctx.fillText('-', dXLeft, dYLeft);
+                    
+                    ctx.fillStyle = '#b3e600'; // Pos
+                    ctx.fillText('+', dXRight, dYRight);
+                }
+            }
+            ctx.restore();
+
+            // Draw Test Object
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.font = '32px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            let emoji = '📻';
+            if(state.testObject === 'electrometer') emoji = '⚡';
+            if(state.testObject === 'person') emoji = '🧍';
+            if(state.testObject === 'phone') emoji = '📱';
+            ctx.fillText(emoji, 0, 0);
+            
+            // Object effects (music notes or static)
+            if (state.extEField > 0 && (state.testObject === 'radio' || state.testObject === 'phone')) {
+                if (state.shieldingDb < 40) {
+                    ctx.font = '16px sans-serif';
+                    ctx.fillStyle = '#00f0ff';
+                    ctx.fillText('🎵', Math.sin(time/200)*20, -30 + Math.cos(time/200)*10);
+                } else if (state.shieldingDb < 100) {
+                    ctx.font = '16px sans-serif';
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.fillText('〰️', Math.random()*20-10, -30 + Math.random()*10);
+                }
+            }
+            ctx.restore();
+
+            // Draw Lightning
+            if (state.lightningActive) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(0, 0); // top left corner
+                
+                let currX = 0;
+                let currY = 0;
+                let targetX = cx - r;
+                let targetY = cy;
+                
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 4;
+                ctx.shadowColor = '#00f0ff';
+                ctx.shadowBlur = 20;
+                
+                for(let i=0; i<10; i++) {
+                    currX += (targetX - currX) * 0.1 + (Math.random()*40 - 20);
+                    currY += (targetY - currY) * 0.1 + (Math.random()*40 - 20);
+                    ctx.lineTo(currX, currY);
+                }
+                ctx.lineTo(targetX, targetY); // hit cage
+                ctx.stroke();
+                
+                // Spark on cage
+                ctx.beginPath();
+                ctx.arc(targetX, targetY, 15 + Math.random()*10, 0, Math.PI*2);
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+                
+                ctx.restore();
+            }
+
+            requestAnimationFrame(draw);
+        };
+
+        // --- Event Listeners ---
+        document.getElementById('slider-efield').addEventListener('input', (e) => {
+            state.extEField = parseFloat(e.target.value);
+            document.getElementById('val-efield').innerText = state.extEField;
+            calcPhysics();
+        });
+
+        document.getElementById('slider-door').addEventListener('input', (e) => {
+            state.doorOpen = parseFloat(e.target.value) / 100;
+            document.getElementById('val-door').innerText = e.target.value;
+            calcPhysics();
+        });
+
+        document.getElementById('sel-geometry').addEventListener('change', (e) => {
+            state.geometry = e.target.value;
+            calcPhysics();
+        });
+
+        document.getElementById('sel-object').addEventListener('change', (e) => {
+            state.testObject = e.target.value;
+            calcPhysics();
+        });
+
+        document.getElementById('sel-view').addEventListener('change', (e) => {
+            state.viewMode = e.target.value;
+        });
+
+        document.getElementById('btn-lightning').addEventListener('click', () => {
+            if (state.lightningActive) return;
+            state.lightningActive = true;
+            state.extEField = 100; // max out field
+            document.getElementById('slider-efield').value = 100;
+            document.getElementById('val-efield').innerText = 100;
+            
+            triggerLightningAudio();
+            calcPhysics();
+            
+            setTimeout(() => {
+                state.lightningActive = false;
+                state.cagePotential = 0;
+                calcPhysics();
+            }, 300); // 300ms zap
+        });
+
+        document.getElementById('btn-audio').addEventListener('click', initAudio);
+
+        const updateHUD = () => {
+            document.getElementById('hud-ext').innerText = state.extEField.toFixed(1);
+            document.getElementById('hud-int').innerText = state.intEField.toFixed(1);
+            document.getElementById('hud-atten').innerText = state.shieldingDb.toFixed(1);
+            document.getElementById('hud-sigma').innerText = state.maxSigma.toFixed(2);
+            document.getElementById('hud-pot').innerText = state.cagePotential.toFixed(1);
+        };
+
+        // Init
+        calcPhysics();
+        requestAnimationFrame(draw);
+
+    </script>
+</body>
+</html>

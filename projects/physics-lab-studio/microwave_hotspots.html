@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microwave Oven Standing Waves & Speed of Light</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #0b1217; color: #f8fafc; }
+        .glass-panel { background: rgba(17, 26, 34, 0.7); backdrop-filter: blur(12px); border: 1px solid #1d2b38; border-radius: 1rem; }
+        canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+        input[type=range] { accent-color: #00f0ff; }
+        .ruler-line { stroke: #b3e600; stroke-width: 2; stroke-dasharray: 4; }
+        .ruler-text { fill: #b3e600; font-family: monospace; font-size: 14px; text-shadow: 1px 1px 2px black; font-weight: bold; }
+    </style>
+</head>
+<body class="min-h-screen p-4 flex flex-col items-center gap-6">
+
+    <div class="text-center w-full max-w-5xl mt-4">
+        <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-emerald-400">Microwave Oven Standing Waves & Speed of Light Simulator</h1>
+        <p class="text-slate-400 mt-2">Discover the invisible waves cooking your food and measure the speed of light!</p>
+    </div>
+
+    <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Controls Sidebar -->
+        <div class="lg:col-span-3 glass-panel p-5 flex flex-col gap-6">
+            <h2 class="text-xl font-bold text-sky-400 border-b border-slate-700 pb-2">Controls</h2>
+            
+            <button id="btn-audio" class="bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 px-4 rounded transition">Enable Audio / Start</button>
+
+            <div class="flex flex-col gap-2">
+                <label class="flex justify-between text-sm text-slate-300">Magnetron Freq (GHz): <span id="val-freq" class="font-mono text-sky-300">2.45</span></label>
+                <input type="range" id="slider-freq" min="2.0" max="3.0" step="0.01" value="2.45" class="w-full">
+            </div>
+
+            <div class="flex items-center gap-3 mt-2">
+                <input type="checkbox" id="toggle-turntable" class="w-5 h-5 accent-sky-500 cursor-pointer">
+                <label for="toggle-turntable" class="text-slate-300 font-semibold cursor-pointer">Rotating Turntable</label>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <label class="flex justify-between text-sm text-slate-300">Cook Time (s): <span id="val-time" class="font-mono text-sky-300">20</span></label>
+                <input type="range" id="slider-time" min="5" max="60" step="1" value="20" class="w-full">
+            </div>
+
+            <button id="btn-cook" class="bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 px-4 rounded transition mt-2">Start Cooking!</button>
+            <button id="btn-reset" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded transition">Reset Chocolate Bar</button>
+
+            <div class="mt-4">
+                <h3 class="text-sm font-bold text-slate-400 mb-2 uppercase tracking-wider">Presets</h3>
+                <div class="flex flex-col gap-2">
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 py-1.5 rounded text-sm transition" data-turntable="false" data-freq="2.45">Chocolate Bar Experiment</button>
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 py-1.5 rounded text-sm transition" data-turntable="true" data-freq="2.45">Even Heating (Turntable)</button>
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 py-1.5 rounded text-sm transition" data-turntable="false" data-freq="3.00">High Freq / Shorter Wavelength</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Simulation View -->
+        <div class="lg:col-span-6 relative aspect-square glass-panel flex flex-col overflow-hidden group">
+            <!-- Canvas -->
+            <div id="canvas-wrapper" class="relative flex-grow bg-slate-900 overflow-hidden cursor-crosshair">
+                <canvas id="sim-canvas"></canvas>
+                <svg id="ruler-svg" class="absolute top-0 left-0 w-full h-full pointer-events-none">
+                    <!-- Ruler line injected here -->
+                </svg>
+            </div>
+            <!-- Overlay status -->
+            <div class="absolute top-4 left-4 glass-panel px-3 py-1 text-sm font-mono text-amber-300 shadow-lg border-amber-900/50">
+                Time: <span id="sim-timer">0.0</span>s
+            </div>
+            <div class="absolute top-4 right-4 text-xs text-slate-400 bg-slate-900/80 px-2 py-1 rounded">
+                Click & Drag to Measure!
+            </div>
+        </div>
+
+        <!-- Data HUD -->
+        <div class="lg:col-span-3 glass-panel p-5 flex flex-col gap-4">
+            <h2 class="text-xl font-bold text-emerald-400 border-b border-slate-700 pb-2">Live Telemetry</h2>
+            
+            <div class="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                <div class="text-xs text-slate-400 uppercase tracking-wide">Magnetron Output</div>
+                <div class="text-xl font-mono text-sky-400"><span id="hud-freq">2.45</span> GHz</div>
+                <div class="text-sm font-mono text-slate-300">λ ≈ <span id="hud-lambda">12.24</span> cm</div>
+            </div>
+
+            <div class="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                <div class="text-xs text-slate-400 uppercase tracking-wide">Theoretical Hotspot Dist (λ/2)</div>
+                <div class="text-2xl font-mono text-amber-400"><span id="hud-d-theory">6.12</span> cm</div>
+            </div>
+
+            <div class="bg-slate-800/50 p-3 rounded-lg border border-emerald-800">
+                <div class="text-xs text-slate-400 uppercase tracking-wide">Ruler Measurement (d)</div>
+                <div class="text-2xl font-mono text-emerald-400"><span id="hud-d-measure">0.00</span> cm</div>
+            </div>
+
+            <div class="bg-slate-800/50 p-3 rounded-lg border border-rose-900 relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-1 opacity-20"><svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M11 20v-5.5H7.5l6-11.5v5.5H17l-6 11.5z"/></svg></div>
+                <div class="text-xs text-slate-400 uppercase tracking-wide">Calculated Speed of Light</div>
+                <div class="text-sm font-mono text-slate-400">c = 2 × d × f</div>
+                <div class="text-2xl font-mono text-rose-400 mt-1"><span id="hud-c-calc">0.00</span> × 10⁸ m/s</div>
+                <div class="text-xs font-mono text-slate-300 mt-1">Error: <span id="hud-error">--</span>%</div>
+            </div>
+
+            <div class="mt-auto pt-4 border-t border-slate-700">
+                <div class="text-xs text-slate-400 uppercase tracking-wide mb-1">Peak Hotspot Temp</div>
+                <div class="w-full bg-slate-800 h-4 rounded-full overflow-hidden">
+                    <div id="temp-bar" class="h-full bg-gradient-to-r from-sky-500 via-amber-500 to-rose-600 w-0 transition-all"></div>
+                </div>
+                <div class="flex justify-between text-xs font-mono text-slate-400 mt-1">
+                    <span>20°C</span>
+                    <span id="hud-temp">20.0°C</span>
+                    <span>100°C+</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Explainer Cards -->
+    <div class="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-6 mt-4 pb-12">
+        <div class="glass-panel p-5">
+            <h3 class="text-lg font-bold text-amber-400 mb-2">1. The Standing Wave Trap</h3>
+            <p class="text-sm text-slate-300 leading-relaxed">Microwaves inside the metal box bounce back and forth. Because the waves are confined, they form a <strong>Standing Wave</strong> pattern. Certain spots (antinodes) have oscillating electric fields that swing wildly up and down, while other spots (nodes) remain perfectly still with ZERO electric field. If you don't use a turntable, food in the nodes stays completely cold!</p>
+        </div>
+        <div class="glass-panel p-5">
+            <h3 class="text-lg font-bold text-rose-400 mb-2">2. Dielectric Heating</h3>
+            <p class="text-sm text-slate-300 leading-relaxed">Why do microwaves heat food but not glass? It's <strong>Dielectric Heating</strong>. Water molecules are polar (they have positive and negative ends). The intense electric field in the microwave flips direction 2.45 billion times per second (2.45 GHz). The water molecules try to flip along with the field, rubbing against each other. This molecular friction creates immense heat!</p>
+        </div>
+        <div class="glass-panel p-5">
+            <h3 class="text-lg font-bold text-emerald-400 mb-2">3. Measure Speed of Light</h3>
+            <p class="text-sm text-slate-300 leading-relaxed">The distance between two adjacent hot spots (nodes to nodes or antinodes to antinodes) is exactly <strong>half a wavelength (λ/2)</strong>. By melting a chocolate bar without the turntable, measuring the distance <em>d</em> between melted blobs, and knowing your microwave's frequency <em>f</em> (usually 2.45 GHz), you can calculate the speed of light: <br><code class="bg-slate-900 px-1 py-0.5 rounded text-rose-300 mt-2 inline-block">c = 2 × d × f ≈ 300,000 km/s!</code></p>
+        </div>
+    </div>
+
+<script>
+    // Constants
+    const C = 299792458; // m/s
+    const BASE_TEMP = 20; // Celsius
+
+    // State
+    let audioCtx = null;
+    let magnetronOsc = null;
+    let fanNoise = null;
+    let sizzleNoise = null;
+    let turntableOsc = null;
+    let masterGain = null;
+
+    let f_GHz = 2.45;
+    let lambda = C / (f_GHz * 1e9) * 100; // cm
+    let useTurntable = false;
+    let cookTimeLimit = 20;
+    
+    let isCooking = false;
+    let cookTimer = 0;
+    let lastFrameTime = 0;
+    
+    // Geometry (Simulate a 30cm x 30cm cavity floor)
+    const CAVITY_SIZE = 30; // cm
+    let heatMap = []; // 2D array of temperatures
+    const RESOLUTION = 100; // grid size
+    let peakTemp = BASE_TEMP;
+
+    // Measurement
+    let isDragging = false;
+    let measureStart = null;
+    let measureEnd = null;
+
+    // DOM
+    const canvas = document.getElementById('sim-canvas');
+    const ctx = canvas.getContext('2d');
+    const wrapper = document.getElementById('canvas-wrapper');
+    const svg = document.getElementById('ruler-svg');
+
+    // UI Updates
+    function updateTelemetry() {
+        lambda = C / (f_GHz * 1e9) * 100;
+        document.getElementById('hud-freq').innerText = f_GHz.toFixed(2);
+        document.getElementById('hud-lambda').innerText = lambda.toFixed(2);
+        document.getElementById('hud-d-theory').innerText = (lambda / 2).toFixed(2);
+        document.getElementById('sim-timer').innerText = cookTimer.toFixed(1);
+        
+        let ratio = (peakTemp - BASE_TEMP) / (100 - BASE_TEMP);
+        ratio = Math.min(1, Math.max(0, ratio));
+        document.getElementById('temp-bar').style.width = `${ratio * 100}%`;
+        document.getElementById('hud-temp').innerText = `${peakTemp.toFixed(1)}°C`;
+    }
+
+    // Initialize Heatmap
+    function initHeatMap() {
+        heatMap = new Float32Array(RESOLUTION * RESOLUTION);
+        for(let i=0; i<heatMap.length; i++) heatMap[i] = BASE_TEMP;
+        peakTemp = BASE_TEMP;
+        cookTimer = 0;
+        updateTelemetry();
+        drawHeatMap();
+    }
+
+    // Physics / Field Calculation
+    function getElectricFieldIntensity(x_cm, y_cm, time) {
+        // Mode parameters to create nice spots
+        const k = 2 * Math.PI / lambda;
+        // discrete hot spots
+        let E = Math.sin(2 * Math.PI * x_cm / lambda) * Math.sin(2 * Math.PI * y_cm / lambda);
+        return E * E; // Intensity
+    }
+
+    function rotatePoint(cx, cy, angle, p) {
+        const s = Math.sin(angle);
+        const c = Math.cos(angle);
+        p.x -= cx;
+        p.y -= cy;
+        const xnew = p.x * c - p.y * s;
+        const ynew = p.x * s + p.y * c;
+        p.x = xnew + cx;
+        p.y = ynew + cy;
+        return p;
+    }
+
+    // Audio System
+    function initAudio() {
+        if (audioCtx) return;
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.5;
+        masterGain.connect(audioCtx.destination);
+
+        // Magnetron Hum
+        magnetronOsc = audioCtx.createOscillator();
+        magnetronOsc.type = 'sawtooth';
+        magnetronOsc.frequency.value = 60;
+        
+        const humFilter = audioCtx.createBiquadFilter();
+        humFilter.type = 'lowpass';
+        humFilter.frequency.value = 400;
+        
+        let humGain = audioCtx.createGain();
+        humGain.gain.value = 0;
+        
+        magnetronOsc.connect(humFilter).connect(humGain).connect(masterGain);
+        magnetronOsc.start();
+        magnetronOsc.humGain = humGain;
+
+        // Fan noise
+        const bufferSize = audioCtx.sampleRate * 2;
+        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+        }
+        fanNoise = audioCtx.createBufferSource();
+        fanNoise.buffer = noiseBuffer;
+        fanNoise.loop = true;
+        
+        const fanFilter = audioCtx.createBiquadFilter();
+        fanFilter.type = 'bandpass';
+        fanFilter.frequency.value = 1000;
+        
+        let fanGain = audioCtx.createGain();
+        fanGain.gain.value = 0;
+        
+        fanNoise.connect(fanFilter).connect(fanGain).connect(masterGain);
+        fanNoise.start();
+        fanNoise.fanGain = fanGain;
+
+        // Sizzle
+        const sizzleBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const sOutput = sizzleBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            sOutput[i] = Math.random() * 2 - 1;
+        }
+        sizzleNoise = audioCtx.createBufferSource();
+        sizzleNoise.buffer = sizzleBuffer;
+        sizzleNoise.loop = true;
+        
+        const sizzleFilter = audioCtx.createBiquadFilter();
+        sizzleFilter.type = 'highpass';
+        sizzleFilter.frequency.value = 4000;
+        
+        let sizzleGain = audioCtx.createGain();
+        sizzleGain.gain.value = 0;
+        
+        sizzleNoise.connect(sizzleFilter).connect(sizzleGain).connect(masterGain);
+        sizzleNoise.start();
+        sizzleNoise.sizzleGain = sizzleGain;
+    }
+
+    function setCookingAudio(active) {
+        if (!audioCtx) return;
+        const t = audioCtx.currentTime;
+        if (active) {
+            magnetronOsc.humGain.gain.setTargetAtTime(0.8, t, 0.1);
+            fanNoise.fanGain.gain.setTargetAtTime(0.2, t, 0.1);
+        } else {
+            magnetronOsc.humGain.gain.setTargetAtTime(0, t, 0.1);
+            fanNoise.fanGain.gain.setTargetAtTime(0, t, 0.1);
+            sizzleNoise.sizzleGain.gain.setTargetAtTime(0, t, 0.1);
+        }
+    }
+
+    function updateSizzle(peakT) {
+        if (!audioCtx || !isCooking) return;
+        let s = (peakT - 50) / 50;
+        s = Math.max(0, Math.min(0.5, s));
+        sizzleNoise.sizzleGain.gain.setTargetAtTime(s, audioCtx.currentTime, 0.1);
+    }
+
+    function beep() {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        osc.frequency.value = 2500;
+        const g = audioCtx.createGain();
+        osc.connect(g).connect(masterGain);
+        
+        const t = audioCtx.currentTime;
+        osc.start(t);
+        g.gain.setValueAtTime(0.5, t);
+        g.gain.setValueAtTime(0, t + 0.2);
+        
+        osc.start(t + 0.4);
+        g.gain.setValueAtTime(0.5, t + 0.4);
+        g.gain.setValueAtTime(0, t + 0.6);
+        
+        osc.start(t + 0.8);
+        g.gain.setValueAtTime(0.5, t + 0.8);
+        g.gain.setValueAtTime(0, t + 1.0);
+        
+        osc.stop(t + 1.1);
+    }
+
+    // Animation Loop
+    function loop(timestamp) {
+        if (!lastFrameTime) lastFrameTime = timestamp;
+        const dt = (timestamp - lastFrameTime) / 1000;
+        lastFrameTime = timestamp;
+
+        if (isCooking) {
+            cookTimer += dt;
+            
+            const heatingRate = 40; 
+            const rotationSpeed = 2 * Math.PI / 10; 
+            let cx = CAVITY_SIZE / 2;
+            let cy = CAVITY_SIZE / 2;
+            
+            let angle = useTurntable ? cookTimer * rotationSpeed : 0;
+            
+            for (let i = 0; i < RESOLUTION; i++) {
+                for (let j = 0; j < RESOLUTION; j++) {
+                    let idx = i * RESOLUTION + j;
+                    
+                    let x_cm = (j / RESOLUTION) * CAVITY_SIZE;
+                    let y_cm = (i / RESOLUTION) * CAVITY_SIZE;
+                    
+                    if (useTurntable) {
+                        let p = {x: x_cm, y: y_cm};
+                        p = rotatePoint(cx, cy, angle, p);
+                        x_cm = p.x;
+                        y_cm = p.y;
+                    }
+
+                    let intensity = getElectricFieldIntensity(x_cm, y_cm, cookTimer);
+                    
+                    heatMap[idx] += intensity * heatingRate * dt;
+                    if (heatMap[idx] > peakTemp) peakTemp = heatMap[idx];
+                }
+            }
+            
+            let newMap = new Float32Array(RESOLUTION * RESOLUTION);
+            const diffCoeff = 0.5 * dt; 
+            for (let i = 1; i < RESOLUTION-1; i++) {
+                for (let j = 1; j < RESOLUTION-1; j++) {
+                    let idx = i * RESOLUTION + j;
+                    let n = heatMap[idx-RESOLUTION];
+                    let s = heatMap[idx+RESOLUTION];
+                    let e = heatMap[idx+1];
+                    let w = heatMap[idx-1];
+                    let c = heatMap[idx];
+                    newMap[idx] = c + diffCoeff * (n+s+e+w - 4*c);
+                }
+            }
+            for (let i = 1; i < RESOLUTION-1; i++) {
+                for (let j = 1; j < RESOLUTION-1; j++) {
+                    heatMap[i*RESOLUTION+j] = newMap[i*RESOLUTION+j];
+                }
+            }
+
+            drawHeatMap();
+            updateTelemetry();
+            updateSizzle(peakTemp);
+
+            if (cookTimer >= cookTimeLimit) {
+                stopCooking();
+                beep();
+            }
+        }
+
+        requestAnimationFrame(loop);
+    }
+
+    // Drawing
+    function drawHeatMap() {
+        const w = canvas.width;
+        const h = canvas.height;
+        const imgData = ctx.createImageData(RESOLUTION, RESOLUTION);
+        const data = imgData.data;
+
+        for (let i = 0; i < heatMap.length; i++) {
+            let temp = heatMap[i];
+            
+            let r=62, g=39, b=35;
+            
+            if (temp > 30) {
+                let t = (temp - 30) / 70; 
+                t = Math.min(1, t);
+                r = 62 + (216 - 62) * t;
+                g = 39 + (67 - 39) * t;
+                b = 35 + (21 - 35) * t;
+                
+                if (temp > 80) {
+                    let t2 = (temp - 80) / 40;
+                    t2 = Math.min(1, t2);
+                    r = 216 + (255 - 216) * t2;
+                    g = 67 + (235 - 67) * t2;
+                    b = 21 + (59 - 21) * t2;
+                }
+            }
+
+            let idx = i * 4;
+            data[idx] = r;
+            data[idx+1] = g;
+            data[idx+2] = b;
+            data[idx+3] = 255;
+        }
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = RESOLUTION;
+        tempCanvas.height = RESOLUTION;
+        tempCanvas.getContext('2d').putImageData(imgData, 0, 0);
+        
+        ctx.imageSmoothingEnabled = false;
+        ctx.clearRect(0,0,w,h);
+        ctx.drawImage(tempCanvas, 0, 0, w, h);
+        
+        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for(let x=0; x<CAVITY_SIZE; x+=5) {
+            let px = (x/CAVITY_SIZE) * w;
+            ctx.moveTo(px, 0); ctx.lineTo(px, h);
+        }
+        for(let y=0; y<CAVITY_SIZE; y+=5) {
+            let py = (y/CAVITY_SIZE) * h;
+            ctx.moveTo(0, py); ctx.lineTo(w, py);
+        }
+        ctx.stroke();
+    }
+
+    function resize() {
+        const rect = wrapper.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        drawHeatMap();
+    }
+
+    window.addEventListener('resize', resize);
+    
+    // Interactions
+    document.getElementById('btn-audio').addEventListener('click', (e) => {
+        initAudio();
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        e.target.innerText = "Audio Enabled";
+        e.target.classList.replace('bg-sky-600', 'bg-emerald-600');
+        e.target.classList.replace('hover:bg-sky-500', 'hover:bg-emerald-500');
+    });
+
+    document.getElementById('slider-freq').addEventListener('input', (e) => {
+        f_GHz = parseFloat(e.target.value);
+        document.getElementById('val-freq').innerText = f_GHz.toFixed(2);
+        updateTelemetry();
+        initHeatMap();
+    });
+
+    document.getElementById('slider-time').addEventListener('input', (e) => {
+        cookTimeLimit = parseInt(e.target.value);
+        document.getElementById('val-time').innerText = cookTimeLimit;
+    });
+
+    document.getElementById('toggle-turntable').addEventListener('change', (e) => {
+        useTurntable = e.target.checked;
+        initHeatMap();
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+        stopCooking();
+        initHeatMap();
+        svg.innerHTML = '';
+        document.getElementById('hud-d-measure').innerText = "0.00";
+        document.getElementById('hud-c-calc').innerText = "0.00";
+        document.getElementById('hud-error').innerText = "--";
+    });
+
+    function stopCooking() {
+        isCooking = false;
+        document.getElementById('btn-cook').innerText = "Start Cooking!";
+        document.getElementById('btn-cook').classList.replace('bg-amber-600', 'bg-rose-600');
+        document.getElementById('btn-cook').classList.replace('hover:bg-amber-500', 'hover:bg-rose-500');
+        setCookingAudio(false);
+    }
+
+    document.getElementById('btn-cook').addEventListener('click', (e) => {
+        if (!isCooking) {
+            initAudio();
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            if (cookTimer >= cookTimeLimit) initHeatMap();
+            isCooking = true;
+            e.target.innerText = "Stop Cooking";
+            e.target.classList.replace('bg-rose-600', 'bg-amber-600');
+            e.target.classList.replace('hover:bg-rose-500', 'hover:bg-amber-500');
+            setCookingAudio(true);
+        } else {
+            stopCooking();
+        }
+    });
+
+    // Presets
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const ds = e.target.dataset;
+            document.getElementById('toggle-turntable').checked = (ds.turntable === 'true');
+            useTurntable = (ds.turntable === 'true');
+            
+            f_GHz = parseFloat(ds.freq);
+            document.getElementById('slider-freq').value = f_GHz;
+            document.getElementById('val-freq').innerText = f_GHz.toFixed(2);
+            
+            stopCooking();
+            initHeatMap();
+        });
+    });
+
+    // Measurement Tool
+    function updateRuler() {
+        if (!measureStart || !measureEnd) return;
+        svg.innerHTML = `
+            <line x1="${measureStart.x}" y1="${measureStart.y}" x2="${measureEnd.x}" y2="${measureEnd.y}" class="ruler-line" />
+            <circle cx="${measureStart.x}" cy="${measureStart.y}" r="4" fill="#b3e600" />
+            <circle cx="${measureEnd.x}" cy="${measureEnd.y}" r="4" fill="#b3e600" />
+        `;
+        
+        const rect = wrapper.getBoundingClientRect();
+        const dx = (measureEnd.x - measureStart.x) / rect.width * CAVITY_SIZE;
+        const dy = (measureEnd.y - measureStart.y) / rect.height * CAVITY_SIZE;
+        const d_cm = Math.sqrt(dx*dx + dy*dy);
+        
+        const midX = (measureStart.x + measureEnd.x) / 2;
+        const midY = (measureStart.y + measureEnd.y) / 2;
+        
+        svg.innerHTML += `<text x="${midX}" y="${midY - 10}" text-anchor="middle" class="ruler-text">${d_cm.toFixed(2)} cm</text>`;
+        
+        document.getElementById('hud-d-measure').innerText = d_cm.toFixed(2);
+        
+        const d_m = d_cm / 100;
+        const c_calc = 2 * d_m * (f_GHz * 1e9); 
+        const c_10_8 = c_calc / 1e8;
+        
+        document.getElementById('hud-c-calc').innerText = c_10_8.toFixed(2);
+        
+        const error = Math.abs((c_calc - C) / C) * 100;
+        const errEl = document.getElementById('hud-error');
+        errEl.innerText = error.toFixed(1);
+        if (error < 5) errEl.className = "text-emerald-400";
+        else if (error < 15) errEl.className = "text-amber-400";
+        else errEl.className = "text-rose-400";
+    }
+
+    wrapper.addEventListener('mousedown', (e) => {
+        const rect = wrapper.getBoundingClientRect();
+        isDragging = true;
+        measureStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        measureEnd = measureStart;
+        updateRuler();
+    });
+
+    wrapper.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const rect = wrapper.getBoundingClientRect();
+        measureEnd = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        updateRuler();
+    });
+
+    wrapper.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+    
+    wrapper.addEventListener('mouseleave', () => {
+        isDragging = false;
+    });
+
+    wrapper.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const rect = wrapper.getBoundingClientRect();
+        isDragging = true;
+        measureStart = { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+        measureEnd = measureStart;
+        updateRuler();
+    }, {passive: false});
+
+    wrapper.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!isDragging) return;
+        const rect = wrapper.getBoundingClientRect();
+        measureEnd = { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+        updateRuler();
+    }, {passive: false});
+
+    wrapper.addEventListener('touchend', () => {
+        isDragging = false;
+    });
+
+    // Init
+    setTimeout(() => {
+        resize();
+        initHeatMap();
+        requestAnimationFrame(loop);
+    }, 100);
+
+</script>
+</body>
+</html>

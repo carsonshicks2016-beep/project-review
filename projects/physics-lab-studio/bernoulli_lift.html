@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bernoulli Lift & Aerodynamic Stall Visualizer</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b1217; /* slate-950 */
+            color: #f8fafc; /* slate-50 */
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111a22; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
+        
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #00f0ff;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+        .stall-warning-text {
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    
+    <!-- Top Navigation / Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center z-10">
+        <div>
+            <h1 class="text-xl font-bold text-sky-400">Bernoulli Lift & Aerodynamic Stall</h1>
+            <p class="text-xs text-slate-400">Interactive Airfoil Simulation</p>
+        </div>
+        <div>
+            <button id="btn-audio" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                Enable Audio
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex flex-col lg:flex-row relative">
+        
+        <!-- Canvas Container -->
+        <div class="flex-1 relative w-full h-[50vh] lg:h-auto overflow-hidden bg-slate-950" id="canvas-container">
+            <canvas id="sim-canvas"></canvas>
+            
+            <!-- HUD Overlay -->
+            <div class="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-md border border-slate-700 rounded-xl p-4 min-w-[250px] shadow-lg">
+                <div class="flex justify-between items-center mb-2 border-b border-slate-700 pb-2">
+                    <span class="text-sm font-semibold uppercase tracking-wider text-slate-300">Flight Data</span>
+                    <span id="flight-state" class="text-xs font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/50">NORMAL</span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mono mt-3">
+                    <div class="text-slate-400">AoA (α):</div>
+                    <div class="text-right text-sky-400" id="hud-aoa">0.0°</div>
+                    
+                    <div class="text-slate-400">Airspeed:</div>
+                    <div class="text-right text-sky-400" id="hud-spd">250 km/h</div>
+                    
+                    <div class="text-slate-400">Lift (L):</div>
+                    <div class="text-right text-emerald-400" id="hud-lift">0 N</div>
+                    
+                    <div class="text-slate-400">Drag (D):</div>
+                    <div class="text-right text-rose-400" id="hud-drag">0 N</div>
+                    
+                    <div class="text-slate-400">L/D Ratio:</div>
+                    <div class="text-right text-amber-400" id="hud-ld">0.0</div>
+                </div>
+            </div>
+            
+            <!-- Legend / Toggle info -->
+            <div class="absolute bottom-4 left-4 bg-slate-900/60 backdrop-blur-sm border border-slate-800 rounded-lg p-2 text-xs flex gap-4">
+                <div class="flex items-center gap-1"><div class="w-3 h-3 bg-emerald-500 rounded-sm"></div> Lift Vector</div>
+                <div class="flex items-center gap-1"><div class="w-3 h-3 bg-rose-500 rounded-sm"></div> Drag Vector</div>
+                <div class="flex items-center gap-1"><div class="w-3 h-3 bg-blue-500/50 rounded-full"></div> Low Pressure</div>
+                <div class="flex items-center gap-1"><div class="w-3 h-3 bg-red-500/50 rounded-full"></div> High Pressure</div>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <aside class="w-full lg:w-80 bg-slate-900 border-l border-slate-800 flex flex-col max-h-[50vh] lg:max-h-none overflow-y-auto z-10">
+            <div class="p-5 space-y-6">
+                
+                <!-- Primary Controls -->
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-800 pb-1">Controls</h3>
+                    
+                    <div class="mb-4">
+                        <div class="flex justify-between mb-1">
+                            <label class="text-sm text-slate-400">Angle of Attack (α)</label>
+                            <span id="val-aoa" class="text-sm font-medium mono text-sky-400">0°</span>
+                        </div>
+                        <input type="range" id="slider-aoa" min="-5" max="25" step="0.5" value="5">
+                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                            <span>-5°</span>
+                            <span class="text-rose-500">Stall ~15°</span>
+                            <span>25°</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="flex justify-between mb-1">
+                            <label class="text-sm text-slate-400">Airspeed</label>
+                            <span id="val-spd" class="text-sm font-medium mono text-sky-400">250 km/h</span>
+                        </div>
+                        <input type="range" id="slider-spd" min="50" max="500" step="5" value="250">
+                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                            <span>50 km/h</span>
+                            <span>500 km/h</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <label class="text-sm text-slate-400 block mb-2">Airfoil Profile</label>
+                        <select id="select-profile" class="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:border-sky-500">
+                            <option value="symmetric">Symmetrical (NACA 0012)</option>
+                            <option value="cambered" selected>High-Lift Cambered (NACA 4412)</option>
+                            <option value="flat">Flat Plate</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Presets -->
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3 border-b border-slate-800 pb-1">Presets</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 transition-colors" data-aoa="3" data-spd="400">Cruise (3°)</button>
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 transition-colors" data-aoa="8" data-spd="250">Climb (8°)</button>
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 transition-colors" data-aoa="12" data-spd="150">Approach (12°)</button>
+                        <button class="preset-btn bg-amber-900/40 hover:bg-amber-900/60 text-amber-400 text-xs py-2 rounded border border-amber-800/50 transition-colors" data-aoa="14.5" data-spd="120">Critical (14.5°)</button>
+                        <button class="preset-btn bg-rose-900/40 hover:bg-rose-900/60 text-rose-400 text-xs py-2 rounded border border-rose-800/50 transition-colors col-span-2" data-aoa="22" data-spd="100">Full Stall (22°)</button>
+                    </div>
+                </div>
+
+                <!-- Visualization Toggles -->
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3 border-b border-slate-800 pb-1">Visualization</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-2 text-sm cursor-pointer hover:text-sky-300 transition-colors">
+                            <input type="checkbox" id="toggle-particles" checked class="w-4 h-4 accent-sky-500">
+                            Tracer Smoke Particles
+                        </label>
+                        <label class="flex items-center gap-2 text-sm cursor-pointer hover:text-sky-300 transition-colors">
+                            <input type="checkbox" id="toggle-streamlines" class="w-4 h-4 accent-sky-500">
+                            Streamlines
+                        </label>
+                        <label class="flex items-center gap-2 text-sm cursor-pointer hover:text-sky-300 transition-colors">
+                            <input type="checkbox" id="toggle-pressure" class="w-4 h-4 accent-sky-500">
+                            Pressure Heatmap
+                        </label>
+                        <label class="flex items-center gap-2 text-sm cursor-pointer hover:text-sky-300 transition-colors">
+                            <input type="checkbox" id="toggle-vectors" checked class="w-4 h-4 accent-sky-500">
+                            Lift / Drag Vectors
+                        </label>
+                    </div>
+                </div>
+                
+            </div>
+        </aside>
+    </main>
+
+    <!-- Explainer Cards Section -->
+    <section class="bg-slate-950 p-6 lg:p-8 border-t border-slate-800">
+        <h2 class="text-2xl font-bold mb-6 text-center text-slate-200">The Physics of Lift & Stall</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
+            <!-- Card 1 -->
+            <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-md">
+                <div class="w-10 h-10 rounded-full bg-sky-900/50 flex items-center justify-center mb-4 text-sky-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-200 mb-2">Bernoulli's Principle</h3>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                    Air flowing over the curved top of a wing accelerates, which according to Bernoulli's equation (<code class="text-sky-300">p + ½ρv² = const</code>), causes a decrease in pressure. The slower-moving air underneath maintains higher pressure. This pressure difference creates the upward force known as Lift.
+                </p>
+            </div>
+            
+            <!-- Card 2 -->
+            <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-md">
+                <div class="w-10 h-10 rounded-full bg-rose-900/50 flex items-center justify-center mb-4 text-rose-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-200 mb-2">Aerodynamic Stall</h3>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                    As Angle of Attack (α) increases, lift increases linearly. However, at the <strong>critical angle</strong> (usually ~15°), the air can no longer follow the sharp contour of the upper wing. The boundary layer <strong>separates</strong>, creating a turbulent wake. Lift abruptly plummets and drag skyrockets.
+                </p>
+            </div>
+            
+            <!-- Card 3 -->
+            <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-md">
+                <div class="w-10 h-10 rounded-full bg-emerald-900/50 flex items-center justify-center mb-4 text-emerald-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-200 mb-2">Stall Recovery</h3>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                    When a stall occurs, increasing engine power alone is not enough. The pilot must <strong>decrease the Angle of Attack</strong> by pushing the nose down. This allows the smooth airflow to reattach to the upper wing surface, restoring lift and ending the stall condition.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- JavaScript Implementation -->
+    <script>
+        // DOM Elements
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        const canvasContainer = document.getElementById('canvas-container');
+        
+        // UI Elements
+        const sliderAoA = document.getElementById('slider-aoa');
+        const sliderSpd = document.getElementById('slider-spd');
+        const valAoA = document.getElementById('val-aoa');
+        const valSpd = document.getElementById('val-spd');
+        const selectProfile = document.getElementById('select-profile');
+        
+        const hudAoA = document.getElementById('hud-aoa');
+        const hudSpd = document.getElementById('hud-spd');
+        const hudLift = document.getElementById('hud-lift');
+        const hudDrag = document.getElementById('hud-drag');
+        const hudLD = document.getElementById('hud-ld');
+        const flightState = document.getElementById('flight-state');
+        
+        const toggleParticles = document.getElementById('toggle-particles');
+        const toggleStreamlines = document.getElementById('toggle-streamlines');
+        const togglePressure = document.getElementById('toggle-pressure');
+        const toggleVectors = document.getElementById('toggle-vectors');
+        
+        const btnAudio = document.getElementById('btn-audio');
+        const presetBtns = document.querySelectorAll('.preset-btn');
+
+        // Simulation State
+        let state = {
+            aoa: 5,         // degrees
+            speed: 250,     // km/h
+            profile: 'cambered',
+            critAngle: 15,  // degrees
+            isStalled: false,
+            stallSeverity: 0, // 0 to 1
+            
+            // Physics outputs
+            lift: 0,
+            drag: 0,
+            cl: 0,
+            cd: 0,
+            
+            // Render options
+            showParticles: true,
+            showStreamlines: false,
+            showPressure: false,
+            showVectors: true
+        };
+
+        // Constants
+        const RHO = 1.225; // Air density kg/m^3
+        const WING_AREA = 20; // m^2 (reference area)
+        const AR = 8; // Aspect ratio
+        const E = 0.8; // Oswald efficiency number
+
+        // Resize Handling
+        function resize() {
+            const rect = canvasContainer.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
+        }
+        window.addEventListener('resize', resize);
+        
+        // Audio System
+        let audioCtx;
+        let windNoise;
+        let windFilter;
+        let windGain;
+        let stallHorn;
+        let stallHornGain;
+        let buffetNoise;
+        let buffetFilter;
+        let buffetGain;
+        let audioEnabled = false;
+        let stallHornInterval;
+        let hornState = false;
+
+        function initAudio() {
+            if (audioEnabled) return;
+            
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // 1. Wind Noise (White noise passed through lowpass filter)
+            const bufferSize = audioCtx.sampleRate * 2; // 2 seconds of noise
+            const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+            
+            windNoise = audioCtx.createBufferSource();
+            windNoise.buffer = noiseBuffer;
+            windNoise.loop = true;
+            
+            windFilter = audioCtx.createBiquadFilter();
+            windFilter.type = 'lowpass';
+            windFilter.frequency.value = 400; // Will be modulated by speed
+            
+            windGain = audioCtx.createGain();
+            windGain.gain.value = 0;
+            
+            windNoise.connect(windFilter);
+            windFilter.connect(windGain);
+            windGain.connect(audioCtx.destination);
+            windNoise.start();
+            
+            // 2. Buffet Rumble (Low frequency noise for stall)
+            buffetNoise = audioCtx.createBufferSource();
+            buffetNoise.buffer = noiseBuffer;
+            buffetNoise.loop = true;
+            
+            buffetFilter = audioCtx.createBiquadFilter();
+            buffetFilter.type = 'lowpass';
+            buffetFilter.frequency.value = 50; // Deep rumble
+            
+            buffetGain = audioCtx.createGain();
+            buffetGain.gain.value = 0;
+            
+            buffetNoise.connect(buffetFilter);
+            buffetFilter.connect(buffetGain);
+            buffetGain.connect(audioCtx.destination);
+            buffetNoise.start();
+            
+            // 3. Stall Horn (Oscillator)
+            stallHorn = audioCtx.createOscillator();
+            stallHorn.type = 'square';
+            stallHorn.frequency.value = 250;
+            
+            stallHornGain = audioCtx.createGain();
+            stallHornGain.gain.value = 0;
+            
+            stallHorn.connect(stallHornGain);
+            stallHornGain.connect(audioCtx.destination);
+            stallHorn.start();
+            
+            audioEnabled = true;
+            btnAudio.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg> Audio Active`;
+            btnAudio.classList.remove('bg-sky-500', 'text-slate-950');
+            btnAudio.classList.add('bg-slate-800', 'text-sky-400', 'border', 'border-sky-500/50');
+            
+            // Start horn pulser
+            setInterval(() => {
+                if (!audioEnabled || !state.isStalled) return;
+                hornState = !hornState;
+                stallHornGain.gain.setTargetAtTime(hornState ? 0.1 : 0, audioCtx.currentTime, 0.05);
+            }, 300);
+        }
+
+        btnAudio.addEventListener('click', () => {
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            initAudio();
+        });
+
+        function updateAudio() {
+            if (!audioEnabled) return;
+            
+            // Wind scales with speed
+            const speedNorm = state.speed / 500;
+            windFilter.frequency.setTargetAtTime(200 + speedNorm * 800, audioCtx.currentTime, 0.1);
+            windGain.gain.setTargetAtTime(speedNorm * 0.3, audioCtx.currentTime, 0.1);
+            
+            // Buffet scales with stall severity and speed
+            if (state.stallSeverity > 0) {
+                buffetGain.gain.setTargetAtTime(state.stallSeverity * speedNorm * 0.8, audioCtx.currentTime, 0.1);
+                buffetFilter.frequency.setTargetAtTime(40 + Math.random() * 20, audioCtx.currentTime, 0.1); // Add chaotic rumble
+                
+                // Beeping horn if near or in stall
+                // Gain handled by interval
+            } else {
+                buffetGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.2);
+                stallHornGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+                hornState = false;
+            }
+        }
+
+        // Particle System
+        class Particle {
+            constructor() {
+                this.reset(true);
+            }
+            
+            reset(randomX = false) {
+                const w = canvas.width / (window.devicePixelRatio || 1);
+                const h = canvas.height / (window.devicePixelRatio || 1);
+                
+                this.x = randomX ? Math.random() * w : -10;
+                this.y = (Math.random() - 0.5) * (h * 0.8); // Relative to center
+                this.vx = 0;
+                this.vy = 0;
+                this.life = Math.random();
+                this.size = Math.random() * 1.5 + 0.5;
+                this.isTurbulent = false;
+            }
+            
+            update(dt, wingX, wingY, chord, aoaRad, isStalled, stallSeverity, speed) {
+                // Base flow speed scaled for visuals
+                const vInf = (speed / 100) * 2; 
+                
+                let targetVx = vInf;
+                let targetVy = 0;
+                
+                // Position relative to wing leading edge
+                const dx = this.x - wingX;
+                const dy = this.y - wingY;
+                
+                // Simplified potential flow approximation around a flat plate/airfoil
+                // Transform to wing-local coordinates
+                const cosA = Math.cos(-aoaRad);
+                const sinA = Math.sin(-aoaRad);
+                
+                const localX = dx * cosA - dy * sinA;
+                const localY = dx * sinA + dy * cosA;
+                
+                // Normalize by chord
+                const nx = localX / chord;
+                const ny = localY / chord;
+                
+                // Flow influence zone
+                if (nx > -0.5 && nx < 1.5 && Math.abs(ny) < 1.5) {
+                    
+                    // Over the wing (suction side)
+                    if (ny < 0) {
+                        // Accelerate over top (Bernoulli)
+                        const overspeed = Math.max(0, 1 - Math.abs(nx - 0.3) * 2) * (aoaRad * 3 + 0.2);
+                        targetVx += overspeed * vInf;
+                        
+                        // Follow contour
+                        if (nx > 0 && nx < 1) {
+                            // Downwash trailing edge
+                            targetVy = Math.sin(aoaRad) * vInf;
+                            
+                            // Separation logic
+                            if (isStalled && nx > (1 - stallSeverity * 0.8)) {
+                                this.isTurbulent = true;
+                            }
+                        }
+                    } 
+                    // Under the wing (pressure side)
+                    else if (ny > 0) {
+                        // Slight deceleration
+                        targetVx *= 0.9;
+                        // Deflect downwards
+                        if (nx > 0 && nx < 1) {
+                            targetVy = Math.sin(aoaRad) * vInf * 0.8;
+                        }
+                    }
+                }
+                
+                // Apply Turbulence
+                if (this.isTurbulent) {
+                    targetVx = vInf * 0.2 + (Math.random() - 0.5) * vInf;
+                    targetVy = (Math.random() - 0.5) * vInf * 1.5;
+                    // Move slightly upwards/backwards in wake eddy
+                    if (Math.random() > 0.8) targetVx *= -0.5;
+                }
+                
+                // Smoothing velocity vector
+                this.vx += (targetVx - this.vx) * 0.1;
+                this.vy += (targetVy - this.vy) * 0.1;
+                
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                // Reset if off screen
+                const w = canvas.width / (window.devicePixelRatio || 1);
+                if (this.x > w + 20 || this.x < -20) {
+                    this.reset(false);
+                }
+            }
+            
+            draw(ctx, wingY) {
+                ctx.fillStyle = this.isTurbulent ? 'rgba(200, 210, 220, 0.4)' : 'rgba(200, 240, 255, 0.6)';
+                ctx.beginPath();
+                ctx.arc(this.x, wingY + this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        const particles = Array.from({length: 800}, () => new Particle());
+
+        // Physics Calculation
+        function updatePhysics() {
+            // Convert inputs
+            const v = state.speed / 3.6; // m/s
+            const aoaRad = state.aoa * Math.PI / 180;
+            
+            // Airfoil characteristics based on profile
+            let alpha0 = 0; // zero-lift angle
+            if (state.profile === 'cambered') alpha0 = -2 * Math.PI / 180; // NACA 4412 roughly
+            
+            const effAlpha = aoaRad - alpha0;
+            
+            // Stall model
+            state.critAngle = state.profile === 'cambered' ? 15 : (state.profile === 'symmetric' ? 12 : 9);
+            const critRad = state.critAngle * Math.PI / 180;
+            
+            let cl = 0;
+            let cd0 = state.profile === 'flat' ? 0.02 : 0.01;
+            
+            // Post-stall blending parameters
+            const stallWidth = 2 * Math.PI / 180;
+            
+            if (effAlpha <= critRad) {
+                // Linear region: Cl = 2*pi*alpha
+                cl = 2 * Math.PI * effAlpha;
+                state.isStalled = false;
+                state.stallSeverity = 0;
+            } else {
+                // Stalled region
+                state.isStalled = true;
+                const excess = effAlpha - critRad;
+                
+                // Cl drops, then stabilizes somewhat like a flat plate
+                const clMax = 2 * Math.PI * critRad;
+                const clFlatPlate = 2 * Math.sin(effAlpha) * Math.cos(effAlpha);
+                
+                // Blending factor
+                const blend = Math.min(1, excess / (5 * Math.PI / 180));
+                cl = clMax * (1 - blend) + clFlatPlate * blend;
+                
+                state.stallSeverity = Math.min(1, excess / (10 * Math.PI / 180));
+            }
+            
+            // Negative AoA stall (simplified)
+            if (effAlpha < -critRad) {
+                cl = Math.max(-1.5, 2 * Math.PI * effAlpha); // Simplified dropoff
+            }
+            
+            // Calculate Drag
+            // Induced drag: Cl^2 / (pi * e * AR)
+            const cd_induced = (cl * cl) / (Math.PI * E * AR);
+            
+            // Parasitic drag increases massively in stall
+            let cd_parasitic = cd0;
+            if (state.isStalled) {
+                // Flat plate like drag in deep stall (Cd ~ 2 * sin^2(alpha))
+                const cdStall = 2 * Math.sin(Math.abs(effAlpha)) * Math.sin(Math.abs(effAlpha));
+                cd_parasitic = cd0 + (cdStall - cd0) * state.stallSeverity;
+            } else {
+                // Small quadratic increase with alpha before stall
+                cd_parasitic = cd0 + 0.5 * effAlpha * effAlpha;
+            }
+            
+            let cd = cd_parasitic + cd_induced;
+            
+            // Calculate Forces (Newtons)
+            const q = 0.5 * RHO * v * v; // Dynamic pressure
+            const lift = q * WING_AREA * cl;
+            const drag = q * WING_AREA * cd;
+            
+            // Update state
+            state.cl = cl;
+            state.cd = cd;
+            state.lift = lift;
+            state.drag = drag;
+        }
+
+        // Render Airfoil Shape
+        function drawAirfoil(ctx, x, y, chord, aoaRad) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(-aoaRad); // Rotate visual (canvas y is down, so negative for positive AoA)
+            
+            ctx.beginPath();
+            
+            if (state.profile === 'flat') {
+                // Flat plate
+                ctx.moveTo(0, 0);
+                ctx.lineTo(chord, 0);
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#94a3b8';
+                ctx.stroke();
+            } else {
+                // NACA-style approximation
+                const m = state.profile === 'cambered' ? 0.04 : 0; // Max camber
+                const p = 0.4; // Position of max camber
+                const t = 0.12; // Thickness
+                
+                // Draw upper and lower surfaces
+                for (let i = 0; i <= 100; i++) {
+                    const xc = i / 100; // 0 to 1
+                    
+                    // Thickness distribution (NACA 4-digit formula)
+                    const yt = 5 * t * (0.2969 * Math.sqrt(xc) - 0.1260 * xc - 0.3516 * xc**2 + 0.2843 * xc**3 - 0.1015 * xc**4);
+                    
+                    // Camber line
+                    let yc = 0;
+                    let theta = 0;
+                    if (m > 0) {
+                        if (xc < p) {
+                            yc = (m / (p*p)) * (2*p*xc - xc*xc);
+                            theta = Math.atan((2*m/(p*p)) * (p - xc));
+                        } else {
+                            yc = (m / ((1-p)*(1-p))) * (1 - 2*p + 2*p*xc - xc*xc);
+                            theta = Math.atan((2*m/((1-p)*(1-p))) * (p - xc));
+                        }
+                    }
+                    
+                    const xu = xc * chord - yt * Math.sin(theta) * chord;
+                    const yu = yc * chord - yt * Math.cos(theta) * chord;
+                    
+                    if (i === 0) ctx.moveTo(xu, -yu);
+                    else ctx.lineTo(xu, -yu);
+                }
+                
+                // Lower surface (back to front)
+                for (let i = 100; i >= 0; i--) {
+                    const xc = i / 100;
+                    const yt = 5 * t * (0.2969 * Math.sqrt(xc) - 0.1260 * xc - 0.3516 * xc**2 + 0.2843 * xc**3 - 0.1015 * xc**4);
+                    
+                    let yc = 0;
+                    let theta = 0;
+                    if (m > 0) {
+                        if (xc < p) {
+                            yc = (m / (p*p)) * (2*p*xc - xc*xc);
+                            theta = Math.atan((2*m/(p*p)) * (p - xc));
+                        } else {
+                            yc = (m / ((1-p)*(1-p))) * (1 - 2*p + 2*p*xc - xc*xc);
+                            theta = Math.atan((2*m/((1-p)*(1-p))) * (p - xc));
+                        }
+                    }
+                    
+                    const xl = xc * chord + yt * Math.sin(theta) * chord;
+                    const yl = yc * chord + yt * Math.cos(theta) * chord;
+                    
+                    ctx.lineTo(xl, -yl);
+                }
+                
+                ctx.closePath();
+                ctx.fillStyle = '#64748b'; // slate-500
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#94a3b8'; // slate-400
+                ctx.stroke();
+            }
+            
+            ctx.restore();
+        }
+
+        // Render Vectors
+        function drawVectors(ctx, x, y) {
+            if (!state.showVectors) return;
+            
+            // Scale factors for visualization
+            const forceScale = 0.005;
+            
+            // Draw Center of Pressure point roughly at quarter chord
+            const aoaRad = state.aoa * Math.PI / 180;
+            const cpOffset = 50; // pixels back from leading edge
+            
+            const cpX = x + Math.cos(-aoaRad) * cpOffset;
+            const cpY = y + Math.sin(-aoaRad) * cpOffset;
+            
+            // Lift Vector (Upwards relative to wind)
+            // Wind is horizontal, so lift is straight up
+            if (Math.abs(state.lift) > 100) {
+                const liftLen = Math.max(10, Math.min(200, Math.abs(state.lift) * forceScale));
+                const dir = state.lift > 0 ? -1 : 1;
+                
+                ctx.beginPath();
+                ctx.moveTo(cpX, cpY);
+                ctx.lineTo(cpX, cpY + dir * liftLen);
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#b3e600'; // emerald-500
+                ctx.stroke();
+                
+                // Arrow head
+                ctx.beginPath();
+                ctx.moveTo(cpX, cpY + dir * liftLen);
+                ctx.lineTo(cpX - 8, cpY + dir * (liftLen - 12));
+                ctx.lineTo(cpX + 8, cpY + dir * (liftLen - 12));
+                ctx.closePath();
+                ctx.fillStyle = '#b3e600';
+                ctx.fill();
+            }
+            
+            // Drag Vector (Backwards relative to wind)
+            if (state.drag > 100) {
+                const dragLen = Math.max(10, Math.min(200, state.drag * forceScale));
+                
+                ctx.beginPath();
+                ctx.moveTo(cpX, cpY);
+                ctx.lineTo(cpX + dragLen, cpY);
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#e6004c'; // rose-500
+                ctx.stroke();
+                
+                // Arrow head
+                ctx.beginPath();
+                ctx.moveTo(cpX + dragLen, cpY);
+                ctx.lineTo(cpX + dragLen - 12, cpY - 8);
+                ctx.lineTo(cpX + dragLen - 12, cpY + 8);
+                ctx.closePath();
+                ctx.fillStyle = '#e6004c';
+                ctx.fill();
+            }
+        }
+
+        // Draw Pressure Heatmap Approximation
+        function drawPressure(ctx, x, y, chord, aoaRad) {
+            if (!state.showPressure) return;
+            
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(-aoaRad);
+            
+            // Top suction (Low pressure)
+            if (!state.isStalled) {
+                // Strong low pressure peak near leading edge
+                const grad = ctx.createLinearGradient(0, -50, chord, 0);
+                grad.addColorStop(0, 'rgba(59, 130, 246, 0)');
+                grad.addColorStop(0.1, `rgba(59, 130, 246, ${Math.min(0.8, state.cl / 2)})`);
+                grad.addColorStop(1, 'rgba(59, 130, 246, 0)');
+                
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.ellipse(chord*0.4, -30, chord*0.5, 40, 0, 0, Math.PI, true);
+                ctx.fill();
+            } else {
+                // Messy pressure distribution in stall
+                const grad = ctx.createRadialGradient(chord*0.5, -20, 10, chord*0.5, -20, chord*0.6);
+                grad.addColorStop(0, 'rgba(59, 130, 246, 0.2)');
+                grad.addColorStop(1, 'rgba(59, 130, 246, 0)');
+                
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(chord*0.5, -20, chord*0.6, 0, Math.PI*2);
+                ctx.fill();
+            }
+            
+            // Bottom pressure (High pressure)
+            if (state.aoa > 0) {
+                const gradHigh = ctx.createLinearGradient(0, 50, chord, 0);
+                gradHigh.addColorStop(0, 'rgba(239, 68, 68, 0)');
+                gradHigh.addColorStop(0.2, `rgba(239, 68, 68, ${Math.min(0.5, state.aoa/30)})`);
+                gradHigh.addColorStop(1, 'rgba(239, 68, 68, 0)');
+                
+                ctx.fillStyle = gradHigh;
+                ctx.beginPath();
+                ctx.ellipse(chord*0.5, 30, chord*0.5, 40, 0, 0, Math.PI, false);
+                ctx.fill();
+            }
+            
+            ctx.restore();
+        }
+
+        // Draw Streamlines
+        function drawStreamlines(ctx, x, y, chord, aoaRad) {
+            if (!state.showStreamlines) return;
+            
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            
+            const lines = 15;
+            const w = canvas.width / (window.devicePixelRatio || 1);
+            
+            for (let i = 0; i < lines; i++) {
+                const startY = y - 150 + (i * 20);
+                
+                ctx.beginPath();
+                ctx.moveTo(0, startY);
+                
+                let curY = startY;
+                for (let curX = 0; curX < w; curX += 10) {
+                    // Simple deflection math
+                    const dx = curX - x;
+                    
+                    if (dx > -100 && dx < chord + 100) {
+                        const distY = curY - y;
+                        
+                        // Deflection depends on position relative to wing
+                        if (distY < 0 && distY > -100) { // Above
+                            if (!state.isStalled) {
+                                // Follow camber up then down
+                                const bump = Math.sin((dx + 100) / (chord + 200) * Math.PI) * 30 * (state.aoa/10);
+                                curY = startY - bump * (1 - Math.abs(distY)/100);
+                            } else {
+                                // Stall boundary separation
+                                if (dx > chord * 0.3) {
+                                    // Separate
+                                    curY += (Math.random() - 0.5) * 5;
+                                } else {
+                                    const bump = Math.sin((dx + 100) / (chord*0.5 + 100) * Math.PI) * 30;
+                                    curY = startY - bump * (1 - Math.abs(distY)/100);
+                                }
+                            }
+                        } else if (distY > 0 && distY < 100) { // Below
+                            const deflect = (state.aoa/15) * 20;
+                            if (dx > 0) {
+                                curY = startY + deflect * (dx/chord) * (1 - Math.abs(distY)/100);
+                            }
+                        }
+                    }
+                    
+                    ctx.lineTo(curX, curY);
+                }
+                ctx.stroke();
+            }
+        }
+
+        // Main Render Loop
+        function render(time) {
+            updatePhysics();
+            updateAudio();
+            updateHUD();
+            
+            const w = canvas.width / (window.devicePixelRatio || 1);
+            const h = canvas.height / (window.devicePixelRatio || 1);
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, w, h);
+            
+            const wingX = w * 0.3;
+            const wingY = h * 0.5;
+            const chord = 200;
+            const aoaRad = state.aoa * Math.PI / 180;
+            
+            // Draw visualizations layers
+            drawPressure(ctx, wingX, wingY, chord, aoaRad);
+            drawStreamlines(ctx, wingX, wingY, chord, aoaRad);
+            
+            // Update & Draw Particles
+            if (state.showParticles) {
+                const dt = 16.6; // approx 60fps
+                particles.forEach(p => {
+                    p.update(dt, wingX, wingY, chord, aoaRad, state.isStalled, state.stallSeverity, state.speed);
+                    p.draw(ctx, wingY);
+                });
+            }
+            
+            // Draw Airfoil
+            drawAirfoil(ctx, wingX, wingY, chord, aoaRad);
+            
+            // Draw Vectors
+            drawVectors(ctx, wingX, wingY);
+            
+            requestAnimationFrame(render);
+        }
+
+        // UI Updates
+        function updateHUD() {
+            hudAoA.textContent = `${state.aoa.toFixed(1)}°`;
+            hudSpd.textContent = `${Math.round(state.speed)} km/h`;
+            hudLift.textContent = `${Math.round(state.lift).toLocaleString()} N`;
+            hudDrag.textContent = `${Math.round(state.drag).toLocaleString()} N`;
+            
+            const ld = state.drag !== 0 ? (state.lift / state.drag) : 0;
+            hudLD.textContent = ld.toFixed(1);
+            
+            // Flight State formatting
+            if (state.isStalled) {
+                flightState.textContent = state.stallSeverity > 0.5 ? 'FULL STALL' : 'STALLED';
+                flightState.className = 'text-xs font-bold px-2 py-1 rounded bg-rose-500/20 text-rose-500 border border-rose-500/50 stall-warning-text';
+                hudLD.className = 'text-right text-rose-500 font-bold';
+            } else if (state.aoa >= state.critAngle - 2) {
+                flightState.textContent = 'STALL WARNING';
+                flightState.className = 'text-xs font-bold px-2 py-1 rounded bg-amber-500/20 text-amber-400 border border-amber-500/50';
+                hudLD.className = 'text-right text-amber-400';
+            } else {
+                flightState.textContent = 'NORMAL';
+                flightState.className = 'text-xs font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/50';
+                hudLD.className = 'text-right text-amber-400';
+            }
+        }
+
+        // Event Listeners
+        sliderAoA.addEventListener('input', (e) => {
+            state.aoa = parseFloat(e.target.value);
+            valAoA.textContent = `${state.aoa}°`;
+        });
+        
+        sliderSpd.addEventListener('input', (e) => {
+            state.speed = parseFloat(e.target.value);
+            valSpd.textContent = `${state.speed} km/h`;
+        });
+        
+        selectProfile.addEventListener('change', (e) => {
+            state.profile = e.target.value;
+        });
+        
+        toggleParticles.addEventListener('change', e => state.showParticles = e.target.checked);
+        toggleStreamlines.addEventListener('change', e => state.showStreamlines = e.target.checked);
+        togglePressure.addEventListener('change', e => state.showPressure = e.target.checked);
+        toggleVectors.addEventListener('change', e => state.showVectors = e.target.checked);
+        
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.aoa = parseFloat(btn.dataset.aoa);
+                state.speed = parseFloat(btn.dataset.spd);
+                
+                sliderAoA.value = state.aoa;
+                sliderSpd.value = state.speed;
+                valAoA.textContent = `${state.aoa}°`;
+                valSpd.textContent = `${state.speed} km/h`;
+            });
+        });
+
+        // Init
+        resize();
+        requestAnimationFrame(render);
+
+    </script>
+</body>
+</html>

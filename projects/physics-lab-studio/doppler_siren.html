@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doppler Siren Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { margin: 0; overflow-x: hidden; background-color: #0b1217; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+        canvas { display: block; width: 100%; height: 100%; }
+        .data-readout { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #111a22; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #00f0ff;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex flex-col lg:flex-row relative z-10 p-4 gap-4 h-[70vh]">
+        
+        <!-- Controls Sidebar -->
+        <div class="lg:w-80 flex-shrink-0 bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-800 flex flex-col p-5 space-y-6 overflow-y-auto z-20 shadow-xl">
+            <div>
+                <h1 class="text-xl font-bold text-sky-400 mb-1 tracking-wide">Doppler Siren</h1>
+                <p class="text-xs text-slate-400">Interactive Physics Simulation</p>
+            </div>
+
+            <div class="space-y-4">
+                <button id="toggleBtn" class="w-full py-3 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" fill-rule="evenodd"></path></svg>
+                    <span>Start Simulation</span>
+                </button>
+                
+                <div class="bg-slate-950/80 rounded-xl p-4 border border-slate-800">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-sm text-slate-300 font-medium">Vehicle Speed</label>
+                        <span id="speedVal" class="text-xs font-mono text-sky-400">130 km/h</span>
+                    </div>
+                    <input type="range" id="speed" min="20" max="400" value="130" class="w-full">
+                    <div class="text-right mt-1"><span id="speedMsVal" class="text-[10px] text-slate-500 font-mono">36.1 m/s</span></div>
+                </div>
+
+                <div class="bg-slate-950/80 rounded-xl p-4 border border-slate-800">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-sm text-slate-300 font-medium">Siren Base Freq</label>
+                        <span id="freqVal" class="text-xs font-mono text-sky-400">960 Hz</span>
+                    </div>
+                    <input type="range" id="freq" min="500" max="1500" value="960" class="w-full">
+                </div>
+
+                <div class="bg-slate-950/80 rounded-xl p-4 border border-slate-800">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-sm text-slate-300 font-medium">Listener Distance</label>
+                        <span id="distVal" class="text-xs font-mono text-sky-400">15 m</span>
+                    </div>
+                    <input type="range" id="dist" min="5" max="100" value="15" class="w-full">
+                </div>
+            </div>
+
+            <div>
+                <label class="text-xs text-slate-400 font-medium uppercase tracking-wider mb-2 block">Presets</label>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <button class="preset-btn py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 transition-colors" data-speed="130" data-dist="15">Ambulance</button>
+                    <button class="preset-btn py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 transition-colors" data-speed="160" data-dist="20">Police</button>
+                    <button class="preset-btn py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 transition-colors" data-speed="100" data-dist="30">Fire Truck</button>
+                    <button class="preset-btn py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 transition-colors" data-speed="330" data-dist="50">Race Car</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="flex-1 relative bg-slate-900/80 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl flex flex-col">
+            <canvas id="simCanvas" class="flex-1 w-full h-full cursor-crosshair"></canvas>
+            
+            <!-- Floating HUD -->
+            <div class="absolute top-4 right-4 bg-slate-950/80 backdrop-blur-md rounded-xl border border-slate-800 p-4 pointer-events-none w-64 shadow-xl">
+                <div class="space-y-3">
+                    <div>
+                        <div class="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Observed Frequency</div>
+                        <div class="flex items-baseline gap-2">
+                            <div id="hudFreq" class="text-3xl font-light text-emerald-400 data-readout">0</div>
+                            <div class="text-sm text-slate-400">Hz</div>
+                        </div>
+                        <div class="mt-2 h-1 bg-slate-800 rounded-full overflow-hidden">
+                            <div id="pitchBar" class="h-full bg-emerald-400 w-1/2 origin-center transition-transform duration-75"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 pt-3 border-t border-slate-800">
+                        <div>
+                            <div class="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Ratio</div>
+                            <div id="hudRatio" class="text-sm text-slate-300 data-readout">1.00x</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Distance</div>
+                            <div id="hudDist" class="text-sm text-slate-300 data-readout">0.0 m</div>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
+                        <div class="text-[10px] text-slate-500 uppercase tracking-widest">State</div>
+                        <div id="hudState" class="text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-slate-300">IDLE</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Explainer Cards -->
+    <div class="bg-slate-950 border-t border-slate-800 p-6 z-20">
+        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-slate-900 rounded-xl p-5 border border-slate-800">
+                <div class="text-sky-400 mb-3 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    <h3 class="font-semibold">Why Pitch Changes</h3>
+                </div>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                    As the vehicle moves forward, it "chases" the sound waves it just emitted. This compresses the wavefronts ahead (higher frequency/pitch) and stretches them behind (lower frequency/pitch). This is known as the Doppler Effect.
+                </p>
+            </div>
+            
+            <div class="bg-slate-900 rounded-xl p-5 border border-slate-800">
+                <div class="text-rose-400 mb-3 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    <h3 class="font-semibold">The Mathematics</h3>
+                </div>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                    <code class="block bg-slate-950 p-2 rounded mb-2 text-xs text-rose-300">f_obs = f_src / (1 - (v/c) * cos(θ))</code>
+                    Where <span class="text-slate-300">c</span> is the speed of sound (343 m/s), <span class="text-slate-300">v</span> is vehicle speed, and <span class="text-slate-300">θ</span> is the angle between the velocity and the observer.
+                </p>
+            </div>
+
+            <div class="bg-slate-900 rounded-xl p-5 border border-slate-800">
+                <div class="text-amber-400 mb-3 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>
+                    <h3 class="font-semibold">Real-World Sirens</h3>
+                </div>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                    Emergency sirens alternate between high and low tones. The sudden drop in pitch as they pass helps pedestrians localize the vehicle's direction and realize it has passed, reducing confusion in urban environments.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants
+        const C_SOUND = 343; // Speed of sound in m/s
+        const SIREN_TOGGLE_MS = 500; // Siren high/low toggle interval
+
+        // DOM Elements
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const toggleBtn = document.getElementById('toggleBtn');
+        const speedSlider = document.getElementById('speed');
+        const freqSlider = document.getElementById('freq');
+        const distSlider = document.getElementById('dist');
+        const presetBtns = document.querySelectorAll('.preset-btn');
+        
+        // Readouts
+        const speedVal = document.getElementById('speedVal');
+        const speedMsVal = document.getElementById('speedMsVal');
+        const freqVal = document.getElementById('freqVal');
+        const distVal = document.getElementById('distVal');
+        const hudFreq = document.getElementById('hudFreq');
+        const hudRatio = document.getElementById('hudRatio');
+        const hudDist = document.getElementById('hudDist');
+        const hudState = document.getElementById('hudState');
+        const pitchBar = document.getElementById('pitchBar');
+
+        // State
+        let isRunning = false;
+        let isSimActive = false;
+        let width, height;
+        let lastTime = 0;
+        let frameCount = 0;
+
+        // Physics State
+        let vehicle = {
+            x: -200,
+            y: 0,
+            v: 130 / 3.6, // m/s
+            baseFreq: 960,
+            secondaryFreq: 770
+        };
+        
+        let listener = {
+            x: 0,
+            y: 15 // Distance from road
+        };
+
+        let wavefronts = []; // Array to store emitted wavefronts
+        let currentSirenFreq = vehicle.baseFreq;
+        let lastSirenToggle = 0;
+        let waveEmitTimer = 0;
+
+        // Audio State
+        let audioCtx;
+        let oscillator;
+        let gainNode;
+
+        // Scale factor: pixels per meter
+        const PPM = 5;
+
+        // Resize handler
+        function resize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            // Handle retina displays
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            width = rect.width;
+            height = rect.height;
+            
+            // Re-center listener horizontally
+            listener.x = width / (2 * PPM);
+        }
+
+        window.addEventListener('resize', resize);
+
+        // Audio Setup
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                oscillator = audioCtx.createOscillator();
+                gainNode = audioCtx.createGain();
+                
+                // Add some harmonics for siren feel
+                const real = new Float32Array([0, 1, 0.5, 0.25, 0.1]);
+                const imag = new Float32Array([0, 0, 0, 0, 0]);
+                const wave = audioCtx.createPeriodicWave(real, imag);
+                oscillator.setPeriodicWave(wave);
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                gainNode.gain.value = 0;
+                oscillator.start();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Input Handlers
+        function updateInputs() {
+            vehicle.v = parseFloat(speedSlider.value) / 3.6;
+            vehicle.baseFreq = parseFloat(freqSlider.value);
+            vehicle.secondaryFreq = vehicle.baseFreq * 0.8; // Approximate realistic ratio
+            listener.y = parseFloat(distSlider.value);
+            
+            speedVal.textContent = `${speedSlider.value} km/h`;
+            speedMsVal.textContent = `${vehicle.v.toFixed(1)} m/s`;
+            freqVal.textContent = `${vehicle.baseFreq} Hz`;
+            distVal.textContent = `${listener.y} m`;
+        }
+
+        speedSlider.addEventListener('input', updateInputs);
+        freqSlider.addEventListener('input', updateInputs);
+        distSlider.addEventListener('input', updateInputs);
+
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                speedSlider.value = btn.dataset.speed;
+                distSlider.value = btn.dataset.dist;
+                updateInputs();
+            });
+        });
+
+        toggleBtn.addEventListener('click', () => {
+            if (!isRunning) {
+                initAudio();
+                isRunning = true;
+                isSimActive = true;
+                
+                // Reset simulation
+                vehicle.x = -width / PPM; // Start off screen
+                wavefronts = [];
+                lastTime = performance.now();
+                lastSirenToggle = lastTime;
+                
+                toggleBtn.innerHTML = `
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 002 0V8a1 1 0 00-1-1zm4 0a1 1 0 00-1 1v4a1 1 0 002 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                    <span>Stop Simulation</span>
+                `;
+                toggleBtn.className = "w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition-colors flex items-center justify-center gap-2";
+                
+                requestAnimationFrame(loop);
+            } else {
+                isRunning = false;
+                isSimActive = false;
+                if (gainNode) gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+                
+                toggleBtn.innerHTML = `
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" fill-rule="evenodd"></path></svg>
+                    <span>Start Simulation</span>
+                `;
+                toggleBtn.className = "w-full py-3 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20";
+                
+                hudFreq.textContent = "0";
+                hudFreq.className = "text-3xl font-light text-slate-600 data-readout";
+                hudRatio.textContent = "1.00x";
+                hudDist.textContent = "0.0 m";
+                hudState.textContent = "IDLE";
+                hudState.className = "text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-slate-500";
+                pitchBar.style.transform = `scaleX(1)`;
+                pitchBar.className = "h-full bg-slate-600 w-1/2 origin-center transition-transform duration-75";
+                
+                draw(); // Draw final idle frame
+            }
+        });
+
+        // Main Loop
+        function loop(timestamp) {
+            if (!isRunning) return;
+            
+            const dt = (timestamp - lastTime) / 1000; // seconds
+            lastTime = timestamp;
+
+            updatePhysics(dt, timestamp);
+            draw();
+
+            requestAnimationFrame(loop);
+        }
+
+        function updatePhysics(dt, timestamp) {
+            if (!isSimActive) return;
+
+            // Move vehicle
+            vehicle.x += vehicle.v * dt;
+
+            // Siren toggle logic
+            if (timestamp - lastSirenToggle > SIREN_TOGGLE_MS) {
+                currentSirenFreq = (currentSirenFreq === vehicle.baseFreq) ? vehicle.secondaryFreq : vehicle.baseFreq;
+                lastSirenToggle = timestamp;
+            }
+
+            // Emit wavefronts (visually)
+            waveEmitTimer -= dt;
+            if (waveEmitTimer <= 0) {
+                wavefronts.push({
+                    x: vehicle.x,
+                    y: vehicle.y,
+                    r: 0,
+                    freq: currentSirenFreq,
+                    createdAt: timestamp
+                });
+                // Emit rate depends slightly on frequency for visual effect, but cap it so it's not too dense
+                waveEmitTimer = 0.15; 
+            }
+
+            // Expand and prune wavefronts
+            for (let i = wavefronts.length - 1; i >= 0; i--) {
+                let w = wavefronts[i];
+                w.r += C_SOUND * dt;
+                // Remove if offscreen
+                if (w.r * PPM > width * 1.5) {
+                    wavefronts.splice(i, 1);
+                }
+            }
+
+            // Doppler Calculation
+            // Distance vector from observer to source
+            const dx = vehicle.x - listener.x;
+            const dy = vehicle.y - listener.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            // Angle theta between velocity vector (along x-axis) and source-to-observer vector
+            // We need cos(theta). The source-to-observer vector is (-dx, -dy) relative to source.
+            // Velocity is (v, 0).
+            // cos(theta) = (-dx * v + -dy * 0) / (dist * v) = -dx / dist.
+            // When approaching (dx < 0), -dx/dist is positive.
+            // When receding (dx > 0), -dx/dist is negative.
+            const cosTheta = -dx / dist;
+
+            // f_obs = f_src / (1 - (v/c) * cosTheta)
+            const f_obs = currentSirenFreq / (1 - (vehicle.v / C_SOUND) * cosTheta);
+            const ratio = f_obs / currentSirenFreq;
+
+            // Amplitude (inverse square law, clamped)
+            // Scale distance so it sounds good within simulation bounds
+            let amp = 100 / (dist * dist + 10);
+            amp = Math.min(Math.max(amp, 0.0), 0.5); // Max volume 0.5 to prevent clipping
+
+            // Update Audio
+            if (audioCtx && isRunning) {
+                // Smoothly update frequency and gain to avoid clicking
+                oscillator.frequency.setTargetAtTime(f_obs, audioCtx.currentTime, 0.05);
+                gainNode.gain.setTargetAtTime(amp, audioCtx.currentTime, 0.05);
+            }
+
+            // Update HUD
+            hudFreq.textContent = Math.round(f_obs);
+            hudRatio.textContent = ratio.toFixed(2) + "x";
+            hudDist.textContent = dist.toFixed(1) + " m";
+
+            if (dx < 0) {
+                hudState.textContent = "APPROACHING";
+                hudState.className = "text-xs font-semibold px-2 py-1 rounded bg-sky-900/50 text-sky-400 border border-sky-800";
+                hudFreq.className = "text-3xl font-light text-sky-400 data-readout";
+                pitchBar.className = "h-full bg-sky-400 w-1/2 origin-left transition-transform duration-75";
+                pitchBar.style.transform = `scaleX(${Math.min((ratio - 1) * 5 + 1, 2)})`;
+            } else {
+                hudState.textContent = "RECEDING";
+                hudState.className = "text-xs font-semibold px-2 py-1 rounded bg-rose-900/50 text-rose-400 border border-rose-800";
+                hudFreq.className = "text-3xl font-light text-rose-400 data-readout";
+                pitchBar.className = "h-full bg-rose-400 w-1/2 origin-left transition-transform duration-75";
+                // Shift bar down
+                pitchBar.style.transform = `scaleX(${Math.max(ratio, 0.1)})`;
+            }
+
+            // Reset condition
+            if (vehicle.x * PPM > width + 500) {
+                // Loop vehicle
+                vehicle.x = -width / PPM;
+                wavefronts = [];
+            }
+        }
+
+        function draw() {
+            // Clear background
+            ctx.fillStyle = '#0b1217'; // slate-950
+            ctx.fillRect(0, 0, width, height);
+
+            // Origin Y for road
+            const roadY = height / 2;
+            const listenerPxY = roadY + listener.y * PPM;
+            const listenerPxX = listener.x * PPM;
+
+            // Draw Road
+            ctx.fillStyle = '#111a22'; // slate-900
+            ctx.fillRect(0, roadY - 15, width, 30);
+            ctx.strokeStyle = '#334155'; // slate-700
+            ctx.setLineDash([20, 20]);
+            ctx.beginPath();
+            ctx.moveTo(0, roadY);
+            ctx.lineTo(width, roadY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw Wavefronts
+            ctx.lineWidth = 1;
+            wavefronts.forEach(w => {
+                const px = w.x * PPM;
+                const py = roadY + w.y * PPM;
+                const pr = w.r * PPM;
+
+                // Color based on if it was emitted when frequency was high or low
+                const isHigh = w.freq === vehicle.baseFreq;
+                
+                ctx.beginPath();
+                ctx.arc(px, py, pr, 0, Math.PI * 2);
+                
+                // Fade out based on radius
+                const alpha = Math.max(0, 1 - (pr / (width * 0.8)));
+                ctx.strokeStyle = isHigh ? `rgba(0, 240, 255, ${alpha * 0.3})` : `rgba(230, 0, 76, ${alpha * 0.3})`;
+                ctx.stroke();
+            });
+
+            // Draw ray from vehicle to listener
+            if (isSimActive) {
+                const vPxX = vehicle.x * PPM;
+                const vPxY = roadY + vehicle.y * PPM;
+
+                ctx.beginPath();
+                ctx.moveTo(vPxX, vPxY);
+                ctx.lineTo(listenerPxX, listenerPxY);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Vehicle Blip
+                ctx.fillStyle = (currentSirenFreq === vehicle.baseFreq) ? '#00f0ff' : '#e6004c';
+                ctx.beginPath();
+                ctx.arc(vPxX, vPxY, 6, 0, Math.PI*2);
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(vPxX, vPxY, 2, 0, Math.PI*2);
+                ctx.fill();
+            }
+
+            // Draw Listener
+            ctx.fillStyle = '#b3e600'; // emerald-500
+            ctx.beginPath();
+            ctx.arc(listenerPxX, listenerPxY, 5, 0, Math.PI*2);
+            ctx.fill();
+            
+            // Listener rings
+            ctx.strokeStyle = '#b3e600';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(listenerPxX, listenerPxY, 12, 0, Math.PI*2);
+            ctx.stroke();
+            
+            // Label
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('LISTENER', listenerPxX, listenerPxY + 25);
+        }
+
+        // Init
+        resize();
+        updateInputs();
+        draw();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-slate-950 text-slate-200">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diffraction Grating & Spectroscopy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: { 850: '#151e2e' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { margin: 0; padding: 0; overflow-x: hidden; font-family: system-ui, -apple-system, sans-serif; }
+        .canvas-container { position: relative; width: 100%; height: 60vh; background: #000; }
+        canvas { display: block; width: 100%; height: 100%; }
+        .glass-panel { background: rgba(17, 26, 34, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 0.5); }
+        input[type=range] { accent-color: #00f0ff; }
+        .mono-font { font-family: monospace; }
+    </style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900 z-10 relative">
+        <h1 class="text-xl font-bold text-sky-400">Diffraction Grating & Spectroscopy</h1>
+        <button id="btnAudio" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded text-white font-medium transition-colors">
+            Enable Audio (Sonification)
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col md:flex-row relative">
+        <!-- Visualization Area -->
+        <div class="flex-1 flex flex-col relative">
+            <div class="canvas-container relative" id="canvasWrapper">
+                <canvas id="simCanvas"></canvas>
+                <!-- HUD -->
+                <div class="absolute top-4 left-4 glass-panel p-4 rounded-xl text-sm w-64 pointer-events-none">
+                    <h3 class="text-sky-400 font-semibold mb-2 border-b border-slate-700 pb-1">Physics HUD</h3>
+                    <div class="grid grid-cols-2 gap-2 text-slate-300 mono-font">
+                        <div>Lines/mm:</div><div id="hudLines" class="text-right text-emerald-400">---</div>
+                        <div>Slit Spacing d:</div><div id="hudSpacing" class="text-right text-emerald-400">--- μm</div>
+                        <div>Slit Count (N):</div><div id="hudN" class="text-right text-emerald-400">---</div>
+                        <div>Resolving R:</div><div id="hudR" class="text-right text-emerald-400">---</div>
+                        <div>1st Order θ:</div><div id="hudTheta" class="text-right text-emerald-400">---°</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cards -->
+            <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-950">
+                <div class="glass-panel p-5 rounded-2xl">
+                    <h3 class="text-sky-400 font-bold mb-2">1. Interference Sharpening</h3>
+                    <p class="text-sm text-slate-400">With 2 slits (Young's experiment), interference produces broad, fuzzy fringes. As the number of illuminated slits (N) increases, the primary maxima sharpen dramatically while secondary maxima disappear. Peak width is proportional to 1/N.</p>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl">
+                    <h3 class="text-sky-400 font-bold mb-2">2. Stellar Fingerprints</h3>
+                    <p class="text-sm text-slate-400">Chemical elements emit or absorb light at specific discrete wavelengths determined by their atomic energy levels. Passing starlight through a grating reveals these specific spectral lines, acting as a chemical barcode across light-years.</p>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl">
+                    <h3 class="text-sky-400 font-bold mb-2">3. Dispersion & Resolving Power</h3>
+                    <p class="text-sm text-slate-400">Dispersion (spreading out colors) depends on grating density (lines/mm). Resolving power R = λ/Δλ = m*N measures the ability to distinguish closely spaced spectral lines. High N is critical for precision spectroscopy.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Sidebar -->
+        <aside class="w-full md:w-80 bg-slate-900 border-l border-slate-800 p-5 overflow-y-auto z-10 flex flex-col gap-6">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-100 mb-4">Simulation Controls</h2>
+                
+                <div class="space-y-4">
+                    <!-- Presets -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Presets</label>
+                        <select id="selPreset" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-sm text-slate-200 outline-none focus:border-sky-500">
+                            <option value="custom">Custom</option>
+                            <option value="youngs">Young's Double Slit (N=2)</option>
+                            <option value="coarse">Coarse Grating (N=10)</option>
+                            <option value="spectrometer">Lab Spectrometer (N=300)</option>
+                            <option value="hydrogen">Hydrogen Balmer Lines</option>
+                            <option value="solar">Solar Fraunhofer Spectrum</option>
+                        </select>
+                    </div>
+
+                    <!-- View Toggle -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">View Mode</label>
+                        <div class="flex bg-slate-800 rounded p-1">
+                            <button id="viewScreen" class="flex-1 py-1 px-2 text-xs rounded bg-sky-600 text-white font-medium transition-colors">Screen</button>
+                            <button id="viewIntensity" class="flex-1 py-1 px-2 text-xs rounded text-slate-400 hover:text-slate-200 transition-colors">I(θ) Plot</button>
+                            <button id="viewTop" class="flex-1 py-1 px-2 text-xs rounded text-slate-400 hover:text-slate-200 transition-colors">Top-Down</button>
+                        </div>
+                    </div>
+
+                    <!-- Light Source -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Light Source</label>
+                        <select id="selSource" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-sm text-slate-200 outline-none focus:border-sky-500">
+                            <option value="white">White Light (Full Spectrum)</option>
+                            <option value="laser532">Laser (532nm Green)</option>
+                            <option value="laser633">Laser (633nm Red)</option>
+                            <option value="hydrogen">Hydrogen Lamp</option>
+                            <option value="helium">Helium Lamp</option>
+                            <option value="sodium">Sodium Vapor Lamp</option>
+                            <option value="star">Distant Star (Absorption)</option>
+                        </select>
+                    </div>
+
+                    <!-- Sliders -->
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <label class="text-sm font-medium text-slate-300">Grating Density</label>
+                            <span id="valDensity" class="text-sm text-sky-400 mono-font">600 L/mm</span>
+                        </div>
+                        <input type="range" id="sldDensity" min="100" max="1200" step="10" value="600" class="w-full">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <label class="text-sm font-medium text-slate-300">Slit Count (N)</label>
+                            <span id="valN" class="text-sm text-sky-400 mono-font">300</span>
+                        </div>
+                        <input type="range" id="sldN" min="2" max="500" step="1" value="300" class="w-full">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 mt-4">Diffraction Order (m)</label>
+                        <div class="flex bg-slate-800 rounded p-1">
+                            <button id="order0" class="flex-1 py-1 px-2 text-xs rounded text-slate-400 hover:text-slate-200 transition-colors">m=0</button>
+                            <button id="order1" class="flex-1 py-1 px-2 text-xs rounded bg-sky-600 text-white font-medium transition-colors">m=1</button>
+                            <button id="order2" class="flex-1 py-1 px-2 text-xs rounded text-slate-400 hover:text-slate-200 transition-colors">m=2</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-auto pt-4 border-t border-slate-800">
+                <p class="text-xs text-slate-500 mb-2">Interactive Sonification: Hover over spectral lines on the Screen or I(θ) view to hear them!</p>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        // --- SIMULATION LOGIC ---
+        // Constants & Data
+        const C = 299792458;
+        const LIGHT_SOURCES = {
+            'white': { type: 'continuous', range: [380, 750] },
+            'laser532': { type: 'discrete', lines: [{ wl: 532, intensity: 1.0, name: 'Laser' }] },
+            'laser633': { type: 'discrete', lines: [{ wl: 633, intensity: 1.0, name: 'Laser' }] },
+            'hydrogen': { type: 'discrete', lines: [
+                { wl: 410.2, intensity: 0.3, name: 'H-delta' },
+                { wl: 434.0, intensity: 0.5, name: 'H-gamma' },
+                { wl: 486.1, intensity: 0.8, name: 'H-beta' },
+                { wl: 656.3, intensity: 1.0, name: 'H-alpha' }
+            ] },
+            'helium': { type: 'discrete', lines: [
+                { wl: 388.9, intensity: 0.6 },
+                { wl: 447.1, intensity: 0.8 },
+                { wl: 501.6, intensity: 0.7 },
+                { wl: 587.6, intensity: 1.0 }, // Yellow D3
+                { wl: 667.8, intensity: 0.5 },
+                { wl: 706.5, intensity: 0.4 }
+            ] },
+            'sodium': { type: 'discrete', lines: [
+                { wl: 589.0, intensity: 1.0, name: 'D2' },
+                { wl: 589.6, intensity: 0.8, name: 'D1' }
+            ] },
+            'star': { type: 'absorption', range: [380, 750], lines: [
+                { wl: 393.4, width: 2.0, name: 'Ca K' },
+                { wl: 396.8, width: 2.0, name: 'Ca H' },
+                { wl: 434.0, width: 0.5, name: 'H-gamma' },
+                { wl: 486.1, width: 1.0, name: 'H-beta' },
+                { wl: 518.4, width: 0.5, name: 'Mg b1' },
+                { wl: 527.0, width: 0.5, name: 'Fe E' },
+                { wl: 589.0, width: 1.0, name: 'Na D2' },
+                { wl: 589.6, width: 0.8, name: 'Na D1' },
+                { wl: 656.3, width: 1.5, name: 'H-alpha' }
+            ] }
+        };
+
+        // State
+        const state = {
+            linesPerMm: 600,
+            N: 300,
+            source: 'white',
+            order: 1,
+            view: 'screen', // screen, intensity, top
+            audioEnabled: false,
+            mouseX: -1,
+            mouseY: -1,
+            hoverWavelength: null
+        };
+
+        // Elements
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const wrapper = document.getElementById('canvasWrapper');
+
+        const domSldDensity = document.getElementById('sldDensity');
+        const domValDensity = document.getElementById('valDensity');
+        const domSldN = document.getElementById('sldN');
+        const domValN = document.getElementById('valN');
+        const domSelSource = document.getElementById('selSource');
+        const domSelPreset = document.getElementById('selPreset');
+        
+        const views = {
+            screen: document.getElementById('viewScreen'),
+            intensity: document.getElementById('viewIntensity'),
+            top: document.getElementById('viewTop')
+        };
+        const orders = {
+            0: document.getElementById('order0'),
+            1: document.getElementById('order1'),
+            2: document.getElementById('order2')
+        };
+
+        // Audio
+        let audioCtx;
+        let oscillators = [];
+        let masterGain;
+
+        function initAudio() {
+            if (audioCtx) return;
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.2;
+            masterGain.connect(audioCtx.destination);
+            state.audioEnabled = true;
+            document.getElementById('btnAudio').textContent = 'Audio Enabled';
+            document.getElementById('btnAudio').classList.replace('bg-emerald-600', 'bg-emerald-500');
+            document.getElementById('btnAudio').classList.add('cursor-default', 'opacity-75');
+        }
+
+        document.getElementById('btnAudio').addEventListener('click', initAudio);
+
+        // Convert wavelength (nm) to RGB string
+        function wlToRGB(Wavelength) {
+            let R, G, B, alpha;
+            let wl = Wavelength;
+            if (wl >= 380 && wl < 440) {
+                R = -(wl - 440) / (440 - 380); G = 0.0; B = 1.0;
+            } else if (wl >= 440 && wl < 490) {
+                R = 0.0; G = (wl - 440) / (490 - 440); B = 1.0;
+            } else if (wl >= 490 && wl < 510) {
+                R = 0.0; G = 1.0; B = -(wl - 510) / (510 - 490);
+            } else if (wl >= 510 && wl < 580) {
+                R = (wl - 510) / (580 - 510); G = 1.0; B = 0.0;
+            } else if (wl >= 580 && wl < 645) {
+                R = 1.0; G = -(wl - 645) / (645 - 580); B = 0.0;
+            } else if (wl >= 645 && wl <= 780) {
+                R = 1.0; G = 0.0; B = 0.0;
+            } else {
+                R = 0.0; G = 0.0; B = 0.0;
+            }
+
+            if (wl > 780 || wl < 380) {
+                alpha = 0.0;
+            } else if (wl > 700) {
+                alpha = (780 - wl) / (780 - 700);
+            } else if (wl < 420) {
+                alpha = (wl - 380) / (420 - 380);
+            } else {
+                alpha = 1.0;
+            }
+            
+            return `rgba(${Math.round(R * 255)}, ${Math.round(G * 255)}, ${Math.round(B * 255)}, ${alpha})`;
+        }
+
+        function resize() {
+            const rect = wrapper.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            draw();
+        }
+        window.addEventListener('resize', resize);
+
+        function updateUI() {
+            domValDensity.textContent = state.linesPerMm + ' L/mm';
+            domValN.textContent = state.N;
+            
+            for (let v in views) {
+                if (v === state.view) {
+                    views[v].className = "flex-1 py-1 px-2 text-xs rounded bg-sky-600 text-white font-medium transition-colors";
+                } else {
+                    views[v].className = "flex-1 py-1 px-2 text-xs rounded text-slate-400 hover:text-slate-200 transition-colors";
+                }
+            }
+            for (let o in orders) {
+                if (parseInt(o) === state.order) {
+                    orders[o].className = "flex-1 py-1 px-2 text-xs rounded bg-sky-600 text-white font-medium transition-colors";
+                } else {
+                    orders[o].className = "flex-1 py-1 px-2 text-xs rounded text-slate-400 hover:text-slate-200 transition-colors";
+                }
+            }
+
+            // Update HUD
+            const d = 1000 / state.linesPerMm; // d in um
+            document.getElementById('hudLines').textContent = state.linesPerMm;
+            document.getElementById('hudSpacing').textContent = d.toFixed(2) + ' μm';
+            document.getElementById('hudN').textContent = state.N;
+            document.getElementById('hudR').textContent = (state.order * state.N).toFixed(0);
+            
+            const lambda_m = 500e-9;
+            const d_m = d * 1e-6;
+            const sinTheta = (state.order * lambda_m) / d_m;
+            if (Math.abs(sinTheta) <= 1) {
+                document.getElementById('hudTheta').textContent = (Math.asin(sinTheta) * 180 / Math.PI).toFixed(2) + '° (500nm)';
+            } else {
+                document.getElementById('hudTheta').textContent = 'N/A';
+            }
+        }
+
+        domSldDensity.addEventListener('input', e => { state.linesPerMm = parseInt(e.target.value); domSelPreset.value = 'custom'; updateUI(); draw(); });
+        domSldN.addEventListener('input', e => { state.N = parseInt(e.target.value); domSelPreset.value = 'custom'; updateUI(); draw(); });
+        domSelSource.addEventListener('change', e => { state.source = e.target.value; domSelPreset.value = 'custom'; draw(); });
+        
+        for (let v in views) {
+            views[v].addEventListener('click', () => { state.view = v; updateUI(); draw(); });
+        }
+        for (let o in orders) {
+            orders[o].addEventListener('click', () => { state.order = parseInt(o); updateUI(); draw(); });
+        }
+
+        domSelPreset.addEventListener('change', e => {
+            const val = e.target.value;
+            if (val === 'youngs') { state.N = 2; state.linesPerMm = 100; state.source = 'laser532'; state.view = 'intensity'; }
+            if (val === 'coarse') { state.N = 10; state.linesPerMm = 200; state.source = 'white'; state.view = 'screen'; }
+            if (val === 'spectrometer') { state.N = 300; state.linesPerMm = 600; state.source = 'white'; state.view = 'screen'; }
+            if (val === 'hydrogen') { state.N = 400; state.linesPerMm = 800; state.source = 'hydrogen'; state.view = 'screen'; state.order = 1; }
+            if (val === 'solar') { state.N = 500; state.linesPerMm = 1000; state.source = 'star'; state.view = 'screen'; state.order = 1; }
+            
+            domSldDensity.value = state.linesPerMm;
+            domSldN.value = state.N;
+            domSelSource.value = state.source;
+            updateUI();
+            draw();
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            state.mouseX = e.clientX - rect.left;
+            state.mouseY = e.clientY - rect.top;
+            draw();
+        });
+        canvas.addEventListener('mouseleave', () => {
+            state.mouseX = -1;
+            state.mouseY = -1;
+            updateAudio([]);
+            draw();
+        });
+
+        function playFrequency(freq, vol) {
+            if (!audioCtx) return null;
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.value = vol;
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start();
+            return { osc, gain };
+        }
+
+        function updateAudio(intensities) {
+            if (!audioCtx || !state.audioEnabled) return;
+            
+            // Cleanup old
+            oscillators.forEach(o => {
+                if (o) {
+                    o.gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+                    setTimeout(() => { try { o.osc.stop(); o.osc.disconnect(); } catch(e){} }, 100);
+                }
+            });
+            oscillators = [];
+
+            if (intensities && intensities.length > 0) {
+                // Map intensity to volume, wavelength to frequency
+                intensities.forEach(line => {
+                    if (line.intensity > 0.05) {
+                        let freq = 200 + ((750 - line.wl) / (750 - 380)) * 600;
+                        oscillators.push(playFrequency(freq, line.intensity * 0.5));
+                    }
+                });
+            }
+        }
+
+        function intensityFunction(theta, lambda, d, a, N) {
+            let k = (Math.PI / lambda) * Math.sin(theta);
+            let beta = a * k;
+            let gamma = d * k;
+            
+            let term1 = 1;
+            if (Math.abs(beta) > 1e-6) term1 = Math.pow(Math.sin(beta) / beta, 2);
+            
+            let term2 = 1;
+            if (Math.abs(gamma) > 1e-6) {
+                if (Math.abs(gamma % Math.PI) < 1e-6) {
+                    term2 = Math.pow(N, 2);
+                } else {
+                    term2 = Math.pow(Math.sin(N * gamma) / Math.sin(gamma), 2);
+                }
+            } else {
+                term2 = Math.pow(N, 2);
+            }
+            
+            return term1 * term2 / Math.pow(N, 2);
+        }
+
+        function getDiffractionAngle(lambda_m, order, d_m) {
+            let sinTheta = (order * lambda_m) / d_m;
+            if (Math.abs(sinTheta) > 1) return null;
+            return Math.asin(sinTheta);
+        }
+
+        function draw() {
+            const w = canvas.clientWidth;
+            const h = canvas.clientHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            const sourceData = LIGHT_SOURCES[state.source];
+            const d_m = (1 / state.linesPerMm) * 1e-3;
+            const a_m = d_m * 0.5;
+            
+            let centerAngle = 0;
+            let angleRange = 0.5;
+            if (state.order !== 0) {
+                const midWl = 550e-9;
+                let midTheta = getDiffractionAngle(midWl, state.order, d_m);
+                if (midTheta !== null) centerAngle = midTheta;
+                
+                let thetaRed = getDiffractionAngle(750e-9, state.order, d_m);
+                let thetaBlue = getDiffractionAngle(380e-9, state.order, d_m);
+                if (thetaRed !== null && thetaBlue !== null) {
+                    angleRange = Math.abs(thetaRed - thetaBlue) * 2;
+                }
+            }
+            if (angleRange < 0.1) angleRange = 0.1;
+            
+            let hoverIntensities = [];
+
+            if (state.view === 'screen') {
+                const screenY = h / 2;
+                const screenHeight = h * 0.6;
+                
+                if (sourceData.type === 'continuous') {
+                    for (let x = 0; x < w; x+=2) {
+                        let theta = centerAngle + ((x - w/2) / w) * angleRange;
+                        let r=0, g=0, b=0;
+                        let samples = 20;
+                        for(let i=0; i<samples; i++) {
+                            let wl = 380 + (i / samples) * (750 - 380);
+                            let I = intensityFunction(theta, wl*1e-9, d_m, a_m, state.N);
+                            let rgb = wlToRGB(wl);
+                            let m = rgb.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+                            if (m) {
+                                r += parseInt(m[1]) * I * parseFloat(m[4]);
+                                g += parseInt(m[2]) * I * parseFloat(m[4]);
+                                b += parseInt(m[3]) * I * parseFloat(m[4]);
+                            }
+                        }
+                        let maxColor = Math.max(r, g, b);
+                        if (maxColor > 255) { r = r/maxColor*255; g = g/maxColor*255; b = b/maxColor*255; }
+                        ctx.fillStyle = `rgb(${r},${g},${b})`;
+                        ctx.fillRect(x, screenY - screenHeight/2, 2, screenHeight);
+                    }
+                } else if (sourceData.type === 'discrete') {
+                    sourceData.lines.forEach(line => {
+                        let theta = getDiffractionAngle(line.wl * 1e-9, state.order, d_m);
+                        if (theta !== null) {
+                            let x = w/2 + ((theta - centerAngle) / angleRange) * w;
+                            let dTheta = line.wl*1e-9 / (state.N * d_m * Math.cos(theta));
+                            let lineWidthPix = Math.max(1, (dTheta / angleRange) * w * 2);
+                            
+                            if (x > 0 && x < w) {
+                                ctx.fillStyle = wlToRGB(line.wl);
+                                ctx.shadowBlur = 10;
+                                ctx.shadowColor = ctx.fillStyle;
+                                ctx.fillRect(x - lineWidthPix/2, screenY - screenHeight/2, lineWidthPix, screenHeight);
+                                ctx.shadowBlur = 0;
+                                
+                                if (line.name) {
+                                    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                                    ctx.font = '10px sans-serif';
+                                    ctx.fillText(`${line.name} (${line.wl}nm)`, x, screenY + screenHeight/2 + 15);
+                                }
+                            }
+                        }
+                    });
+                } else if (sourceData.type === 'absorption') {
+                    for (let x = 0; x < w; x+=2) {
+                        let theta = centerAngle + ((x - w/2) / w) * angleRange;
+                        let r=0, g=0, b=0;
+                        let samples = 20;
+                        for(let i=0; i<samples; i++) {
+                            let wl = 380 + (i / samples) * (750 - 380);
+                            let I = intensityFunction(theta, wl*1e-9, d_m, a_m, state.N);
+                            let absorb = 0;
+                            sourceData.lines.forEach(line => {
+                                let dist = Math.abs(wl - line.wl);
+                                if (dist < line.width * 1.5) {
+                                    absorb = Math.max(absorb, Math.exp(-(dist*dist)/(line.width*line.width)));
+                                }
+                            });
+                            I *= (1 - absorb);
+
+                            let rgb = wlToRGB(wl);
+                            let m = rgb.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+                            if (m) {
+                                r += parseInt(m[1]) * I * parseFloat(m[4]);
+                                g += parseInt(m[2]) * I * parseFloat(m[4]);
+                                b += parseInt(m[3]) * I * parseFloat(m[4]);
+                            }
+                        }
+                        let maxColor = Math.max(r, g, b);
+                        if (maxColor > 255) { r = r/maxColor*255; g = g/maxColor*255; b = b/maxColor*255; }
+                        ctx.fillStyle = `rgb(${r},${g},${b})`;
+                        ctx.fillRect(x, screenY - screenHeight/2, 2, screenHeight);
+                    }
+                    
+                    sourceData.lines.forEach(line => {
+                        let theta = getDiffractionAngle(line.wl * 1e-9, state.order, d_m);
+                        if (theta !== null) {
+                            let x = w/2 + ((theta - centerAngle) / angleRange) * w;
+                            if (x > 0 && x < w && line.name) {
+                                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                                ctx.font = '10px sans-serif';
+                                ctx.fillText(line.name, x, screenY + screenHeight/2 + 15);
+                            }
+                        }
+                    });
+                }
+
+                if (state.mouseX > 0 && state.mouseY > screenY - screenHeight/2 && state.mouseY < screenY + screenHeight/2) {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+                    ctx.beginPath();
+                    ctx.moveTo(state.mouseX, screenY - screenHeight/2);
+                    ctx.lineTo(state.mouseX, screenY + screenHeight/2);
+                    ctx.stroke();
+
+                    let thetaHover = centerAngle + ((state.mouseX - w/2) / w) * angleRange;
+                    
+                    if (sourceData.type === 'discrete') {
+                        sourceData.lines.forEach(line => {
+                            let expectedTheta = getDiffractionAngle(line.wl * 1e-9, state.order, d_m);
+                            if (expectedTheta !== null) {
+                                let dTheta = line.wl*1e-9 / (state.N * d_m * Math.cos(expectedTheta));
+                                if (Math.abs(thetaHover - expectedTheta) < Math.max(dTheta * 2, angleRange*0.01)) {
+                                    hoverIntensities.push({ wl: line.wl, intensity: line.intensity });
+                                }
+                            }
+                        });
+                    } else if (sourceData.type === 'continuous') {
+                        let sinThetaHover = Math.sin(thetaHover);
+                        let wlHover = (sinThetaHover * d_m) / (state.order || 1) * 1e9;
+                        if (wlHover >= 380 && wlHover <= 750) {
+                            hoverIntensities.push({ wl: wlHover, intensity: 1.0 });
+                        }
+                    } else if (sourceData.type === 'absorption') {
+                        let sinThetaHover = Math.sin(thetaHover);
+                        let wlHover = (sinThetaHover * d_m) / (state.order || 1) * 1e9;
+                        if (wlHover >= 380 && wlHover <= 750) {
+                            let absorb = 0;
+                            sourceData.lines.forEach(line => {
+                                let dist = Math.abs(wlHover - line.wl);
+                                if (dist < line.width * 2) {
+                                    absorb = Math.max(absorb, Math.exp(-(dist*dist)/(line.width*line.width)));
+                                }
+                            });
+                            hoverIntensities.push({ wl: wlHover, intensity: 1 - absorb });
+                        }
+                    }
+                }
+
+            } else if (state.view === 'intensity') {
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.beginPath(); ctx.moveTo(0, h-40); ctx.lineTo(w, h-40); ctx.stroke();
+                
+                let plotLines = [];
+                if (sourceData.type === 'discrete') plotLines = sourceData.lines;
+                else if (sourceData.type === 'continuous' || sourceData.type === 'absorption') plotLines = [{wl: 550, intensity: 1.0}];
+                
+                plotLines.forEach(line => {
+                    ctx.strokeStyle = wlToRGB(line.wl);
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    for (let x = 0; x < w; x++) {
+                        let theta = centerAngle + ((x - w/2) / w) * angleRange;
+                        let I = intensityFunction(theta, line.wl*1e-9, d_m, a_m, state.N);
+                        let y = (h - 40) - I * (h - 80) * line.intensity;
+                        if (x === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                });
+                
+                if (state.mouseX > 0) {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                    ctx.beginPath(); ctx.moveTo(state.mouseX, 0); ctx.lineTo(state.mouseX, h); ctx.stroke();
+                    
+                    let thetaHover = centerAngle + ((state.mouseX - w/2) / w) * angleRange;
+                    plotLines.forEach(line => {
+                        let I = intensityFunction(thetaHover, line.wl*1e-9, d_m, a_m, state.N);
+                        if (I > 0.05) hoverIntensities.push({ wl: line.wl, intensity: I });
+                    });
+                }
+            } else if (state.view === 'top') {
+                const gx = w * 0.1;
+                const gy = h / 2;
+                
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.moveTo(gx, gy - 50); ctx.lineTo(gx, gy + 50); ctx.stroke();
+                
+                ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(gx, gy); ctx.stroke();
+                
+                let plotLines = [];
+                if (sourceData.type === 'discrete') plotLines = sourceData.lines;
+                else plotLines = [{wl: 400}, {wl: 550}, {wl: 700}];
+                
+                plotLines.forEach(line => {
+                    let theta = getDiffractionAngle(line.wl * 1e-9, state.order, d_m);
+                    if (theta !== null) {
+                        ctx.strokeStyle = wlToRGB(line.wl);
+                        ctx.beginPath();
+                        ctx.moveTo(gx, gy);
+                        let dx = Math.cos(theta) * (w - gx);
+                        let dy = Math.sin(theta) * (w - gx);
+                        ctx.lineTo(gx + dx, gy + dy);
+                        ctx.stroke();
+                    }
+                });
+            }
+
+            updateAudio(hoverIntensities);
+        }
+
+        updateUI();
+        setTimeout(() => { resize(); }, 100);
+    </script>
+</body>
+</html>

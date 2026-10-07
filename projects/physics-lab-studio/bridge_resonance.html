@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tacoma Narrows Bridge Aeroelastic Flutter Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; overflow-x: hidden; }
+        .data-readout { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        canvas { touch-action: none; }
+        
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px; width: 16px;
+            border-radius: 50%;
+            background: #00f0ff;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+        
+        .card { backdrop-filter: blur(8px); }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="p-4 border-b border-slate-800 bg-slate-900/80 sticky top-0 z-10 flex justify-between items-center">
+        <div>
+            <h1 class="text-xl font-bold text-sky-400">Tacoma Narrows Bridge Simulator</h1>
+            <p class="text-sm text-slate-400">Aeroelastic Flutter & Negative Aerodynamic Damping</p>
+        </div>
+        <button id="btn-audio" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium transition-colors">
+            Enable Audio Engine
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-4 gap-4 grid grid-cols-1 lg:grid-cols-4 max-w-7xl mx-auto w-full">
+        
+        <!-- Controls Sidebar -->
+        <aside class="col-span-1 flex flex-col gap-4">
+            <!-- Controls Panel -->
+            <div class="card bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+                <h2 class="text-lg font-semibold mb-4 text-slate-100 border-b border-slate-800 pb-2">Physics Controls</h2>
+                
+                <div class="mb-4">
+                    <label class="block text-sm mb-1 text-slate-300">Wind Speed (mph): <span id="val-wind" class="data-readout text-sky-400">0</span></label>
+                    <input type="range" id="slider-wind" min="0" max="80" step="0.5" value="0">
+                    <div class="flex justify-between text-xs text-slate-500 mt-1">
+                        <span>0</span><span class="text-rose-500">Flutter ~40</span><span>80</span>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm mb-1 text-slate-300">Structural Damping ζ_s:</label>
+                    <input type="range" id="slider-damping" min="0.001" max="0.1" step="0.001" value="0.005">
+                    <div class="flex justify-between text-xs text-slate-500 mt-1">
+                        <span>Low (1940)</span><span>High (Retrofit)</span>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm mb-1 text-slate-300">Torsional Stiffness k_α:</label>
+                    <input type="range" id="slider-stiff" min="0.5" max="5.0" step="0.1" value="1.0">
+                    <div class="flex justify-between text-xs text-slate-500 mt-1">
+                        <span>Flexible deck</span><span>Stiff Truss</span>
+                    </div>
+                </div>
+                
+                <button id="btn-reset" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors mt-2 text-sm">
+                    Reset Bridge Structure
+                </button>
+            </div>
+
+            <!-- Presets -->
+            <div class="card bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+                <h2 class="text-lg font-semibold mb-3 text-slate-100 border-b border-slate-800 pb-2">Scenarios</h2>
+                <div class="flex flex-col gap-2">
+                    <button class="preset-btn px-3 py-2 bg-slate-800 hover:bg-sky-900 text-left text-sm rounded-lg transition-colors border border-slate-700" data-wind="15" data-damp="0.005" data-stiff="1.0">Calm Breeze (15 mph)</button>
+                    <button class="preset-btn px-3 py-2 bg-slate-800 hover:bg-sky-900 text-left text-sm rounded-lg transition-colors border border-slate-700" data-wind="38" data-damp="0.005" data-stiff="1.0">Galloping Gertie Morning (38 mph)</button>
+                    <button class="preset-btn px-3 py-2 bg-slate-800 hover:bg-rose-900 text-left text-sm rounded-lg transition-colors border border-rose-900 text-rose-200" data-wind="42" data-damp="0.005" data-stiff="1.0">Catastrophic Flutter (42 mph)</button>
+                    <button class="preset-btn px-3 py-2 bg-slate-800 hover:bg-emerald-900 text-left text-sm rounded-lg transition-colors border border-emerald-900 text-emerald-200" data-wind="80" data-damp="0.08" data-stiff="4.0">Modern Retrofit (80 mph)</button>
+                </div>
+            </div>
+            
+            <!-- View Mode -->
+            <div class="card bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+                <h2 class="text-lg font-semibold mb-3 text-slate-100 border-b border-slate-800 pb-2">View Mode</h2>
+                <div class="flex flex-col gap-2">
+                    <label class="flex items-center gap-2 text-sm cursor-pointer hover:text-sky-400">
+                        <input type="radio" name="viewMode" value="3D" checked class="accent-sky-500"> 3D Span Perspective
+                    </label>
+                    <label class="flex items-center gap-2 text-sm cursor-pointer hover:text-sky-400">
+                        <input type="radio" name="viewMode" value="2D" class="accent-sky-500"> 2D Cross-Section & Vortices
+                    </label>
+                    <label class="flex items-center gap-2 text-sm cursor-pointer hover:text-sky-400">
+                        <input type="radio" name="viewMode" value="Phase" class="accent-sky-500"> Phase Space (α vs α')
+                    </label>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Visualization & HUD -->
+        <section class="col-span-1 lg:col-span-3 flex flex-col gap-4">
+            
+            <!-- Canvas Container -->
+            <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
+                <canvas id="sim-canvas" class="absolute inset-0 w-full h-full"></canvas>
+                
+                <!-- Overlay HUD -->
+                <div class="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none">
+                    <div class="bg-slate-900/80 backdrop-blur-md px-3 py-2 rounded-lg border border-slate-700/50 text-sm">
+                        <span class="text-slate-400">Torsional Amplitude:</span>
+                        <span id="hud-amp" class="data-readout text-sky-400 ml-2 font-bold">0.0°</span>
+                    </div>
+                    <div class="bg-slate-900/80 backdrop-blur-md px-3 py-2 rounded-lg border border-slate-700/50 text-sm">
+                        <span class="text-slate-400">Heave Amplitude:</span>
+                        <span id="hud-heave" class="data-readout text-sky-400 ml-2 font-bold">0.0m</span>
+                    </div>
+                    <div class="bg-slate-900/80 backdrop-blur-md px-3 py-2 rounded-lg border border-slate-700/50 text-sm">
+                        <span class="text-slate-400">Frequency:</span>
+                        <span id="hud-freq" class="data-readout text-emerald-400 ml-2">0.00 Hz</span>
+                    </div>
+                </div>
+                
+                <div class="absolute top-4 right-4 flex flex-col gap-2 pointer-events-none items-end">
+                    <div class="bg-slate-900/80 backdrop-blur-md px-3 py-2 rounded-lg border border-slate-700/50 text-sm">
+                        <span class="text-slate-400">Net Aerodynamic Damping ζ_net:</span>
+                        <span id="hud-damp" class="data-readout text-emerald-400 ml-2 font-bold">+0.005</span>
+                    </div>
+                    <div class="bg-slate-900/80 backdrop-blur-md px-3 py-2 rounded-lg border border-slate-700/50 text-sm">
+                        <span class="text-slate-400">Structural Integrity:</span>
+                        <span id="hud-hp" class="data-readout text-emerald-500 ml-2 font-bold">100%</span>
+                    </div>
+                </div>
+                
+                <div id="collapse-overlay" class="absolute inset-0 bg-red-900/50 backdrop-blur-sm hidden flex-col items-center justify-center pointer-events-none">
+                    <h2 class="text-5xl font-black text-rose-500 drop-shadow-lg mb-2">STRUCTURAL FAILURE</h2>
+                    <p class="text-xl text-white font-semibold">Torsional limit exceeded. The bridge has collapsed.</p>
+                </div>
+            </div>
+
+            <!-- Explainer Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                <div class="card bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+                    <h3 class="font-bold text-sky-400 mb-2 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        The Resonance Myth
+                    </h3>
+                    <p class="text-sm text-slate-300 leading-relaxed">
+                        Textbooks often claim the bridge collapsed due to simple forced resonance (like pushing a swing). However, the wind was a steady 42 mph, not oscillating. The true cause was <strong>aeroelastic flutter</strong>, a self-exciting instability where the twisting bridge extracts energy from the steady wind.
+                    </p>
+                </div>
+                
+                <div class="card bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+                    <h3 class="font-bold text-rose-400 mb-2 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        Negative Damping
+                    </h3>
+                    <p class="text-sm text-slate-300 leading-relaxed">
+                        Normally, damping dissipates energy and stops vibrations. But as wind speed increases, the aerodynamic forces created by the bridge's twisting start acting in the same direction as its velocity. The effective damping becomes negative, causing oscillations to grow exponentially.
+                    </p>
+                </div>
+
+                <div class="card bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+                    <h3 class="font-bold text-emerald-400 mb-2 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        Modern Solutions
+                    </h3>
+                    <p class="text-sm text-slate-300 leading-relaxed">
+                        Modern suspension bridges are designed to prevent flutter. They use deep, stiff trusses instead of solid plate girders, aerodynamic slots in the deck to equalize pressure, and tuned mass dampers to artificially increase structural damping (ζ_s).
+                    </p>
+                </div>
+            </div>
+            
+        </section>
+    </main>
+
+    <script>
+        // Physics Simulation Variables
+        let state = {
+            h: 0, h_v: 0, // Heave (vertical) pos and vel
+            a: 0, a_v: 0, // Alpha (torsional/pitch) pos and vel
+            time: 0,
+            dt: 0.016, // roughly 60fps
+            collapsed: false,
+            hp: 100,
+            windSpeed: 0, // mph
+            viewMode: '3D',
+            phaseHistory: [],
+            lastA: 0,
+            freq: 0,
+            zeroCrossings: []
+        };
+        
+        // Physical Constants (Roughly scaled for demo purposes)
+        const constants = {
+            m: 100, // mass analog
+            I: 50,  // moment of inertia analog
+            k_h: 200, // heave stiffness
+            B: 12, // deck width (meters)
+            rho: 1.225, // air density
+        };
+        
+        let k_a_base = 150; // base torsional stiffness
+        let zeta_s_base = 0.005; // structural damping ratio
+        
+        // Audio Engine Variables
+        let audioCtx;
+        let windNode, windGain, windFilter;
+        let groanOsc, groanGain;
+        let audioEnabled = false;
+
+        // DOM Elements
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        const collapseOverlay = document.getElementById('collapse-overlay');
+        
+        // Resize Canvas
+        function resizeCanvas() {
+            canvas.width = canvas.clientWidth * window.devicePixelRatio;
+            canvas.height = canvas.clientHeight * window.devicePixelRatio;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Audio Setup
+        document.getElementById('btn-audio').addEventListener('click', () => {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Wind noise (white noise passed through lowpass filter)
+                const bufferSize = audioCtx.sampleRate * 2;
+                const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = Math.random() * 2 - 1;
+                }
+                
+                windNode = audioCtx.createBufferSource();
+                windNode.buffer = noiseBuffer;
+                windNode.loop = true;
+                
+                windFilter = audioCtx.createBiquadFilter();
+                windFilter.type = 'lowpass';
+                windFilter.frequency.value = 400;
+                windFilter.Q.value = 2;
+                
+                windGain = audioCtx.createGain();
+                windGain.gain.value = 0;
+                
+                windNode.connect(windFilter);
+                windFilter.connect(windGain);
+                windGain.connect(audioCtx.destination);
+                windNode.start();
+                
+                // Groaning synth
+                groanOsc = audioCtx.createOscillator();
+                groanOsc.type = 'sawtooth';
+                groanOsc.frequency.value = 50;
+                
+                groanGain = audioCtx.createGain();
+                groanGain.gain.value = 0;
+                
+                groanOsc.connect(groanGain);
+                groanGain.connect(audioCtx.destination);
+                groanOsc.start();
+                
+                audioEnabled = true;
+                document.getElementById('btn-audio').classList.replace('bg-emerald-600', 'bg-slate-700');
+                document.getElementById('btn-audio').innerText = 'Audio Active';
+            } else if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        });
+
+        // Trigger collapse sound
+        function playCollapseSound() {
+            if (!audioEnabled || !audioCtx) return;
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1.5);
+            
+            gain.gain.setValueAtTime(1.0, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 1.5);
+            
+            // turn off groans
+            if(groanGain) groanGain.gain.setValueAtTime(0, audioCtx.currentTime);
+        }
+
+        // Update Physics
+        function updatePhysics() {
+            if (state.collapsed) return;
+
+            let v_wind = state.windSpeed * 0.44704; // mph to m/s
+            let k_a = k_a_base * parseFloat(document.getElementById('slider-stiff').value);
+            let zeta_s = parseFloat(document.getElementById('slider-damping').value);
+            
+            // Damping coefficients
+            let c_h = 2 * zeta_s * Math.sqrt(constants.k_h * constants.m);
+            let c_a_struct = 2 * zeta_s * Math.sqrt(k_a * constants.I);
+            
+            // Aerodynamic Forces (Simplified Flutter Derivatives)
+            // Wind adds a negative damping term to torsion based on velocity
+            // flutter threshold around 40mph (18 m/s)
+            let v_crit = 18; 
+            
+            // Aerodynamic torsional damping (becomes negative when v_wind > v_crit)
+            // Simplified model: aerodynamic damping is proportional to v_wind, and negative
+            let aero_damping_coeff = - (v_wind / v_crit) * c_a_struct * 1.5; 
+            if (v_wind < 1) aero_damping_coeff = 0; // No wind, no aero damping
+            
+            let c_a_net = c_a_struct + aero_damping_coeff;
+            
+            // Aerodynamic moment couples with heave and alpha
+            let M_aero = 0.5 * constants.rho * v_wind * v_wind * constants.B * constants.B * (0.1 * state.a);
+            
+            // Add some tiny random turbulence to kickstart oscillations
+            let turbulence = (Math.random() - 0.5) * v_wind * 0.01;
+            
+            // Equations of motion
+            // m h'' + c_h h' + k_h h = 0 (simplified heave, uncoupled for now to focus on torsion)
+            let h_acc = (-c_h * state.h_v - constants.k_h * state.h + turbulence * 10) / constants.m;
+            
+            // I_α α'' + c_α_net α' + k_α α = M_aero + turbulence
+            let a_acc = (-c_a_net * state.a_v - k_a * state.a + M_aero + turbulence) / constants.I;
+            
+            // Euler integration
+            state.h_v += h_acc * state.dt;
+            state.h += state.h_v * state.dt;
+            
+            state.a_v += a_acc * state.dt;
+            state.a += state.a_v * state.dt;
+            
+            state.time += state.dt;
+            
+            // Phase tracking
+            state.phaseHistory.push({a: state.a, v: state.a_v});
+            if(state.phaseHistory.length > 200) state.phaseHistory.shift();
+            
+            // Frequency calculation (zero crossings)
+            if (state.lastA < 0 && state.a >= 0) {
+                state.zeroCrossings.push(state.time);
+                if (state.zeroCrossings.length > 5) state.zeroCrossings.shift();
+                
+                if (state.zeroCrossings.length > 1) {
+                    let period = (state.zeroCrossings[state.zeroCrossings.length-1] - state.zeroCrossings[0]) / (state.zeroCrossings.length - 1);
+                    state.freq = 1 / period;
+                }
+            }
+            state.lastA = state.a;
+            
+            // Calculate effective damping ratio for HUD
+            let net_zeta = c_a_net / (2 * Math.sqrt(k_a * constants.I));
+            
+            // Structural damage if alpha is too high
+            let a_deg = state.a * (180 / Math.PI);
+            if (Math.abs(a_deg) > 15) {
+                state.hp -= (Math.abs(a_deg) - 15) * 0.1;
+            } else if (state.hp < 100) {
+                state.hp += 0.05; // slow heal if not twisting too much
+            }
+            state.hp = Math.min(100, Math.max(0, state.hp));
+            
+            if (state.hp <= 0 && !state.collapsed) {
+                state.collapsed = true;
+                collapseOverlay.classList.remove('hidden');
+                collapseOverlay.classList.add('flex');
+                playCollapseSound();
+            }
+
+            // Update UI
+            document.getElementById('hud-amp').innerText = Math.abs(a_deg).toFixed(1) + '°';
+            document.getElementById('hud-heave').innerText = state.h.toFixed(2) + 'm';
+            document.getElementById('hud-freq').innerText = state.freq.toFixed(2) + ' Hz';
+            
+            let dampEl = document.getElementById('hud-damp');
+            dampEl.innerText = (net_zeta > 0 ? '+' : '') + net_zeta.toFixed(4);
+            dampEl.className = 'data-readout ml-2 font-bold ' + (net_zeta < 0 ? 'text-rose-500' : 'text-emerald-400');
+            
+            let hpEl = document.getElementById('hud-hp');
+            hpEl.innerText = state.hp.toFixed(0) + '%';
+            if(state.hp > 70) hpEl.className = 'data-readout ml-2 font-bold text-emerald-500';
+            else if(state.hp > 30) hpEl.className = 'data-readout ml-2 font-bold text-amber-500';
+            else hpEl.className = 'data-readout ml-2 font-bold text-rose-500';
+
+            // Audio Update
+            if (audioEnabled && !state.collapsed) {
+                // Wind noise based on speed
+                let normWind = Math.min(1, state.windSpeed / 80);
+                windGain.gain.setTargetAtTime(normWind * 0.5, audioCtx.currentTime, 0.1);
+                windFilter.frequency.setTargetAtTime(300 + normWind * 1000, audioCtx.currentTime, 0.1);
+                
+                // Groaning based on torsion and speed
+                let strain = Math.abs(state.a_v) * 2.0;
+                let groanVol = Math.min(1.0, strain);
+                groanGain.gain.setTargetAtTime(groanVol * 0.3, audioCtx.currentTime, 0.05);
+                
+                // Pitch shifting groan
+                groanOsc.frequency.setTargetAtTime(50 + Math.abs(state.a) * 200, audioCtx.currentTime, 0.05);
+            } else if (audioEnabled && state.collapsed) {
+                windGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+                groanGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+            }
+        }
+
+        // Rendering
+        function draw3DView(w, h, cx, cy) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            
+            // Sky/Background
+            ctx.fillStyle = '#0b1217';
+            ctx.fillRect(-cx, -cy, w, h);
+            
+            // Draw suspension cables
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            
+            let segments = 30;
+            let bridgeLength = w * 0.8;
+            let startX = -bridgeLength/2;
+            let dx = bridgeLength / segments;
+            
+            // Deck properties
+            let deckWidth = 100;
+            let maxTwist = state.collapsed ? Math.PI/2 : state.a;
+            
+            // Draw main cables (parabolas)
+            ctx.beginPath();
+            for(let i=0; i<=segments; i++) {
+                let x = startX + i*dx;
+                let nx = (x / (bridgeLength/2));
+                let cableY = -200 + 150 * (nx*nx);
+                if(i===0) ctx.moveTo(x, cableY);
+                else ctx.lineTo(x, cableY);
+            }
+            ctx.stroke();
+
+            // Draw deck and suspenders
+            for(let i=0; i<=segments; i++) {
+                let x = startX + i*dx;
+                let nx = (x / (bridgeLength/2));
+                
+                // Mode shape: sin(pi * (x+L/2)/L) for fundamental torsional mode
+                let modeShape = Math.sin(Math.PI * (i/segments));
+                
+                let localTwist = maxTwist * modeShape;
+                let localHeave = state.h * 10 * modeShape;
+                
+                if (state.collapsed && i > segments/3 && i < 2*segments/3) {
+                    localHeave += 500; // Drop middle section
+                    localTwist += (Math.random()-0.5) * 2;
+                }
+                
+                // Left and right edges of deck in 3D projection (simple isometric-ish)
+                let leftX = x - deckWidth * Math.cos(localTwist) * 0.2;
+                let leftY = localHeave + deckWidth * Math.sin(localTwist);
+                
+                let rightX = x + deckWidth * Math.cos(localTwist) * 0.2;
+                let rightY = localHeave - deckWidth * Math.sin(localTwist);
+                
+                // Cable connection points
+                let cableY = -200 + 150 * (nx*nx);
+                
+                // Draw suspender cables
+                if (!state.collapsed || (i <= segments/3 || i >= 2*segments/3)) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, cableY);
+                    ctx.lineTo(leftX, leftY);
+                    ctx.stroke();
+                }
+
+                // Draw deck segment
+                ctx.fillStyle = '#64748b';
+                ctx.beginPath();
+                ctx.arc(leftX, leftY, 2, 0, Math.PI*2);
+                ctx.arc(rightX, rightY, 2, 0, Math.PI*2);
+                ctx.fill();
+                
+                // connect across
+                ctx.strokeStyle = '#94a3b8';
+                ctx.beginPath();
+                ctx.moveTo(leftX, leftY);
+                ctx.lineTo(rightX, rightY);
+                ctx.stroke();
+            }
+            
+            // Draw towers
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(startX - 20, -250, 40, 400);
+            ctx.fillRect(startX + bridgeLength - 20, -250, 40, 400);
+
+            ctx.restore();
+        }
+
+        function draw2DView(w, h, cx, cy) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            
+            ctx.fillStyle = '#0b1217';
+            ctx.fillRect(-cx, -cy, w, h);
+            
+            let deckWidth = 200;
+            let deckThickness = 20;
+            
+            let angle = state.collapsed ? Math.PI/3 : state.a;
+            let heave = state.collapsed ? 200 : state.h * 15;
+            
+            // Wind particles
+            ctx.fillStyle = 'rgba(0, 240, 255, 0.5)';
+            let windV = state.windSpeed * 2; // visual scaling
+            for(let i=0; i<50; i++) {
+                let px = -cx + (Date.now() * 0.1 * windV + i * 50) % w;
+                let py = (Math.sin(px * 0.01) * 20) + (i % 10 - 5) * 40;
+                ctx.beginPath();
+                ctx.arc(px, py, 2, 0, Math.PI*2);
+                ctx.fill();
+            }
+            
+            // Apply transform for bridge deck
+            ctx.translate(0, heave);
+            ctx.rotate(angle);
+            
+            // Draw deck cross section
+            ctx.fillStyle = '#64748b';
+            ctx.fillRect(-deckWidth/2, -deckThickness/2, deckWidth, deckThickness);
+            
+            // Highlight edges where vortices shed
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(-deckWidth/2 - 5, -deckThickness/2, 5, deckThickness);
+            ctx.fillRect(deckWidth/2, -deckThickness/2, 5, deckThickness);
+            
+            // Draw vortex shedding (crude visualization)
+            if (!state.collapsed && state.windSpeed > 10) {
+                ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+                ctx.lineWidth = 2;
+                
+                // Top leading edge vortex
+                let v_rad = 10 + Math.abs(state.a)*50;
+                ctx.beginPath();
+                ctx.arc(-deckWidth/2, -deckThickness/2 - v_rad, v_rad, 0, Math.PI);
+                ctx.stroke();
+                
+                // trailing edge vortex
+                ctx.beginPath();
+                ctx.arc(deckWidth/2, deckThickness/2 + v_rad, v_rad, Math.PI, Math.PI*2);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function drawPhaseView(w, h, cx, cy) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            
+            ctx.fillStyle = '#0b1217';
+            ctx.fillRect(-cx, -cy, w, h);
+            
+            // Grid
+            ctx.strokeStyle = '#1d2b38';
+            ctx.lineWidth = 1;
+            for(let i = -w/2; i < w/2; i+=50) {
+                ctx.beginPath(); ctx.moveTo(i, -h/2); ctx.lineTo(i, h/2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-w/2, i); ctx.lineTo(w/2, i); ctx.stroke();
+            }
+            
+            // Axes
+            ctx.strokeStyle = '#475569';
+            ctx.beginPath(); ctx.moveTo(-w/2, 0); ctx.lineTo(w/2, 0); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, -h/2); ctx.lineTo(0, h/2); ctx.stroke();
+            
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '12px monospace';
+            ctx.fillText("Angle α", w/2 - 60, -10);
+            ctx.fillText("Velocity α'", 10, -h/2 + 20);
+            
+            // Draw phase history
+            if (state.phaseHistory.length > 0) {
+                let scaleX = 200; // pixels per rad
+                let scaleY = 50;  // pixels per rad/s
+                
+                ctx.strokeStyle = '#00f0ff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for(let i=0; i<state.phaseHistory.length; i++) {
+                    let pt = state.phaseHistory[i];
+                    let px = pt.a * scaleX;
+                    let py = -pt.v * scaleY; // flip y for canvas
+                    
+                    if (i===0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+                
+                // Current point
+                let curr = state.phaseHistory[state.phaseHistory.length-1];
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath();
+                ctx.arc(curr.a * scaleX, -curr.v * scaleY, 5, 0, Math.PI*2);
+                ctx.fill();
+            }
+            
+            ctx.restore();
+        }
+
+        function render() {
+            let w = canvas.width;
+            let h = canvas.height;
+            let cx = w / 2;
+            let cy = h / 2;
+            
+            ctx.clearRect(0, 0, w, h);
+            
+            if (state.viewMode === '3D') {
+                draw3DView(w, h, cx, cy);
+            } else if (state.viewMode === '2D') {
+                draw2DView(w, h, cx, cy);
+            } else if (state.viewMode === 'Phase') {
+                drawPhaseView(w, h, cx, cy);
+            }
+        }
+
+        function loop() {
+            updatePhysics();
+            render();
+            requestAnimationFrame(loop);
+        }
+
+        // Event Listeners
+        const sliderWind = document.getElementById('slider-wind');
+        const valWind = document.getElementById('val-wind');
+        sliderWind.addEventListener('input', (e) => {
+            state.windSpeed = parseFloat(e.target.value);
+            valWind.innerText = state.windSpeed.toFixed(1);
+        });
+
+        document.querySelectorAll('input[name="viewMode"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                state.viewMode = e.target.value;
+            });
+        });
+
+        function resetBridge() {
+            state.h = 0; state.h_v = 0;
+            state.a = 0; state.a_v = 0;
+            state.collapsed = false;
+            state.hp = 100;
+            state.phaseHistory = [];
+            state.zeroCrossings = [];
+            collapseOverlay.classList.add('hidden');
+            collapseOverlay.classList.remove('flex');
+            
+            // Turn off collapse audio if playing
+            if(audioEnabled && windGain && groanGain) {
+                // Audio will resume normal logic in updatePhysics
+            }
+        }
+
+        document.getElementById('btn-reset').addEventListener('click', resetBridge);
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                let ds = e.target.dataset;
+                sliderWind.value = ds.wind;
+                state.windSpeed = parseFloat(ds.wind);
+                valWind.innerText = state.windSpeed.toFixed(1);
+                
+                document.getElementById('slider-damping').value = ds.damp;
+                document.getElementById('slider-stiff').value = ds.stiff;
+                
+                resetBridge();
+            });
+        });
+
+        // Start
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>

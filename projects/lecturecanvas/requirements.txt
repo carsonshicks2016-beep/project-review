@@ -1,0 +1,7 @@
+# LectureCanvas Whisper transcription server.
+#
+# Install with:  python3 -m pip install -r requirements.txt
+# ffmpeg must also be on PATH (macOS: brew install ffmpeg).
+flask>=3.0
+openai-whisper>=20231117
+torch>=2.1

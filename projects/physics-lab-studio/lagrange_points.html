@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lagrange Point & Effective Potential Explorer</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { margin: 0; overflow-x: hidden; background-color: #0b1217; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+        canvas { display: block; width: 100%; height: 100%; border-radius: 1rem; }
+        .hud-font { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        input[type=range] { accent-color: #00f0ff; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #111a22; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 h-screen flex flex-col">
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex flex-col lg:flex-row gap-4 p-4 min-h-0">
+        
+        <!-- Canvas Area -->
+        <div class="flex-1 relative bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden group">
+            <canvas id="simCanvas"></canvas>
+            
+            <!-- Floating Instructions -->
+            <div class="absolute top-4 left-4 bg-slate-950/70 backdrop-blur-md border border-slate-700/50 p-3 rounded-xl pointer-events-none transition-opacity opacity-70 group-hover:opacity-100">
+                <p class="text-sm text-sky-200">🖱️ Click to spawn satellite</p>
+                <p class="text-sm text-sky-200">⌨️ Arrow Keys to apply Delta-V</p>
+            </div>
+            
+            <!-- Audio Init Overlay -->
+            <div id="audioOverlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50">
+                <button id="startAudioBtn" class="px-6 py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-full font-bold shadow-lg shadow-sky-900/50 transition transform hover:scale-105 active:scale-95">
+                    Initialize Audio & Simulation
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="w-full lg:w-80 flex flex-col gap-4 overflow-y-auto pr-2">
+            
+            <!-- Controls Panel -->
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 p-5 shadow-lg flex flex-col gap-4">
+                <h2 class="text-xl font-bold text-sky-400 border-b border-slate-700 pb-2">Simulation Controls</h2>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wider">System Preset</label>
+                    <select id="presetSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-slate-200 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 outline-none">
+                        <option value="sun-earth">Sun-Earth (JWST/SOHO)</option>
+                        <option value="earth-moon">Earth-Moon (Lunar Gateway)</option>
+                        <option value="sun-jupiter">Sun-Jupiter (Trojan Asteroids)</option>
+                        <option value="binary">Equal Binary Star</option>
+                    </select>
+                </div>
+
+                <div>
+                    <div class="flex justify-between">
+                        <label class="block text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wider">Mass Ratio (μ)</label>
+                        <span id="muValue" class="text-xs text-sky-300 hud-font">0.000003</span>
+                    </div>
+                    <input type="range" id="muSlider" min="-6" max="-0.30103" step="0.01" value="-5.52" class="w-full">
+                    <p class="text-[10px] text-slate-500 mt-1">μ = M₂ / (M₁ + M₂)</p>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">View Options</label>
+                    <div class="space-y-2 text-sm">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="showContours" checked class="rounded border-slate-700 bg-slate-950 text-sky-500 focus:ring-sky-500">
+                            <span>Zero-Velocity Contours</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="showLPoints" checked class="rounded border-slate-700 bg-slate-950 text-sky-500 focus:ring-sky-500">
+                            <span>Lagrange Points</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="showTrail" checked class="rounded border-slate-700 bg-slate-950 text-sky-500 focus:ring-sky-500">
+                            <span>Satellite Trajectory</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="pt-2">
+                    <button id="clearSatBtn" class="w-full py-2 bg-slate-800 hover:bg-rose-900/50 hover:text-rose-400 text-slate-300 border border-slate-700 hover:border-rose-800 rounded-lg text-sm transition transition-colors">
+                        Clear Satellite
+                    </button>
+                </div>
+            </div>
+
+            <!-- HUD / Telemetry Panel -->
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 p-5 shadow-lg flex-1 min-h-[250px]">
+                <h2 class="text-xl font-bold text-sky-400 border-b border-slate-700 pb-2 mb-4">Telemetry HUD</h2>
+                
+                <div class="grid grid-cols-2 gap-x-2 gap-y-4 hud-font text-xs">
+                    <div class="col-span-2">
+                        <span class="text-slate-500 block">Position (x, y)</span>
+                        <span id="hudPos" class="text-emerald-400 text-sm">--</span>
+                    </div>
+                    
+                    <div class="col-span-2">
+                        <span class="text-slate-500 block">Velocity (ẋ, ẏ)</span>
+                        <span id="hudVel" class="text-emerald-400 text-sm">--</span>
+                    </div>
+                    
+                    <div>
+                        <span class="text-slate-500 block">Jacobi Const (C_J)</span>
+                        <span id="hudCj" class="text-amber-400 text-sm">--</span>
+                    </div>
+                    
+                    <div>
+                        <span class="text-slate-500 block">Local Gravity (|g|)</span>
+                        <span id="hudG" class="text-amber-400 text-sm">--</span>
+                    </div>
+                    
+                    <div class="col-span-2 mt-2 bg-slate-950 p-2 rounded border border-slate-800">
+                        <span class="text-slate-500 block mb-1">Nearest L-Point</span>
+                        <div class="flex justify-between items-end">
+                            <span id="hudNearestL" class="text-sky-300 font-bold text-lg">None</span>
+                            <span id="hudDistL" class="text-slate-400">Dist: --</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Explainer Cards -->
+    <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-md">
+            <h3 class="text-lg font-bold text-sky-400 mb-2 flex items-center gap-2"><span class="text-xl">⚖️</span> The Five Lagrange Points</h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+                In a two-body rotating system, gravity and centrifugal forces perfectly balance at 5 specific locations. 
+                <strong class="text-rose-400">L1, L2, and L3</strong> are <em>saddle points</em> (unstable like balancing a marble on a saddle). 
+                <strong class="text-emerald-400">L4 and L5</strong> are potential peaks, but curiously stabilized by the Coriolis force if the mass ratio is small enough (μ < 0.0385), forming stable traps for Trojan asteroids.
+            </p>
+        </div>
+        
+        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-md">
+            <h3 class="text-lg font-bold text-sky-400 mb-2 flex items-center gap-2"><span class="text-xl">🔭</span> Why L2 for JWST?</h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+                The James Webb Space Telescope orbits <strong class="text-sky-300">L2</strong> (behind Earth relative to the Sun). Because it's further out, it should orbit slower than Earth, but Earth's extra gravitational pull speeds it up so it stays locked with Earth. L2 allows JWST to keep the Sun, Earth, and Moon always behind its heat shield, while it maintains an unstable "halo orbit" requiring occasional thruster station-keeping.
+            </p>
+        </div>
+
+        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-md">
+            <h3 class="text-lg font-bold text-sky-400 mb-2 flex items-center gap-2"><span class="text-xl">🎢</span> Jacobi Energy & Topography</h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+                The <strong>Jacobi Constant ($C_J$)</strong> is the conserved "energy" in this rotating frame. It defines forbidden regions (Zero-Velocity Curves). If a satellite's $C_J$ is high, it's trapped near a planet. As $C_J$ lowers, "necks" open at L1 and L2, allowing interplanetary travel (the Interplanetary Transport Network).
+            </p>
+        </div>
+    </div>
+
+<script>
+    // System State
+    const state = {
+        mu: 0.000003, // Earth-Sun default
+        lPoints: [], // {id, x, y, type}
+        satellites: [], // {x, y, vx, vy, trail: []}
+        running: false,
+        viewScale: 1.5,
+        viewOffset: {x: 0, y: 0},
+        keys: { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false }
+    };
+
+    // Constants
+    const TRAIL_LENGTH = 1000;
+    const DT = 0.005; // Simulation timestep
+    const STEPS_PER_FRAME = 5;
+
+    // DOM Elements
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d', { alpha: false });
+    
+    // Resize handler
+    function resize() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width * window.devicePixelRatio;
+        canvas.height = rect.height * window.devicePixelRatio;
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Physics Engine
+    function calculateEffectivePotential(x, y, mu) {
+        const r1 = Math.sqrt((x + mu)**2 + y**2);
+        const r2 = Math.sqrt((x - (1 - mu))**2 + y**2);
+        return 0.5 * (x**2 + y**2) + (1 - mu) / r1 + mu / r2;
+    }
+
+    function calculateDerivatives(x, y, vx, vy, mu) {
+        const r1 = Math.sqrt((x + mu)**2 + y**2);
+        const r2 = Math.sqrt((x - (1 - mu))**2 + y**2);
+        const r13 = r1**3;
+        const r23 = r2**3;
+        
+        // Acceleration in corotating frame (including Coriolis 2vx, 2vy and centrifugal x, y)
+        // dU/dx = x - (1-mu)*(x+mu)/r1^3 - mu*(x-(1-mu))/r2^3
+        // dU/dy = y - (1-mu)*y/r1^3 - mu*y/r2^3
+        const dUdx = x - (1 - mu)*(x + mu)/r13 - mu*(x - (1 - mu))/r23;
+        const dUdy = y - (1 - mu)*y/r13 - mu*y/r23;
+
+        const ax = 2 * vy + dUdx;
+        const ay = -2 * vx + dUdy;
+
+        return { dx: vx, dy: vy, dvx: ax, dvy: ay, dUdx, dUdy };
+    }
+
+    function rk4Step(sat, dt, mu) {
+        const k1 = calculateDerivatives(sat.x, sat.y, sat.vx, sat.vy, mu);
+        const k2 = calculateDerivatives(sat.x + 0.5*dt*k1.dx, sat.y + 0.5*dt*k1.dy, sat.vx + 0.5*dt*k1.dvx, sat.vy + 0.5*dt*k1.dvy, mu);
+        const k3 = calculateDerivatives(sat.x + 0.5*dt*k2.dx, sat.y + 0.5*dt*k2.dy, sat.vx + 0.5*dt*k2.dvx, sat.vy + 0.5*dt*k2.dvy, mu);
+        const k4 = calculateDerivatives(sat.x + dt*k3.dx, sat.y + dt*k3.dy, sat.vx + dt*k3.dvx, sat.vy + dt*k3.dvy, mu);
+
+        sat.x += (dt / 6) * (k1.dx + 2*k2.dx + 2*k3.dx + k4.dx);
+        sat.y += (dt / 6) * (k1.dy + 2*k2.dy + 2*k3.dy + k4.dy);
+        sat.vx += (dt / 6) * (k1.dvx + 2*k2.dvx + 2*k3.dvx + k4.dvx);
+        sat.vy += (dt / 6) * (k1.dvy + 2*k2.dvy + 2*k3.dvy + k4.dvy);
+        
+        return k1; // return derivatives for gravity/HUD
+    }
+
+    // Lagrange Point Finder (approximate for L1-L3 via Newton-Raphson, exact for L4/L5)
+    function findLagrangePoints(mu) {
+        const points = [];
+        // L4, L5
+        points.push({ id: 'L4', x: 0.5 - mu, y: Math.sqrt(3)/2, type: 'peak' });
+        points.push({ id: 'L5', x: 0.5 - mu, y: -Math.sqrt(3)/2, type: 'peak' });
+        
+        // Helper function to find root for collinear points (y=0)
+        function findRoot(guess, condition) {
+            let x = guess;
+            for(let i=0; i<20; i++) {
+                const r1 = Math.abs(x + mu);
+                const r2 = Math.abs(x - (1 - mu));
+                const sign1 = Math.sign(x + mu);
+                const sign2 = Math.sign(x - (1 - mu));
+                
+                const f = x - (1-mu)*sign1/(r1**2) - mu*sign2/(r2**2);
+                const df = 1 + 2*(1-mu)/(r1**3) + 2*mu/(r2**3); // d/dx of force
+                
+                x = x - f/df;
+            }
+            return x;
+        }
+
+        // L1 (between M1 and M2)
+        points.push({ id: 'L1', x: findRoot(1 - mu - Math.cbrt(mu/3), 0), y: 0, type: 'saddle' });
+        // L2 (past M2)
+        points.push({ id: 'L2', x: findRoot(1 - mu + Math.cbrt(mu/3), 0), y: 0, type: 'saddle' });
+        // L3 (past M1)
+        points.push({ id: 'L3', x: findRoot(-1 - 5*mu/12, 0), y: 0, type: 'saddle' });
+
+        return points;
+    }
+
+    function updateSystem() {
+        state.lPoints = findLagrangePoints(state.mu);
+        // adjust view scale slightly based on mu to keep M2 visible
+        state.viewScale = 1.8 + Math.abs(state.mu)*0.5;
+    }
+
+    // UI Listeners
+    document.getElementById('muSlider').addEventListener('input', (e) => {
+        const val = Math.pow(10, parseFloat(e.target.value));
+        state.mu = val;
+        document.getElementById('muValue').innerText = val.toExponential(4);
+        updateSystem();
+    });
+
+    const presets = {
+        'sun-earth': { mu: 0.000003, slider: -5.52 },
+        'earth-moon': { mu: 0.01215, slider: -1.915 },
+        'sun-jupiter': { mu: 0.000953, slider: -3.02 },
+        'binary': { mu: 0.5, slider: -0.30103 }
+    };
+    
+    document.getElementById('presetSelect').addEventListener('change', (e) => {
+        const p = presets[e.target.value];
+        state.mu = p.mu;
+        document.getElementById('muSlider').value = p.slider;
+        document.getElementById('muValue').innerText = p.mu.toExponential(4);
+        updateSystem();
+        state.satellites = []; // clear on system change
+    });
+
+    document.getElementById('clearSatBtn').addEventListener('click', () => {
+        state.satellites = [];
+    });
+
+    // Input Handling
+    window.addEventListener('keydown', (e) => { if(state.keys.hasOwnProperty(e.code)) state.keys[e.code] = true; });
+    window.addEventListener('keyup', (e) => { if(state.keys.hasOwnProperty(e.code)) state.keys[e.code] = false; });
+
+    function toWorld(cx, cy) {
+        const w = canvas.parentElement.clientWidth;
+        const h = canvas.parentElement.clientHeight;
+        const minDim = Math.min(w, h);
+        const pxPerUnit = minDim / (state.viewScale * 2);
+        
+        const wx = (cx - w/2) / pxPerUnit - state.viewOffset.x;
+        const wy = -(cy - h/2) / pxPerUnit - state.viewOffset.y; // flipped Y for math coords
+        return {x: wx, y: wy};
+    }
+
+    function toScreen(wx, wy) {
+        const w = canvas.parentElement.clientWidth;
+        const h = canvas.parentElement.clientHeight;
+        const minDim = Math.min(w, h);
+        const pxPerUnit = minDim / (state.viewScale * 2);
+        
+        const cx = w/2 + (wx + state.viewOffset.x) * pxPerUnit;
+        const cy = h/2 - (wy + state.viewOffset.y) * pxPerUnit; // flipped Y
+        return {x: cx, y: cy, pxPerUnit};
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const worldPos = toWorld(e.clientX - rect.left, e.clientY - rect.top);
+        
+        // Simple initial velocity proportional to distance from origin for pseudo-orbit, or just 0
+        state.satellites.push({
+            x: worldPos.x,
+            y: worldPos.y,
+            vx: -worldPos.y, // corotating swirl
+            vy: worldPos.x,
+            trail: [],
+            trailTimer: 0
+        });
+    });
+
+    // Audio Engine
+    const audio = {
+        ctx: null,
+        gravityOsc: null,
+        gravityGain: null,
+        chordOscs: [],
+        chordGains: [],
+        thrusterNoise: null,
+        thrusterFilter: null,
+        thrusterGain: null,
+        
+        init: async function() {
+            if(this.ctx) return;
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Gravity hum
+            this.gravityOsc = this.ctx.createOscillator();
+            this.gravityOsc.type = 'sine';
+            this.gravityGain = this.ctx.createGain();
+            this.gravityGain.gain.value = 0;
+            this.gravityOsc.connect(this.gravityGain);
+            this.gravityGain.connect(this.ctx.destination);
+            this.gravityOsc.start();
+
+            // Ethereal Chords (L-Points)
+            const freqs = [261.63, 329.63, 392.00, 523.25]; // C E G C
+            for(let f of freqs) {
+                const osc = this.ctx.createOscillator();
+                osc.type = 'triangle';
+                osc.frequency.value = f;
+                const gain = this.ctx.createGain();
+                gain.gain.value = 0;
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                this.chordOscs.push(osc);
+                this.chordGains.push(gain);
+            }
+
+            // Thruster noise (White noise buffer)
+            const bufferSize = this.ctx.sampleRate * 2; // 2 seconds
+            const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            
+            this.thrusterNoise = this.ctx.createBufferSource();
+            this.thrusterNoise.buffer = buffer;
+            this.thrusterNoise.loop = true;
+            
+            this.thrusterFilter = this.ctx.createBiquadFilter();
+            this.thrusterFilter.type = 'lowpass';
+            this.thrusterFilter.frequency.value = 800;
+            
+            this.thrusterGain = this.ctx.createGain();
+            this.thrusterGain.gain.value = 0;
+            
+            this.thrusterNoise.connect(this.thrusterFilter);
+            this.thrusterFilter.connect(this.thrusterGain);
+            this.thrusterGain.connect(this.ctx.destination);
+            this.thrusterNoise.start();
+        },
+        
+        update: function(sat, deriv, nearestL, distL, isThrusting) {
+            if(!this.ctx) return;
+            
+            // Gravity hum based on |grad U|
+            const g = Math.sqrt(deriv.dUdx**2 + deriv.dUdy**2);
+            const targetFreq = 50 + Math.min(g * 20, 400);
+            const targetVol = Math.min(g * 0.1, 0.3);
+            
+            this.gravityOsc.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.1);
+            this.gravityGain.gain.setTargetAtTime(targetVol, this.ctx.currentTime, 0.1);
+
+            // Chord proximity to L point
+            let chordVol = 0;
+            if(distL < 0.2) {
+                chordVol = (0.2 - distL) * 2; // 0 to 0.4 max per osc
+            }
+            for(let i=0; i<this.chordGains.length; i++) {
+                this.chordGains[i].gain.setTargetAtTime(chordVol * 0.1, this.ctx.currentTime, 0.2);
+            }
+
+            // Thruster
+            if(isThrusting) {
+                this.thrusterGain.gain.setTargetAtTime(0.3, this.ctx.currentTime, 0.05);
+                // modulate filter slightly
+                this.thrusterFilter.frequency.setTargetAtTime(400 + Math.random()*800, this.ctx.currentTime, 0.05);
+            } else {
+                this.thrusterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+            }
+        }
+    };
+
+    document.getElementById('startAudioBtn').addEventListener('click', () => {
+        document.getElementById('audioOverlay').style.display = 'none';
+        audio.init();
+        state.running = true;
+        updateSystem();
+        requestAnimationFrame(loop);
+    });
+
+    // Render Helpers
+    function drawGridAndAxes(w, h) {
+        ctx.strokeStyle = '#1d2b38';
+        ctx.lineWidth = 1;
+        
+        const origin = toScreen(0,0);
+        ctx.beginPath();
+        ctx.moveTo(0, origin.y); ctx.lineTo(w, origin.y);
+        ctx.moveTo(origin.x, 0); ctx.lineTo(origin.x, h);
+        ctx.stroke();
+    }
+
+    function drawContours(w, h) {
+        if(!document.getElementById('showContours').checked) return;
+        
+        const step = 8; // px resolution for grid
+        const cols = Math.floor(w / step);
+        const rows = Math.floor(h / step);
+        
+        // Find C_J of L-points to use as contour levels
+        const levels = state.lPoints.map(p => {
+            const u = calculateEffectivePotential(p.x, p.y, state.mu);
+            return 2 * u; // C_J at v=0
+        }).sort((a,b) => b-a); // highest C_J to lowest
+        
+        // Add a few more levels for visual context
+        levels.push(levels[4] - 0.2, levels[4] - 0.5, levels[0] + 0.5, levels[0] + 1.5);
+        
+        ctx.fillStyle = 'rgba(0, 240, 255, 0.5)';
+        for(let i=0; i<cols; i++) {
+            for(let j=0; j<rows; j++) {
+                const sx = i * step + step/2;
+                const sy = j * step + step/2;
+                const world = toWorld(sx, sy);
+                
+                const U = calculateEffectivePotential(world.x, world.y, state.mu);
+                const C_J = 2 * U;
+                
+                // Draw dots near contour levels
+                for(let lvl of levels) {
+                    if(Math.abs(C_J - lvl) < 0.02) {
+                        ctx.fillRect(sx, sy, 1, 1);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // Main Loop
+    function loop() {
+        if(!state.running) return;
+
+        const w = canvas.parentElement.clientWidth;
+        const h = canvas.parentElement.clientHeight;
+        
+        // Clear
+        ctx.fillStyle = '#0b1217';
+        ctx.fillRect(0, 0, w, h);
+
+        drawGridAndAxes(w, h);
+        drawContours(w, h);
+
+        // Draw primary bodies
+        const m1Pos = toScreen(-state.mu, 0);
+        const m2Pos = toScreen(1 - state.mu, 0);
+        
+        // M1 (Sun/Primary)
+        ctx.beginPath();
+        ctx.arc(m1Pos.x, m1Pos.y, 15, 0, Math.PI*2);
+        ctx.fillStyle = '#f59e0b'; // amber
+        ctx.shadowColor = '#f59e0b';
+        ctx.shadowBlur = 20;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        
+        // M2 (Earth/Secondary)
+        ctx.beginPath();
+        ctx.arc(m2Pos.x, m2Pos.y, 8, 0, Math.PI*2);
+        ctx.fillStyle = '#00f0ff'; // sky
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = 10;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Draw Lagrange Points
+        if(document.getElementById('showLPoints').checked) {
+            ctx.font = '10px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            state.lPoints.forEach(p => {
+                const sp = toScreen(p.x, p.y);
+                const isStable = (p.id === 'L4' || p.id === 'L5') && state.mu < 0.03852;
+                
+                ctx.beginPath();
+                ctx.arc(sp.x, sp.y, 4, 0, Math.PI*2);
+                ctx.fillStyle = isStable ? '#b3e600' : '#e6004c'; // emerald or rose
+                ctx.fill();
+                
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.fillText(p.id, sp.x, sp.y - 12);
+            });
+        }
+
+        // Update and draw satellites
+        let activeDeriv = null;
+        let activeSat = null;
+        let nearestLPoint = null;
+        let minDistL = Infinity;
+        let isThrusting = false;
+
+        for(let i=0; i<state.satellites.length; i++) {
+            let sat = state.satellites[i];
+            
+            // Player Thruster Input applied to the FIRST satellite
+            if(i === 0) {
+                const THRUST = 0.02;
+                if(state.keys.ArrowUp) { sat.vy += THRUST; isThrusting = true; }
+                if(state.keys.ArrowDown) { sat.vy -= THRUST; isThrusting = true; }
+                if(state.keys.ArrowLeft) { sat.vx -= THRUST; isThrusting = true; }
+                if(state.keys.ArrowRight) { sat.vx += THRUST; isThrusting = true; }
+            }
+
+            // Physics steps
+            let deriv;
+            for(let s=0; s<STEPS_PER_FRAME; s++) {
+                deriv = rk4Step(sat, DT, state.mu);
+            }
+            
+            if(i === 0) {
+                activeDeriv = deriv;
+                activeSat = sat;
+            }
+
+            // Trail
+            sat.trailTimer++;
+            if(sat.trailTimer > 3) {
+                sat.trail.push({x: sat.x, y: sat.y});
+                if(sat.trail.length > TRAIL_LENGTH) sat.trail.shift();
+                sat.trailTimer = 0;
+            }
+
+            // Draw Trail
+            if(document.getElementById('showTrail').checked && sat.trail.length > 1) {
+                ctx.beginPath();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = i === 0 ? 'rgba(179, 230, 0, 0.6)' : 'rgba(148, 163, 184, 0.4)';
+                const first = toScreen(sat.trail[0].x, sat.trail[0].y);
+                ctx.moveTo(first.x, first.y);
+                for(let pt of sat.trail) {
+                    const sp = toScreen(pt.x, pt.y);
+                    ctx.lineTo(sp.x, sp.y);
+                }
+                ctx.stroke();
+            }
+
+            // Draw Satellite
+            const sp = toScreen(sat.x, sat.y);
+            ctx.beginPath();
+            ctx.arc(sp.x, sp.y, 3, 0, Math.PI*2);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+
+            // Thrust visual
+            if(i === 0 && isThrusting) {
+                ctx.beginPath();
+                ctx.arc(sp.x, sp.y, 8, 0, Math.PI*2);
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+        }
+
+        // HUD Updates and Audio mapping based on active satellite
+        if(activeSat && activeDeriv) {
+            const U = calculateEffectivePotential(activeSat.x, activeSat.y, state.mu);
+            const v2 = activeSat.vx**2 + activeSat.vy**2;
+            const C_J = 2*U - v2;
+            const g = Math.sqrt(activeDeriv.dUdx**2 + activeDeriv.dUdy**2);
+
+            // Find nearest L point
+            state.lPoints.forEach(p => {
+                const dist = Math.sqrt((activeSat.x - p.x)**2 + (activeSat.y - p.y)**2);
+                if(dist < minDistL) {
+                    minDistL = dist;
+                    nearestLPoint = p;
+                }
+            });
+
+            document.getElementById('hudPos').innerText = `${activeSat.x.toFixed(4)}, ${activeSat.y.toFixed(4)}`;
+            document.getElementById('hudVel').innerText = `${activeSat.vx.toFixed(4)}, ${activeSat.vy.toFixed(4)}`;
+            document.getElementById('hudCj').innerText = C_J.toFixed(5);
+            document.getElementById('hudG').innerText = g.toFixed(5);
+            
+            if(nearestLPoint) {
+                document.getElementById('hudNearestL').innerText = nearestLPoint.id;
+                document.getElementById('hudDistL').innerText = `Dist: ${minDistL.toFixed(3)}`;
+                document.getElementById('hudNearestL').className = (nearestLPoint.type === 'peak' && state.mu < 0.0385) ? 'text-emerald-400 font-bold text-lg' : 'text-rose-400 font-bold text-lg';
+            }
+
+            audio.update(activeSat, activeDeriv, nearestLPoint, minDistL, isThrusting);
+        } else {
+            // No sat, silence audio
+            if(audio.ctx) {
+                audio.gravityGain.gain.setTargetAtTime(0, audio.ctx.currentTime, 0.1);
+                for(let g of audio.chordGains) g.gain.setTargetAtTime(0, audio.ctx.currentTime, 0.1);
+            }
+        }
+
+        requestAnimationFrame(loop);
+    }
+</script>
+</body>
+</html>
