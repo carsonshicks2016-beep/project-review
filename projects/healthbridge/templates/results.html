@@ -1,0 +1,999 @@
+{% extends "base.html" %}
+
+{% block title %}HealthBridge AI - Analysis Report{% endblock %}
+{% block nav_tag %}Structured Report{% endblock %}
+
+{% block content %}
+
+{% if is_demo %}
+<div class="demo-banner">
+    <div class="demo-banner-inner">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M7 6.5L12 9 7 11.5V6.5Z" fill="currentColor"/></svg>
+        <strong>Live Demo Report</strong> — This report was generated from synthetic data embedded in HealthBridge. Upload your own files on the <a href="/">home page</a> to run a real analysis.
+    </div>
+</div>
+{% endif %}
+
+<div class="report-shell">
+
+    {# ── MASTHEAD ────────────────────────────────────────────────────────────── #}
+    <section class="report-masthead">
+        <div class="report-masthead-copy">
+            <div class="section-eyebrow">{{ report_summary.eyebrow }}</div>
+            <h1>{{ report_summary.headline }}</h1>
+            <p>{{ report_summary.subheadline }}</p>
+            <div class="report-meta-row">
+                <span class="chip chip-meta">Generated {{ generated_at }}</span>
+                <span class="chip chip-meta">Engine {{ engine_version }}</span>
+                <span class="chip chip-meta">Confidence {{ data_quality.score }}/100</span>
+            </div>
+        </div>
+        <div class="report-confidence-panel">
+            <div class="report-confidence-label">Report Confidence</div>
+            <div class="report-confidence-score">{{ data_quality.score }}</div>
+            <div class="report-confidence-band confidence-{{ data_quality.score|confidence_class }}">{{ data_quality.label }}</div>
+            <p>{{ report_summary.confidence_line }}</p>
+        </div>
+    </section>
+
+    {# ── PARTIAL ANALYSIS ALERT ──────────────────────────────────────────────── #}
+    {% if analysis_notice or analysis_errors %}
+    <section class="analysis-alert {% if analysis_errors %}warning{% else %}info{% endif %}">
+        <div class="analysis-alert-header">
+            <div>
+                <div class="analysis-alert-title">{{ analysis_notice or "One or more inputs could not be fully processed." }}</div>
+                {% if requested_mode and requested_mode != mode %}
+                <div class="analysis-alert-copy">Your requested {{ requested_mode_label }} was narrowed to the strongest trustworthy report HealthBridge could complete from the available inputs.</div>
+                {% endif %}
+            </div>
+            <a href="/" class="btn btn-secondary">Retry Upload</a>
+        </div>
+        {% if analysis_errors %}
+        <div class="analysis-alert-details">
+            {% for item in analysis_errors %}
+            <div class="bullet-row"><strong>{{ item.source }}:</strong> {{ item.message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    {# ── METRIC STRIP ────────────────────────────────────────────────────────── #}
+    <section class="metric-grid">
+        {% for metric in metric_cards %}
+        <div class="metric-card">
+            <div class="metric-card-label">{{ metric.label }}</div>
+            <div class="metric-card-value">{{ metric.value }}</div>
+            <div class="metric-card-caption">{{ metric.caption }}</div>
+        </div>
+        {% endfor %}
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    {# TAB BAR                                                                   #}
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    <div class="report-tabs-wrapper">
+        <nav class="report-tabs" role="tablist" aria-label="Report sections">
+            <button class="report-tab active" data-tab="overview" role="tab" aria-selected="true" aria-controls="tab-overview">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>
+                Overview
+            </button>
+            {% if genomic_dossiers or variant_matrix or genetic_advantages %}
+            <button class="report-tab" data-tab="genetics" role="tab" aria-selected="false" aria-controls="tab-genetics">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2Q8 5 12 8Q8 11 4 14" stroke="#3b82f6" stroke-width="1.4" stroke-linecap="round" fill="none"/><path d="M12 2Q8 5 4 8Q8 11 12 14" stroke="#93c5fd" stroke-width="1.4" stroke-linecap="round" fill="none"/></svg>
+                Genetics
+                {% if genetic_advantages or genomic_dossiers %}<span class="tab-count">{{ (genetic_advantages|length) + (genomic_dossiers|length) }}</span>{% endif %}
+            </button>
+            {% endif %}
+            {% if biomarker_dossiers or biomarker_matrix %}
+            <button class="report-tab" data-tab="biomarkers" role="tab" aria-selected="false" aria-controls="tab-biomarkers">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2C8 2 3 8 3 11a5 5 0 0 0 10 0C13 8 8 2 8 2Z" stroke="#be123c" stroke-width="1.4" stroke-linejoin="round" fill="rgba(190,18,60,0.08)"/></svg>
+                Biomarkers
+                {% if biomarker_dossiers %}<span class="tab-count">{{ biomarker_dossiers|length }}</span>{% endif %}
+            </button>
+            {% endif %}
+            {% if wearable_context %}
+            <button class="report-tab" data-tab="wearables" role="tab" aria-selected="false" aria-controls="tab-wearables">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="4" y="2" width="8" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M6 5h4M6 8h4M6 11h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                Wearables
+            </button>
+            {% endif %}
+            <button class="report-tab" data-tab="action" role="tab" aria-selected="false" aria-controls="tab-action">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Action Plan
+                {% if next_tests %}<span class="tab-count">{{ next_tests|length }}</span>{% endif %}
+            </button>
+        </nav>
+    </div>
+
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    {# TAB: OVERVIEW                                                              #}
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    <div id="tab-overview" class="tab-panel active" role="tabpanel">
+
+        {# Dashboard #}
+        {% if visualizations and visualizations.dashboard %}
+        {% with dashboard = visualizations.dashboard %}
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">Composite Dashboard</div>
+                <h2>High-level health readout.</h2>
+            </div>
+            <div class="dashboard-container">
+                <div class="dashboard-header {% if dashboard.summary_score >= 80 %}optimal{% elif dashboard.summary_score >= 60 %}good{% elif dashboard.summary_score >= 40 %}fair{% else %}needs-attention{% endif %}">
+                    <div class="dashboard-card-label">Overall score</div>
+                    <div class="dashboard-score">{{ dashboard.summary_score }}</div>
+                    <div class="dashboard-score-label">
+                        {% if dashboard.summary_score >= 80 %}Excellent{% elif dashboard.summary_score >= 60 %}Good{% elif dashboard.summary_score >= 40 %}Fair{% else %}Needs Attention{% endif %}
+                    </div>
+                </div>
+                <div class="dashboard-grid">
+                    {% for section in dashboard.sections %}
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-label">{{ section.category }}</div>
+                        <div class="dashboard-card-score" style="color: {{ section.color }};">{{ section.score }}</div>
+                        <div class="dashboard-card-status" style="color: {{ section.color }};">{{ section.status }}</div>
+                        <div class="dashboard-card-bar">
+                            <div class="dashboard-card-bar-fill" style="width: {{ section.score }}%; background: {{ section.color }};"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% if wearable_context %}
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-label">Wearables</div>
+                        <div class="dashboard-card-score" style="color: {{ wearable_context.overall_color }};">{{ wearable_context.overall_score }}</div>
+                        <div class="dashboard-card-status" style="color: {{ wearable_context.overall_color }};">{{ wearable_context.overall_status }}</div>
+                        <div class="dashboard-card-bar">
+                            <div class="dashboard-card-bar-fill" style="width: {{ wearable_context.overall_score }}%; background: {{ wearable_context.overall_color }};"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+        {% endwith %}
+        {% endif %}
+
+        {# Key Takeaways #}
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">Executive Summary</div>
+                <h2>Key takeaways from this run.</h2>
+            </div>
+            <div class="takeaway-grid">
+                {% for takeaway in key_takeaways %}
+                <div class="takeaway-card theme-{{ takeaway.theme }}">
+                    <div class="takeaway-title">{{ takeaway.title }}</div>
+                    <div class="takeaway-body">{{ takeaway.body }}</div>
+                </div>
+                {% endfor %}
+                {% if wearable_context and wearable_context.warning_flags %}
+                <div class="takeaway-card theme-warning">
+                    <div class="takeaway-title">Wearable Signal</div>
+                    <div class="takeaway-body">{{ wearable_context.warning_flags[0].message }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        {# Cross-source convergence #}
+        {% if cross_source_dossiers %}
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">Cross-Source Findings</div>
+                <h2>Where genotype and biomarkers appear to converge.</h2>
+            </div>
+            <div class="dossier-stack">
+                {% for finding in cross_source_dossiers %}
+                <article class="dossier-card theme-{{ finding.theme }}">
+                    <div class="dossier-header">
+                        <div>
+                            <div class="dossier-kicker">{{ finding.category }}</div>
+                            <h3>{{ finding.title }}</h3>
+                        </div>
+                        <div class="dossier-badges">
+                            <span class="chip chip-status theme-{{ finding.theme }}">{{ finding.status }}</span>
+                            <span class="chip chip-confidence">{{ finding.certainty_label }} certainty</span>
+                        </div>
+                    </div>
+                    <p class="dossier-summary">{{ finding.summary }}</p>
+                    <div class="dossier-context">{{ finding.context }}</div>
+                    {% if finding.interpretation %}
+                    <div class="callout-panel">
+                        <div class="callout-title">Why it matters</div>
+                        <div class="callout-body">{{ finding.interpretation }}</div>
+                    </div>
+                    {% endif %}
+                    {% if finding.actions %}
+                    <div class="action-list">
+                        {% for action in finding.actions %}
+                        <div class="action-list-item">
+                            <strong>{{ action.title }}</strong>
+                            <span>{{ action.description }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <details class="details-panel">
+                        <summary>Open provenance, caveats, and follow-up</summary>
+                        {% if finding.provenance %}
+                        <div class="details-subtitle">Provenance</div>
+                        <div class="provenance-grid">
+                            {% for item in finding.provenance %}
+                            <div class="provenance-item">
+                                <div class="provenance-label">{{ item.label }}</div>
+                                <div class="provenance-value">{{ item.value }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% if finding.caveats %}
+                        <div class="details-subtitle">Caveats</div>
+                        {% for item in finding.caveats %}<div class="bullet-row">{{ item }}</div>{% endfor %}
+                        {% endif %}
+                        {% if finding.what_changes %}
+                        <div class="details-subtitle">What would change the conclusion</div>
+                        {% for item in finding.what_changes %}<div class="bullet-row">{{ item }}</div>{% endfor %}
+                        {% endif %}
+                        {% if finding.next_tests %}
+                        <div class="details-subtitle">Helpful next tests</div>
+                        {% for item in finding.next_tests %}
+                        <div class="next-test-row"><strong>{{ item.name }}</strong><span>{{ item.reason }}</span></div>
+                        {% endfor %}
+                        {% endif %}
+                        {% if finding.evidence_links %}
+                        <div class="details-subtitle">Literature & database links</div>
+                        <div class="reference-link-grid">
+                            {% for link in finding.evidence_links %}
+                            <a class="reference-link" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">
+                                <strong>{{ link.label }}</strong><span>{{ link.source }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </details>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+        {% elif mode == "combined" %}
+        <section class="section-block">
+            <div class="empty-state-card">
+                <div class="empty-state-title">No hardcoded convergence pattern reached threshold.</div>
+                <div class="empty-state-body">{{ cross_source_empty_state }}</div>
+            </div>
+        </section>
+        {% endif %}
+
+        {# Source quality #}
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">Source Quality</div>
+                <h2>What was analyzed and how much confidence to place in it.</h2>
+            </div>
+            <div class="overview-grid">
+                {% for item in source_overview %}
+                <div class="overview-card">
+                    <div class="overview-card-title">{{ item.title }}</div>
+                    <div class="overview-card-body">{{ item.body }}</div>
+                </div>
+                {% endfor %}
+                {% if wearable_context %}
+                <div class="overview-card">
+                    <div class="overview-card-title">Wearable Input</div>
+                    <div class="overview-card-body">{{ wearable_context.platform }} · {{ wearable_context.date_range_label }}{% if wearable_context.nights_analyzed %} · {{ wearable_context.nights_analyzed }} nights analyzed{% endif %}</div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="quality-panel">
+                <div class="quality-column">
+                    <div class="quality-title">Strengthening factors</div>
+                    {% for item in data_quality.strengths %}<div class="bullet-row">{{ item }}</div>{% endfor %}
+                </div>
+                <div class="quality-column">
+                    <div class="quality-title">Limitations still visible</div>
+                    {% for item in data_quality.limitations %}<div class="bullet-row">{{ item }}</div>{% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <div class="tab-nav-footer">
+            {% if genomic_dossiers or variant_matrix or genetic_advantages %}<button class="btn btn-secondary" onclick="HBTabs.switchTo('genetics')">View Genetics →</button>{% endif %}
+            {% if biomarker_dossiers %}<button class="btn btn-secondary" onclick="HBTabs.switchTo('biomarkers')">View Biomarkers →</button>{% endif %}
+            {% if wearable_context %}<button class="btn btn-secondary" onclick="HBTabs.switchTo('wearables')">View Wearables →</button>{% endif %}
+            <button class="btn btn-primary" onclick="HBTabs.switchTo('action')">Go to Action Plan →</button>
+        </div>
+    </div>{# /tab-overview #}
+
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    {# TAB: GENETICS                                                              #}
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    {% if genomic_dossiers or variant_matrix or genetic_advantages %}
+    <div id="tab-genetics" class="tab-panel" role="tabpanel">
+
+        {% if dna_quality %}
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">DNA Quality Controls</div>
+                <h2>Strict gating before any SNP-driven claim is allowed through.</h2>
+            </div>
+            <div class="overview-grid compact-overview">
+                {% for metric in dna_quality.parse_metrics %}
+                <div class="overview-card">
+                    <div class="overview-card-title">{{ metric.label }}</div>
+                    <div class="fun-estimate">{{ metric.value }}</div>
+                    <div class="overview-card-body">Source hint: {{ dna_quality.source_hint }}{% if dna_quality.strict_mode %} · strict mode enabled{% endif %}</div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="quality-panel">
+                <div class="quality-column">
+                    <div class="quality-title">Validation strengths</div>
+                    <div class="bullet-row">{{ dna_quality.summary }}</div>
+                    {% for item in dna_quality.strengths %}<div class="bullet-row">{{ item }}</div>{% endfor %}
+                </div>
+                <div class="quality-column">
+                    <div class="quality-title">Suppression rules still applied</div>
+                    {% for item in dna_quality.limitations %}<div class="bullet-row">{{ item }}</div>{% endfor %}
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
+        {% if genetic_advantages %}
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">Genetic Advantages</div>
+                <h2>Your inherent biological strengths, backed by genomic evidence.</h2>
+            </div>
+            <div class="dossier-stack">
+                {% for finding in genetic_advantages %}
+                <article class="dossier-card theme-strength">
+                    <div class="dossier-header">
+                        <div>
+                            <div class="dossier-kicker">{{ finding.category }}</div>
+                            <h3>{{ finding.title }}</h3>
+                        </div>
+                        <div class="dossier-badges">
+                            <span class="chip chip-status theme-strength">{{ finding.status }}</span>
+                            <span class="chip chip-confidence">{{ finding.certainty_score }}/100</span>
+                        </div>
+                    </div>
+                    <p class="dossier-summary">{{ finding.summary }}</p>
+                    <div class="dossier-context">{{ finding.interpretation }}</div>
+                    <div class="callout-panel callout-strength">
+                        <div class="callout-title">Advantage context</div>
+                        <div class="callout-body">{{ finding.context }}</div>
+                    </div>
+                    <details class="details-panel">
+                        <summary>Open evidence and provenance</summary>
+                        <div class="details-subtitle">Provenance</div>
+                        <div class="provenance-grid">
+                            {% for item in finding.provenance %}
+                            <div class="provenance-item">
+                                <div class="provenance-label">{{ item.label }}</div>
+                                <div class="provenance-value">{{ item.value }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if finding.evidence_links %}
+                        <div class="details-subtitle">Literature & database links</div>
+                        <div class="reference-link-grid">
+                            {% for link in finding.evidence_links %}
+                            <a class="reference-link" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">
+                                <strong>{{ link.label }}</strong><span>{{ link.source }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </details>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if genomic_dossiers %}
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">Genomic Dossiers</div>
+                <h2>Risk variants framed as predisposition, not certainty.</h2>
+            </div>
+            <div class="dossier-stack">
+                {% for finding in genomic_dossiers %}
+                <article class="dossier-card theme-{{ finding.theme }}">
+                    <div class="dossier-header">
+                        <div>
+                            <div class="dossier-kicker">{{ finding.category }}</div>
+                            <h3>{{ finding.title }}</h3>
+                        </div>
+                        <div class="dossier-badges">
+                            <span class="chip chip-status theme-{{ finding.theme }}">{{ finding.status }}</span>
+                            <span class="chip chip-confidence">{{ finding.certainty_score }}/100</span>
+                        </div>
+                    </div>
+                    <p class="dossier-summary">{{ finding.summary }}</p>
+                    <div class="dossier-context">{{ finding.interpretation }}</div>
+                    <div class="callout-panel">
+                        <div class="callout-title">Interpretation posture</div>
+                        <div class="callout-body">{{ finding.context }}</div>
+                    </div>
+                    <details class="details-panel">
+                        <summary>Open evidence, caveats, and follow-up</summary>
+                        <div class="details-subtitle">Provenance</div>
+                        <div class="provenance-grid">
+                            {% for item in finding.provenance %}
+                            <div class="provenance-item">
+                                <div class="provenance-label">{{ item.label }}</div>
+                                <div class="provenance-value">{{ item.value }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if finding.evidence %}
+                        <div class="details-subtitle">Curated evidence</div>
+                        {% for item in finding.evidence %}
+                        <div class="bullet-row">
+                            {% if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.label }}</a>: {{ item.title }}
+                            {% else %}{{ item.label }}: {{ item.title }}{% endif %}
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                        {% if finding.caveats %}
+                        <div class="details-subtitle">Caveats</div>
+                        {% for item in finding.caveats %}<div class="bullet-row">{{ item }}</div>{% endfor %}
+                        {% endif %}
+                        {% if finding.next_tests %}
+                        <div class="details-subtitle">Helpful companion data</div>
+                        {% for item in finding.next_tests %}
+                        <div class="next-test-row"><strong>{{ item.name }}</strong><span>{{ item.reason }}</span></div>
+                        {% endfor %}
+                        {% endif %}
+                        {% if finding.evidence_links %}
+                        <div class="details-subtitle">Literature & database links</div>
+                        <div class="reference-link-grid">
+                            {% for link in finding.evidence_links %}
+                            <a class="reference-link" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">
+                                <strong>{{ link.label }}</strong><span>{{ link.source }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </details>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if variant_matrix %}
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">Phenotype Sketch</div>
+                <h2>For fun only: a rough trait estimate from visible-trait variants.</h2>
+                <p class="fun-disclaimer">{{ phenotype_sketch.disclaimer }}</p>
+            </div>
+            {% if phenotype_sketch.cards %}
+            <div class="overview-grid">
+                {% for item in phenotype_sketch.cards %}
+                <div class="overview-card">
+                    <div class="overview-card-title">{{ item.title }}</div>
+                    <div class="fun-estimate">{{ item.estimate }}</div>
+                    <div class="fun-confidence">{{ item.confidence }}</div>
+                    <div class="overview-card-body">{{ item.body }}</div>
+                    {% if item.links %}
+                    <div class="inline-link-row">
+                        {% for link in item.links %}<a class="inline-ref-link" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.label }}</a>{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </section>
+
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">Population-Enrichment Notes</div>
+                <h2>For fun only: where some of these alleles are commonly enriched.</h2>
+                <p class="fun-disclaimer">{{ population_notes.disclaimer }}</p>
+            </div>
+            {% if population_notes.cards %}
+            <div class="overview-grid">
+                {% for item in population_notes.cards %}
+                <div class="overview-card">
+                    <div class="overview-card-title">{{ item.title }}</div>
+                    <div class="fun-estimate">{{ item.estimate }}</div>
+                    <div class="fun-confidence">{{ item.confidence }}</div>
+                    <div class="overview-card-body">{{ item.body }}</div>
+                    {% if item.links %}
+                    <div class="inline-link-row">
+                        {% for link in item.links %}<a class="inline-ref-link" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.label }}</a>{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </section>
+
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">Matched Variant Appendix</div>
+                <h2>All detected panel variants with quick evidence links.</h2>
+                <p class="fun-disclaimer">{{ genomic_panel_summary.note }}</p>
+            </div>
+            <div class="overview-grid compact-overview">
+                <div class="overview-card">
+                    <div class="overview-card-title">Curated panel size</div>
+                    <div class="fun-estimate">{{ genomic_panel_summary.panel_size }} SNPs</div>
+                </div>
+                <div class="overview-card">
+                    <div class="overview-card-title">Matched in this upload</div>
+                    <div class="fun-estimate">{{ genomic_panel_summary.matched_variants }} variants</div>
+                </div>
+                <div class="overview-card">
+                    <div class="overview-card-title">Risk-leaning matches</div>
+                    <div class="fun-estimate">{{ genomic_panel_summary.risk_variants }} variants</div>
+                </div>
+                {% if genomic_panel_summary.protective_variants %}
+                <div class="overview-card">
+                    <div class="overview-card-title">Protective / advantage matches</div>
+                    <div class="fun-estimate" style="color: #22c55e;">{{ genomic_panel_summary.protective_variants }} variants</div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="table-shell">
+                <table class="matrix-table">
+                    <thead>
+                        <tr>
+                            <th>Variant</th><th>Gene</th><th>Category</th><th>Trait</th>
+                            <th>Genotype</th><th>Claim status</th><th>Evidence score</th><th>Evidence</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in variant_matrix %}
+                        <tr>
+                            <td>{{ row.rsid }}</td>
+                            <td>{{ row.gene }}</td>
+                            <td>{{ row.category }}</td>
+                            <td>{{ row.trait }}</td>
+                            <td>{{ row.genotype }}</td>
+                            <td>
+                                <span class="chip chip-status theme-{{ row.theme }}">
+                                    {% if row.claim_ready %}{{ row.zygosity }}{% else %}{{ row.validation_status }}{% endif %}
+                                </span>
+                                {% if row.validation_notes %}<div class="table-note">{{ row.validation_notes[0] }}</div>{% endif %}
+                            </td>
+                            <td>{{ row.evidence_score }}/100</td>
+                            <td>
+                                {% if row.links %}
+                                <div class="table-link-stack">
+                                    {% for link in row.links %}<a class="inline-ref-link" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.label }}</a>{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        {% endif %}
+
+        <div class="tab-nav-footer">
+            <button class="btn btn-secondary" onclick="HBTabs.switchTo('overview')">← Back to Overview</button>
+            {% if biomarker_dossiers %}<button class="btn btn-primary" onclick="HBTabs.switchTo('biomarkers')">View Biomarkers →</button>{% endif %}
+        </div>
+    </div>{# /tab-genetics #}
+    {% endif %}
+
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    {# TAB: BIOMARKERS                                                            #}
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    {% if biomarker_dossiers or biomarker_matrix %}
+    <div id="tab-biomarkers" class="tab-panel" role="tabpanel">
+
+        {% if biomarker_dossiers %}
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">Biomarker Dossiers</div>
+                <h2>Each biomarker finding with confidence and caveats attached.</h2>
+            </div>
+            <div class="dossier-stack">
+                {% for finding in biomarker_dossiers %}
+                <article class="dossier-card theme-{{ finding.theme }}">
+                    <div class="dossier-header">
+                        <div>
+                            <div class="dossier-kicker">{{ finding.category }}</div>
+                            <h3>{{ finding.title }}</h3>
+                        </div>
+                        <div class="dossier-badges">
+                            <span class="chip chip-status theme-{{ finding.theme }}">{{ finding.status }}</span>
+                            <span class="chip chip-confidence">{{ finding.certainty_score }}/100</span>
+                        </div>
+                    </div>
+                    <p class="dossier-summary">{{ finding.summary }}</p>
+                    <div class="dossier-context">{{ finding.interpretation }}</div>
+                    <div class="callout-panel">
+                        <div class="callout-title">Context</div>
+                        <div class="callout-body">{{ finding.context }}</div>
+                    </div>
+                    <details class="details-panel">
+                        <summary>Open ranges, caveats, and follow-up</summary>
+                        <div class="details-subtitle">Measured context</div>
+                        <div class="provenance-grid">
+                            {% for item in finding.provenance %}
+                            <div class="provenance-item">
+                                <div class="provenance-label">{{ item.label }}</div>
+                                <div class="provenance-value">{{ item.value }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if finding.caveats %}
+                        <div class="details-subtitle">Caveats</div>
+                        {% for item in finding.caveats %}<div class="bullet-row">{{ item }}</div>{% endfor %}
+                        {% endif %}
+                        {% if finding.what_changes %}
+                        <div class="details-subtitle">What would strengthen this signal</div>
+                        {% for item in finding.what_changes %}<div class="bullet-row">{{ item }}</div>{% endfor %}
+                        {% endif %}
+                        {% if finding.next_tests %}
+                        <div class="details-subtitle">Helpful next tests</div>
+                        {% for item in finding.next_tests %}
+                        <div class="next-test-row"><strong>{{ item.name }}</strong><span>{{ item.reason }}</span></div>
+                        {% endfor %}
+                        {% endif %}
+                        {% if finding.evidence_links %}
+                        <div class="details-subtitle">Literature & database links</div>
+                        <div class="reference-link-grid">
+                            {% for link in finding.evidence_links %}
+                            <a class="reference-link" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">
+                                <strong>{{ link.label }}</strong><span>{{ link.source }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </details>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if biomarker_matrix %}
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">Normalized Biomarker Matrix</div>
+                <h2>All parsed biomarkers at a glance.</h2>
+            </div>
+            <div class="table-shell">
+                <table class="matrix-table">
+                    <thead>
+                        <tr>
+                            <th>Biomarker</th><th>Category</th><th>Measured</th>
+                            <th>Status</th><th>Standard range</th><th>Optimal range</th><th>Evidence</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in biomarker_matrix %}
+                        <tr>
+                            <td>{{ row.name }}</td>
+                            <td>{{ row.category }}</td>
+                            <td>{{ row.value }}</td>
+                            <td><span class="chip chip-status theme-{{ row.theme }}">{{ row.flag.replace('_', ' ') }}</span></td>
+                            <td>{{ row.standard_range }}</td>
+                            <td>{{ row.optimal_range }}</td>
+                            <td>
+                                {% if row.links %}
+                                <div class="table-link-stack">
+                                    {% for link in row.links %}<a class="inline-ref-link" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.label }}</a>{% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        {% endif %}
+
+        <div class="tab-nav-footer">
+            <button class="btn btn-secondary" onclick="HBTabs.switchTo('overview')">← Back to Overview</button>
+            {% if wearable_context %}<button class="btn btn-primary" onclick="HBTabs.switchTo('wearables')">View Wearables →</button>{% endif %}
+        </div>
+    </div>{# /tab-biomarkers #}
+    {% endif %}
+
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    {# TAB: WEARABLES                                                             #}
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    {% if wearable_context %}
+    <div id="tab-wearables" class="tab-panel" role="tabpanel">
+
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">Wearable Overview · {{ wearable_context.platform }}</div>
+                <h2>Physiological trends from continuous monitoring.</h2>
+                {% if wearable_context.date_range_label %}
+                <p class="wearable-date-range">Period: {{ wearable_context.date_range_label }}</p>
+                {% endif %}
+            </div>
+
+            {# Overall score #}
+            <div class="wearable-score-banner" style="border-color: {{ wearable_context.overall_color }}20; background: {{ wearable_context.overall_color }}08;">
+                <div class="wearable-score-left">
+                    <div class="wearable-score-label">Wearable Health Score</div>
+                    <div class="wearable-score-value" style="color: {{ wearable_context.overall_color }};">{{ wearable_context.overall_score }}</div>
+                    <div class="wearable-score-status" style="color: {{ wearable_context.overall_color }};">{{ wearable_context.overall_status }}</div>
+                </div>
+                <div class="wearable-score-bar-wrap">
+                    <div class="wearable-score-bar">
+                        <div class="wearable-score-bar-fill" style="width: {{ wearable_context.overall_score }}%; background: {{ wearable_context.overall_color }};"></div>
+                    </div>
+                    <div class="wearable-score-bar-labels"><span>0</span><span>50</span><span>100</span></div>
+                </div>
+            </div>
+
+            {# Warning flags #}
+            {% if wearable_context.warning_flags %}
+            <div class="wearable-flags">
+                <div class="wearable-flags-title">Signals worth attention</div>
+                {% for flag in wearable_context.warning_flags %}
+                <div class="wearable-flag-row wearable-flag-warning">
+                    <div class="wearable-flag-metric">{{ flag.metric }}</div>
+                    <div class="wearable-flag-message">{{ flag.message }}</div>
+                </div>
+                {% endfor %}
+                {% for flag in wearable_context.insight_flags %}
+                <div class="wearable-flag-row wearable-flag-insight">
+                    <div class="wearable-flag-metric">{{ flag.metric }}</div>
+                    <div class="wearable-flag-message">{{ flag.message }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </section>
+
+        {# Sleep #}
+        {% if wearable_context.sleep_cards %}
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">Sleep</div>
+                <h2>Sleep architecture over the monitored period.</h2>
+                {% if wearable_context.nights_analyzed %}<p>{{ wearable_context.nights_analyzed }} nights analyzed.</p>{% endif %}
+            </div>
+            <div class="wearable-card-grid">
+                {% for card in wearable_context.sleep_cards %}
+                <div class="wearable-metric-card {% if card.optimal %}optimal{% else %}suboptimal{% endif %}">
+                    <div class="wearable-metric-label">{{ card.label }}</div>
+                    <div class="wearable-metric-value">{{ card.value }}</div>
+                    <div class="wearable-metric-note">{{ card.note }}</div>
+                    <div class="wearable-metric-dot {% if card.optimal %}dot-green{% else %}dot-amber{% endif %}"></div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {# HRV + Heart Rate #}
+        {% if wearable_context.biometric_cards %}
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">HRV & Heart Rate</div>
+                <h2>Autonomic nervous system and cardiovascular markers.</h2>
+            </div>
+            <div class="wearable-card-grid">
+                {% for card in wearable_context.biometric_cards %}
+                <div class="wearable-metric-card {% if card.optimal %}optimal{% else %}suboptimal{% endif %}">
+                    <div class="wearable-metric-label">{{ card.label }}</div>
+                    <div class="wearable-metric-value">{{ card.value }}</div>
+                    <div class="wearable-metric-note">{{ card.note }}</div>
+                    <div class="wearable-metric-dot {% if card.optimal %}dot-green{% else %}dot-amber{% endif %}"></div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {# Activity #}
+        {% if wearable_context.activity_cards %}
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">Activity</div>
+                <h2>Movement and energy expenditure patterns.</h2>
+                {% if wearable_context.days_analyzed %}<p>{{ wearable_context.days_analyzed }} days analyzed.</p>{% endif %}
+            </div>
+            <div class="wearable-card-grid">
+                {% for card in wearable_context.activity_cards %}
+                <div class="wearable-metric-card {% if card.optimal %}optimal{% else %}suboptimal{% endif %}">
+                    <div class="wearable-metric-label">{{ card.label }}</div>
+                    <div class="wearable-metric-value">{{ card.value }}</div>
+                    <div class="wearable-metric-note">{{ card.note }}</div>
+                    <div class="wearable-metric-dot {% if card.optimal %}dot-green{% else %}dot-amber{% endif %}"></div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {# Recovery #}
+        {% if wearable_context.recovery_cards %}
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">Recovery & Readiness</div>
+                <h2>Day-to-day recovery quality.</h2>
+            </div>
+            <div class="wearable-card-grid">
+                {% for card in wearable_context.recovery_cards %}
+                <div class="wearable-metric-card {% if card.optimal %}optimal{% else %}suboptimal{% endif %}">
+                    <div class="wearable-metric-label">{{ card.label }}</div>
+                    <div class="wearable-metric-value">{{ card.value }}</div>
+                    <div class="wearable-metric-note">{{ card.note }}</div>
+                    <div class="wearable-metric-dot {% if card.optimal %}dot-green{% else %}dot-amber{% endif %}"></div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <div class="tab-nav-footer">
+            <button class="btn btn-secondary" onclick="HBTabs.switchTo('overview')">← Back to Overview</button>
+            <button class="btn btn-primary" onclick="HBTabs.switchTo('action')">Go to Action Plan →</button>
+        </div>
+    </div>{# /tab-wearables #}
+    {% endif %}
+
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    {# TAB: ACTION PLAN                                                           #}
+    {# ══════════════════════════════════════════════════════════════════════════ #}
+    <div id="tab-action" class="tab-panel" role="tabpanel">
+
+        {# Trust strip #}
+        <section class="trust-strip">
+            {% for marker in trust_markers %}
+            <div class="trust-card">
+                <div class="trust-card-title">{{ marker.title }}</div>
+                <div class="trust-card-body">{{ marker.body }}</div>
+            </div>
+            {% endfor %}
+        </section>
+
+        {# Next tests #}
+        {% if next_tests %}
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">Next Best Tests</div>
+                <h2>What would make this report more certain.</h2>
+            </div>
+            <div class="next-test-grid">
+                {% for item in next_tests %}
+                <div class="next-test-card">
+                    <div class="next-test-title">{{ item.name }}</div>
+                    <div class="next-test-body">{{ item.reason }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {# Action timeline from scored findings #}
+        {% if action_plan and action_plan.action_timeline %}
+        {% with tl = action_plan.action_timeline %}
+        {% if tl.immediate_1_week or tl.short_term_1_month or tl.medium_term_3_months %}
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">Prioritized Action Timeline</div>
+                <h2>What to address and when.</h2>
+            </div>
+
+            {% if tl.immediate_1_week %}
+            <div class="action-timeline-block critical">
+                <div class="action-timeline-header">
+                    <span class="action-timeline-dot"></span>
+                    <div>
+                        <div class="action-timeline-label">Immediate — Within 1 Week</div>
+                        <div class="action-timeline-sub">Consult a healthcare provider before acting on critical signals.</div>
+                    </div>
+                </div>
+                {% for f in tl.immediate_1_week %}
+                <div class="action-timeline-card">
+                    <div class="action-timeline-card-title">{{ f.name }}</div>
+                    <div class="action-timeline-card-body">{{ f.description }}</div>
+                    <div class="action-timeline-card-score">Risk score: {{ f.composite_risk_score }}/100</div>
+                    {% for a in f.actions[:2] %}
+                    <div class="action-list-item"><strong>{{ a.title }}</strong><span>{{ a.description }}</span></div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if tl.short_term_1_month %}
+            <div class="action-timeline-block high">
+                <div class="action-timeline-header">
+                    <span class="action-timeline-dot"></span>
+                    <div>
+                        <div class="action-timeline-label">Short-term — Within 1 Month</div>
+                    </div>
+                </div>
+                {% for f in tl.short_term_1_month %}
+                <div class="action-timeline-card">
+                    <div class="action-timeline-card-title">{{ f.name }}</div>
+                    <div class="action-timeline-card-body">{{ f.description }}</div>
+                    <div class="action-timeline-card-score">Risk score: {{ f.composite_risk_score }}/100</div>
+                    {% for a in f.actions[:2] %}
+                    <div class="action-list-item"><strong>{{ a.title }}</strong><span>{{ a.description }}</span></div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if tl.medium_term_3_months %}
+            <div class="action-timeline-block moderate">
+                <div class="action-timeline-header">
+                    <span class="action-timeline-dot"></span>
+                    <div>
+                        <div class="action-timeline-label">Medium-term — Within 3 Months</div>
+                    </div>
+                </div>
+                {% for f in tl.medium_term_3_months %}
+                <div class="action-timeline-card">
+                    <div class="action-timeline-card-title">{{ f.name }}</div>
+                    <div class="action-timeline-card-body">{{ f.description }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </section>
+        {% endif %}
+        {% endwith %}
+        {% endif %}
+
+        {# Methodology snapshot #}
+        <section class="section-block">
+            <div class="section-heading">
+                <div class="section-eyebrow">Methodology Snapshot</div>
+                <h2>Why the output is structured this way.</h2>
+            </div>
+            <div class="trust-strip">
+                {% for section in methodology_sections %}
+                <div class="trust-card">
+                    <div class="trust-card-title">{{ section.title }}</div>
+                    <div class="trust-card-body">{{ section.body }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="report-footer-actions">
+                <a href="/methodology" class="btn btn-secondary">Open Full Methodology</a>
+                <a href="/" class="btn btn-primary">Start New Analysis</a>
+            </div>
+        </section>
+
+        <div class="tab-nav-footer">
+            <button class="btn btn-secondary" onclick="HBTabs.switchTo('overview')">← Back to Overview</button>
+            <a href="/" class="btn btn-primary">New Analysis</a>
+        </div>
+    </div>{# /tab-action #}
+
+</div>{# /report-shell #}
+
+<div class="disclaimer">
+    <div class="disclaimer-icon">!</div>
+    <div class="disclaimer-text">
+        HealthBridge is designed for educational review and health optimization planning. It is not a diagnostic device, and single-timepoint results should be confirmed with repeat testing and clinical judgment before action.
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.dashboard-card-score').forEach(function(el) {
+        const target = parseInt(el.textContent);
+        if (!isNaN(target)) HealthBridge.animateNumber(el, 0, target, 1000);
+    });
+});
+</script>
+{% endblock %}

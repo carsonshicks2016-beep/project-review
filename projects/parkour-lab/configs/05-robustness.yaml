@@ -1,0 +1,4 @@
+stage: 5
+status: planned_not_implemented
+randomization: [friction, body_mass]
+perturbations: random_pushes

@@ -1,0 +1,29 @@
+{
+  "subject_id": "agent_zero",
+  "created": "2026-06-21T00:00:00+00:00",
+  "_doc": "Every personal field is UNKNOWN until you measure it. value=null + status=unknown is intentional: we never invent personal data. Population priors used by the simulator live in personal_cambrian/genome.py (GENE_SPECS), NOT here. Replace value/status/source/timestamp/method/ci as real measurements arrive.",
+  "metrics": {
+    "age_years":            {"value": null, "unit": "years",     "status": "unknown", "method": "", "source": "", "note": "ENTER"},
+    "sex":                  {"value": null, "unit": "category",  "status": "unknown", "method": "", "source": "", "note": "ENTER — drives O2 carrying capacity, fiber priors, hormonal recovery"},
+    "height_m":             {"value": null, "unit": "m",         "status": "unknown", "method": "", "source": "", "note": "ENTER — stadiometer"},
+    "body_mass_kg":         {"value": null, "unit": "kg",        "status": "unknown", "method": "", "source": "", "note": "ENTER — scale"},
+    "body_fat_frac":        {"value": null, "unit": "frac",      "status": "unknown", "method": "", "source": "", "note": "ENTER — DEXA preferred; BIA low-confidence"},
+    "segment_lengths":      {"value": null, "unit": "m",         "status": "unknown", "method": "", "source": "", "note": "ENTER — femur/tibia/arm/torso; tape or motion-capture"},
+    "resting_hr_bpm":       {"value": null, "unit": "bpm",       "status": "unknown", "method": "", "source": "Whoop?", "note": "ENTER — optional WHOOP input"},
+    "vo2max_ml_kg_min":     {"value": null, "unit": "ml/kg/min", "status": "unknown", "method": "", "source": "", "note": "ENTER — graded test gold standard; watch estimate low-confidence"},
+    "hr_recovery_bpm_60s":  {"value": null, "unit": "bpm",       "status": "unknown", "method": "", "source": "Whoop?", "note": "ENTER"},
+    "squat_1rm_kg":         {"value": null, "unit": "kg",        "status": "unknown", "method": "", "source": "WeightliftingApp?", "note": "ENTER — optional lifting input"},
+    "bench_1rm_kg":         {"value": null, "unit": "kg",        "status": "unknown", "method": "", "source": "", "note": "ENTER"},
+    "deadlift_1rm_kg":      {"value": null, "unit": "kg",        "status": "unknown", "method": "", "source": "", "note": "ENTER"},
+    "sprint_40m_s":         {"value": null, "unit": "s",         "status": "unknown", "method": "", "source": "", "note": "ENTER — timing gates preferred"},
+    "vertical_jump_m":      {"value": null, "unit": "m",         "status": "unknown", "method": "", "source": "", "note": "ENTER — force plate / jump mat"},
+    "throw_velocity_m_s":   {"value": null, "unit": "m/s",       "status": "unknown", "method": "", "source": "", "note": "ENTER — radar"},
+    "mobility_index":       {"value": null, "unit": "score",     "status": "unknown", "method": "", "source": "", "note": "ENTER — FMS / goniometry"},
+    "training_age_years":   {"value": null, "unit": "years",     "status": "unknown", "method": "", "source": "", "note": "ENTER"},
+    "injury_history":       {"value": null, "unit": "list",      "status": "unknown", "method": "", "source": "", "note": "ENTER — site, date, severity, current status"},
+    "sleep_hours":          {"value": null, "unit": "h",         "status": "unknown", "method": "", "source": "Whoop?", "note": "ENTER"},
+    "recovery_score":       {"value": null, "unit": "pct",       "status": "unknown", "method": "", "source": "Whoop?", "note": "ENTER"},
+    "goals":                {"value": null, "unit": "text",      "status": "unknown", "method": "", "source": "", "note": "ENTER — primary athletic objective(s)"},
+    "constraints":          {"value": null, "unit": "text",      "status": "unknown", "method": "", "source": "", "note": "ENTER — time/equipment/medical limits"}
+  }
+}

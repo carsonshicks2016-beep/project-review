@@ -1,0 +1,23 @@
+stage: 2
+env_id: Humanoid-v5
+seed: 7
+total_timesteps: 10000000
+n_envs: 8
+n_steps: 512
+batch_size: 256
+n_epochs: 5
+learning_rate: 0.0000356987
+gamma: 0.95
+gae_lambda: 0.9
+clip_range: 0.3
+ent_coef: 0.00238306
+max_grad_norm: 2.0
+vf_coef: 0.431892
+net_arch: [256, 256]
+activation: relu
+ortho_init: false
+log_std_init: -2.0
+eval_every_updates: 100
+eval_episodes: 5
+# Adapted from RL Zoo Humanoid-v4; v5 restores contact cost and changes observations.
+# These are starting settings, not a claim of reproduced Zoo performance.

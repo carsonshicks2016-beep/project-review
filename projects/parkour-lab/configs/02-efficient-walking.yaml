@@ -1,0 +1,26 @@
+stage: 3
+env_id: ParkourHumanoid
+seed: 7
+total_timesteps: 4000000
+n_envs: 8
+n_steps: 512
+batch_size: 256
+n_epochs: 5
+learning_rate: 0.00003
+gamma: 0.95
+gae_lambda: 0.9
+clip_range: 0.3
+ent_coef: 0.002
+max_grad_norm: 2.0
+vf_coef: 0.43
+net_arch: [256, 256]
+activation: relu
+ortho_init: false
+log_std_init: -2.0
+eval_every_updates: 100
+eval_episodes: 5
+curriculum:
+  initial_level: 1.0
+  max_level: 1.0
+env_kwargs:
+  ctrl_cost_weight: 0.5

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c1118">
+  <title>Mission Control</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Mission Control home"><span class="brand-mark">M</span><span><strong>Mission Control</strong><small>Project workspace</small></span></a>
+    <div class="top-actions"><span class="host" id="host">Connecting…</span><button class="button quiet" id="refresh">Refresh</button></div>
+  </header>
+  <main>
+    <section class="intro"><div><p class="eyebrow">YOUR PROJECTS, IN ONE PLACE</p><h1>Make room to build.</h1><p class="lede">Browse your local project folders, check what’s available, and launch configured apps when you need them.</p></div>
+      <div class="summary"><div><strong id="project-count">—</strong><span>projects found</span></div><div><strong id="running-count">—</strong><span>running here</span></div></div>
+    </section>
+    <section class="toolbar" aria-label="Project controls"><label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Find a project…" autocomplete="off"><kbd>/</kbd></label><div id="filters" class="filters"><button class="filter active" data-filter="all">All</button><button class="filter" data-filter="ready">Ready to launch</button><button class="filter" data-filter="running">Running</button><button class="filter" data-filter="missing">Needs attention</button></div></section>
+    <div id="notice" class="notice" role="status" hidden></div>
+    <section id="projects" class="projects" aria-live="polite"><div class="loading">Finding your projects…</div></section>
+  </main>
+  <dialog id="logs-dialog" class="logs-dialog"><div class="dialog-head"><div><p class="eyebrow">PROCESS OUTPUT</p><h2 id="logs-title">Project logs</h2></div><button class="icon-button" id="close-logs" aria-label="Close logs">×</button></div><pre id="logs" class="logs"></pre></dialog>
+  <script src="/app.js" defer></script>
+</body>
+</html>
