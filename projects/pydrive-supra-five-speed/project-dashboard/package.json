@@ -1,0 +1,14 @@
+{
+  "name": "project-dashboard",
+  "version": "1.0.0",
+  "description": "Carson's Coding Project Dashboard Control Center",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "type": "module"
+}

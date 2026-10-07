@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VECTOR DUEL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="hud">
+      <div class="fighter left">
+        <div class="name" id="n0">ARC</div>
+        <div class="bar"><i id="h0"></i></div>
+      </div>
+      <div id="center">
+        <div id="title">VECTOR&nbsp;DUEL</div>
+        <div id="sub"><span id="matchlabel">MATCH 1 / 1</span> &nbsp;·&nbsp; <span id="timer">0.0s</span></div>
+      </div>
+      <div class="fighter right">
+        <div class="name" id="n1">HEX</div>
+        <div class="bar"><i id="h1"></i></div>
+      </div>
+    </header>
+
+    <div id="stage">
+      <canvas id="scene"></canvas>
+      <div id="verdict"></div>
+    </div>
+
+    <footer id="controls">
+      <button id="prev" title="Previous duel">◀◀</button>
+      <button id="play" title="Play / pause">❚❚</button>
+      <button id="next" title="Next duel">▶▶</button>
+      <input id="scrub" type="range" min="0" max="1000" value="0" />
+      <button id="speed" title="Playback speed">1.0×</button>
+      <button id="auto" class="active" title="Auto-advance playlist">AUTO</button>
+      <span class="pill" id="stat">HITS <b>0</b> · <b>—</b></span>
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

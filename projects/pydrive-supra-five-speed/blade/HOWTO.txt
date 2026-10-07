@@ -1,0 +1,40 @@
+============================================================
+  BLADE — curriculum trainer · loadouts · live 3D viewer
+============================================================
+
+LOADOUTS:  none  sword  shield  sword_shield  mace  axe  katana
+
+------------------------------------------------------------
+TRAIN one fighter through the curriculum (STAND→WALK→TERRAIN→SPAR).
+Headless, with the lab-grade dashboard; auto-promotes between stages.
+
+    python3 -m blade.train --name knight  --loadout sword_shield
+    python3 -m blade.train --name reaper  --loadout axe
+    python3 -m blade.train --name ronin   --loadout katana
+    python3 -m blade.train --name brawler --loadout none
+
+  continue a run (same stage it left off on):
+    python3 -m blade.train --name knight --resume
+
+  flags: --iters 20000  --envs 24  --rollout 64  --ent 0.003
+         --eval-every 15  --workers 14  --seed N
+
+------------------------------------------------------------
+WATCH live in clean 3D (simplified viewer, no mjpython needed).
+Hot-reloads as it trains and follows the curriculum into new stages.
+
+    python3 -m blade.view --name knight
+    python3 -m blade.view --name knight --stage SPAR     # force the combat world
+    python3 -m blade.view --name reaper --stage STAND    # watch any stage
+
+------------------------------------------------------------
+MATCHMAKER — pit any two trained fighters (any loadouts, even mixed).
+
+    python3 -m blade.arena --left knight --right reaper          # sword+shield vs axe -> mp4
+    python3 -m blade.arena --left knight --right knight          # mirror
+    python3 -m blade.arena --left knight --right reaper --live   # clean 3D window
+
+------------------------------------------------------------
+  checkpoints -> blade/checkpoints/   videos -> blade/replays/
+  full docs   -> blade/README.md
+------------------------------------------------------------
