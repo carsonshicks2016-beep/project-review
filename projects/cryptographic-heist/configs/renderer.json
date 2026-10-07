@@ -1,0 +1,13 @@
+{
+  "pygame": {
+    "width": 1480,
+    "height": 900,
+    "dashboard_fraction": 0.25,
+    "target_fps": 60
+  },
+  "threejs": {
+    "enabled_after_replay_schema_v1": true,
+    "source": "replay_log"
+  }
+}
+

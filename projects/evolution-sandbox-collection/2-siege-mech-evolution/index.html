@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Siege Mech Evolution — GA Locomotion &amp; Ballistic Targeting</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════ HEADER ═══════════════════ -->
+  <header id="app-header">
+    <div class="header-brand">
+      <span class="brand-icon">⚙️</span>
+      <div class="brand-text">
+        <h1>SIEGE MECH EVOLUTION</h1>
+        <p class="subtitle">GA-Evolved Locomotion &amp; Ballistic Targeting</p>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-chip">
+        <span class="status-label">Generation</span>
+        <span class="status-value" id="gen-count">0</span>
+      </div>
+      <div class="status-chip accent-gold">
+        <span class="status-label">Best Fitness</span>
+        <span class="status-value" id="best-fitness">0.00</span>
+      </div>
+      <div class="status-chip">
+        <span class="status-label">Pop. Alive</span>
+        <span class="status-value" id="pop-alive">0 / 0</span>
+      </div>
+      <div class="status-chip chip-wind" id="wind-badge">
+        <span class="status-label">Wind</span>
+        <span class="status-value">Calm</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════ MAIN GRID ═══════════════════ -->
+  <main id="app-main">
+
+    <!-- ────── LEFT SIDEBAR ────── -->
+    <aside class="controls-sidebar" id="controls-sidebar">
+      <div class="panel-heading">
+        <span class="panel-heading-icon">▸</span> CONTROL MATRIX
+      </div>
+
+      <!-- Tabs -->
+      <nav class="tab-bar" id="tab-bar">
+        <button class="tab-btn active" data-tab="tab-simulation">Simulation</button>
+        <button class="tab-btn" data-tab="tab-ga">GA Params</button>
+        <button class="tab-btn" data-tab="tab-env">Environment</button>
+      </nav>
+
+      <!-- ── Simulation Tab ── -->
+      <section class="tab-content" id="tab-simulation">
+        <div class="control-group">
+          <label class="control-label" for="template-select">Mech Template</label>
+          <div class="select-wrapper">
+            <select id="template-select">
+              <option value="biped">Biped</option>
+              <option value="tripod">Tripod</option>
+              <option value="quadruped">Quadruped</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label" for="target-select">Target Type</label>
+          <div class="select-wrapper">
+            <select id="target-select">
+              <option value="static-tower">Static Tower</option>
+              <option value="moving-drone">Moving Drone</option>
+              <option value="mixed">Mixed</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label" for="terrain-select">Terrain</label>
+          <div class="select-wrapper">
+            <select id="terrain-select">
+              <option value="flat">Flat</option>
+              <option value="hills">Hills</option>
+              <option value="craters">Craters</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label" for="pop-slider">
+            Population Size
+            <span class="slider-readout" id="pop-slider-val">20</span>
+          </label>
+          <input type="range" id="pop-slider" min="5" max="40" value="20" />
+        </div>
+
+        <div class="control-group">
+          <label class="control-label" for="speed-slider">
+            Sim Speed
+            <span class="slider-readout" id="speed-slider-val">1×</span>
+          </label>
+          <input type="range" id="speed-slider" min="1" max="10" value="1" />
+        </div>
+
+        <div class="control-group">
+          <label class="control-label" for="timer-slider">
+            Gen Timer
+            <span class="slider-readout" id="timer-slider-val">15s</span>
+          </label>
+          <input type="range" id="timer-slider" min="5" max="30" value="15" />
+        </div>
+      </section>
+
+      <!-- ── GA Parameters Tab ── -->
+      <section class="tab-content hidden" id="tab-ga">
+        <div class="control-group">
+          <label class="control-label" for="mutation-slider">
+            Mutation Rate
+            <span class="slider-readout" id="mutation-slider-val">12%</span>
+          </label>
+          <input type="range" id="mutation-slider" min="1" max="50" value="12" />
+        </div>
+
+        <div class="control-group">
+          <label class="control-label" for="crossover-slider">
+            Crossover Rate
+            <span class="slider-readout" id="crossover-slider-val">80%</span>
+          </label>
+          <input type="range" id="crossover-slider" min="50" max="100" value="80" />
+        </div>
+
+        <div class="control-group">
+          <label class="control-label" for="selection-select">Selection Method</label>
+          <div class="select-wrapper">
+            <select id="selection-select">
+              <option value="tournament">Tournament</option>
+              <option value="roulette">Roulette</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label" for="loco-weight-slider">
+            Locomotion Weight
+            <span class="slider-readout" id="loco-weight-slider-val">50%</span>
+          </label>
+          <input type="range" id="loco-weight-slider" min="0" max="100" value="50" />
+        </div>
+
+        <div class="control-group">
+          <label class="control-label" for="target-weight-slider">
+            Targeting Weight
+            <span class="slider-readout" id="target-weight-slider-val">50%</span>
+          </label>
+          <input type="range" id="target-weight-slider" min="0" max="100" value="50" />
+        </div>
+      </section>
+
+      <!-- ── Environment Tab ── -->
+      <section class="tab-content hidden" id="tab-env">
+        <div class="control-group">
+          <label class="control-label" for="gravity-slider">
+            Gravity
+            <span class="slider-readout" id="gravity-slider-val">10</span>
+          </label>
+          <input type="range" id="gravity-slider" min="1" max="20" value="10" />
+        </div>
+
+        <div class="control-group">
+          <label class="control-label" for="wind-x-slider">
+            Wind X
+            <span class="slider-readout" id="wind-x-slider-val">0</span>
+          </label>
+          <input type="range" id="wind-x-slider" min="-5" max="5" value="0" />
+        </div>
+
+        <div class="control-group">
+          <label class="control-label" for="wind-z-slider">
+            Wind Z
+            <span class="slider-readout" id="wind-z-slider-val">0</span>
+          </label>
+          <input type="range" id="wind-z-slider" min="-5" max="5" value="0" />
+        </div>
+
+        <div class="control-group">
+          <label class="control-label" for="friction-slider">
+            Friction
+            <span class="slider-readout" id="friction-slider-val">70%</span>
+          </label>
+          <input type="range" id="friction-slider" min="0" max="100" value="70" />
+        </div>
+      </section>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button class="btn btn-primary" id="play-pause-btn">
+          <span class="btn-icon">▶</span> Play
+        </button>
+        <button class="btn btn-danger" id="reset-btn">
+          <span class="btn-icon">⟲</span> Reset Evolution
+        </button>
+        <button class="btn btn-secondary" id="next-gen-btn">
+          <span class="btn-icon">⏭</span> Next Generation
+        </button>
+      </div>
+    </aside>
+
+    <!-- ────── CENTER — 3D VIEWPORT ────── -->
+    <section class="viewport-panel" id="viewport-panel">
+      <div class="viewport-header">
+        <span class="live-indicator">
+          <span class="live-dot"></span>
+          SIMULATION VIEWPORT
+        </span>
+      </div>
+
+      <div class="viewport-canvas-wrapper">
+        <canvas id="viewport-canvas"></canvas>
+      </div>
+
+      <div class="camera-bar">
+        <button class="cam-btn active" id="cam-free-btn">Free Cam</button>
+        <button class="cam-btn" id="cam-follow-btn">Follow Best</button>
+        <button class="cam-btn" id="cam-target-btn">Target View</button>
+      </div>
+
+      <p class="viewport-hint">Click+drag to orbit. Scroll to zoom. Double-click mech to track.</p>
+    </section>
+
+    <!-- ────── RIGHT SIDEBAR — TELEMETRY ────── -->
+    <aside class="telemetry-sidebar" id="telemetry-sidebar">
+      <div class="panel-heading">
+        <span class="panel-heading-icon">◈</span> TELEMETRY
+      </div>
+
+      <!-- Fitness History -->
+      <div class="telemetry-block">
+        <h3 class="telemetry-title">Fitness History</h3>
+        <div class="chart-wrapper">
+          <canvas id="fitness-chart"></canvas>
+        </div>
+        <p class="chart-label">Best / Average fitness per generation</p>
+      </div>
+
+      <!-- Aiming Deviation -->
+      <div class="telemetry-block">
+        <h3 class="telemetry-title">Aiming Deviation</h3>
+        <div class="chart-wrapper chart-wrapper-square">
+          <canvas id="scatter-chart"></canvas>
+        </div>
+        <p class="chart-label">Projectile impact scatter (CEP)</p>
+      </div>
+
+      <!-- Best Mech Stats -->
+      <div class="telemetry-block">
+        <h3 class="telemetry-title">Best Mech Stats</h3>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-value" id="stat-distance">0.0</span>
+            <span class="stat-label">Distance Moved</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="stat-hits">0</span>
+            <span class="stat-label">Hits</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="stat-misses">0</span>
+            <span class="stat-label">Misses</span>
+          </div>
+          <div class="stat-card accent-gold">
+            <span class="stat-value" id="stat-accuracy">0%</span>
+            <span class="stat-label">Accuracy</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mech Physical Traits -->
+      <div class="telemetry-block">
+        <h3 class="telemetry-title">Mech Physical Traits</h3>
+
+        <div class="trait-row">
+          <span class="trait-label">Avg Limb Length</span>
+          <span class="trait-val" id="trait-limb-val">0.00</span>
+          <div class="trait-bar">
+            <div class="trait-fill" id="trait-limb-fill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="trait-row">
+          <span class="trait-label">Avg Muscle Amp</span>
+          <span class="trait-val" id="trait-muscle-val">0.00</span>
+          <div class="trait-bar">
+            <div class="trait-fill" id="trait-muscle-fill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="trait-row">
+          <span class="trait-label">Avg Turret Prec</span>
+          <span class="trait-val" id="trait-turret-val">0.00</span>
+          <div class="trait-bar">
+            <div class="trait-fill accent-cyan" id="trait-turret-fill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ═══════════════════ FOOTER ═══════════════════ -->
+  <footer id="app-footer">
+    <div class="footer-wind" id="wind-compass-panel">
+      <canvas id="wind-compass-canvas" width="48" height="48"></canvas>
+      <span class="footer-wind-label">WIND</span>
+    </div>
+
+    <div class="footer-progress">
+      <span class="footer-progress-label">Generation Progress</span>
+      <div class="gen-progress-bar" id="gen-progress-bar">
+        <div class="gen-progress-fill" id="gen-progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="footer-timer">
+      <span class="timer-label">TIME</span>
+      <span class="timer-value" id="gen-timer-val">15s</span>
+    </div>
+  </footer>
+
+  <!-- ═══════════════════ SCRIPTS ═══════════════════ -->
+  <script src="js/projection.js"></script>
+  <script src="js/physics3d.js"></script>
+  <script src="js/ga.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

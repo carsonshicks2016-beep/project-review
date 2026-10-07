@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NIGHT CRUISE</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;font-family:'Courier New',monospace;cursor:crosshair}
+canvas{display:block}
+#overlay{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;z-index:10;pointer-events:none}
+#drop-zone{pointer-events:all;border:2px dashed rgba(255,0,128,0.4);border-radius:12px;padding:50px 70px;text-align:center;background:rgba(0,0,0,0.75);backdrop-filter:blur(12px);transition:all .3s}
+#drop-zone.drag{border-color:#ff0080;background:rgba(255,0,128,0.08)}
+#drop-zone.hidden{display:none}
+#drop-zone h1{color:#ff0080;font-size:clamp(28px,5vw,52px);text-shadow:0 0 20px #ff0080,0 0 60px rgba(255,0,128,0.4);margin-bottom:10px;letter-spacing:10px}
+#drop-zone p{color:#0ff;font-size:13px;opacity:.6;margin-bottom:28px;letter-spacing:3px}
+#drop-zone button{background:0 0;border:1px solid #0ff;color:#0ff;padding:11px 30px;font-family:inherit;font-size:13px;cursor:pointer;letter-spacing:4px;transition:all .3s;margin:6px}
+#drop-zone button:hover{background:rgba(0,255,255,0.08);box-shadow:0 0 20px rgba(0,255,255,0.25)}
+#mic-btn{border-color:#ff0080!important;color:#ff0080!important}
+#mic-btn:hover{background:rgba(255,0,128,0.08)!important;box-shadow:0 0 20px rgba(255,0,128,0.25)!important}
+#np{position:fixed;top:18px;left:50%;transform:translateX(-50%);color:#0ff;font-size:11px;letter-spacing:5px;opacity:.55;z-index:20;text-shadow:0 0 8px #0ff;white-space:nowrap}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="overlay"><div id="drop-zone">
+  <h1>NIGHT CRUISE</h1>
+  <p>DROP AN AUDIO FILE OR CHOOSE BELOW</p>
+  <button id="pick">SELECT FILE</button>
+  <input type="file" id="fin" accept="audio/*" hidden>
+  <br>
+  <button id="mic-btn">USE MICROPHONE</button>
+</div></div>
+<div id="np"></div>
+
+<script>
+(() => {
+// ═══════════════════ CANVAS ═══════════════════
+const cv = document.getElementById('c'), c = cv.getContext('2d');
+let W, H;
+const resize = () => { W = cv.width = innerWidth; H = cv.height = innerHeight; buildScanline(); };
+addEventListener('resize', resize);
+resize();
+
+// ═══════════════════ AUDIO ═══════════════════
+let actx, ana, freq, audioEl, src, audioOn = false;
+const B = { bass: 0, low: 0, mid: 0, hi: 0 };
+let bE = 0, bA = 0, bC = 0, beat = false;
+
+function audioInit() {
+  if (actx) { actx.resume(); return; }
+  actx = new (AudioContext || webkitAudioContext)();
+  ana = actx.createAnalyser();
+  ana.fftSize = 2048;
+  ana.smoothingTimeConstant = 0.75;
+  freq = new Uint8Array(ana.frequencyBinCount);
+}
+
+function audioFile(file) {
+  audioInit();
+  if (audioEl) { audioEl.pause(); audioEl.remove(); }
+  if (src) try { src.disconnect(); } catch(e) {}
+  audioEl = new Audio();
+  audioEl.src = URL.createObjectURL(file);
+  src = actx.createMediaElementSource(audioEl);
+  src.connect(ana); ana.connect(actx.destination);
+  audioEl.play(); audioOn = true;
+  dropZone.classList.add('hidden');
+  np.textContent = '\u266B  ' + file.name.replace(/\.[^/.]+$/, '').toUpperCase();
+  audioEl.onended = () => { audioOn = false; dropZone.classList.remove('hidden'); np.textContent = ''; };
+}
+
+async function audioMic() {
+  audioInit();
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    src = actx.createMediaStreamSource(stream);
+    src.connect(ana); audioOn = true;
+    dropZone.classList.add('hidden');
+    np.textContent = '\u25CF  LIVE INPUT';
+  } catch(e) { console.warn('Mic denied', e); }
+}
+
+function audioAnalyze() {
+  if (!ana || !audioOn) { B.bass = B.low = B.mid = B.hi = 0; beat = false; return; }
+  ana.getByteFrequencyData(freq);
+  const sr = actx.sampleRate, bw = sr / 2048, bins = ana.frequencyBinCount;
+  const be = Math.ceil(150 / bw), le = Math.ceil(500 / bw), me = Math.ceil(2000 / bw);
+  let s = [0,0,0,0], n = [0,0,0,0];
+  for (let i = 1; i < bins; i++) {
+    const v = freq[i] / 255, k = i <= be ? 0 : i <= le ? 1 : i <= me ? 2 : 3;
+    s[k] += v; n[k]++;
+  }
+  B.bass = n[0] ? s[0]/n[0] : 0;
+  B.low  = n[1] ? s[1]/n[1] : 0;
+  B.mid  = n[2] ? s[2]/n[2] : 0;
+  B.hi   = n[3] ? s[3]/n[3] : 0;
+  bE = B.bass; bA = bA * 0.93 + bE * 0.07;
+  bC = Math.max(0, bC - 1);
+  beat = bE > bA * 1.35 && bE > 0.22 && bC <= 0;
+  if (beat) bC = 10;
+}
+
+// ═══════════════════ CAR STATE ═══════════════════
+const car = { by: 0, bv: 0, sx: 0, sv: 0, sp: 0, tilt: 0, tail: 0, glow: 0 };
+
+function carUpdate() {
+  if (beat) car.bv += 6 + B.bass * 10;
+  car.bv += (-0.12 * car.by - 0.14 * car.bv);
+  car.by += car.bv;
+  car.sp += 0.012 + B.low * 0.04;
+  const st = Math.sin(car.sp) * B.low * 55;
+  car.sv += 0.05 * (st - car.sx) - 0.12 * car.sv;
+  car.sx += car.sv;
+  car.tilt = car.sv * 0.006;
+  car.tail = beat ? 1 : car.tail * 0.91 + B.bass * 0.09;
+  car.glow = car.glow * 0.88 + B.low * 0.12;
+}
+
+// ═══════════════════ SCENE DATA ═══════════════════
+let roadZ = 0, t = 0;
+
+// Stars
+const stars = Array.from({length: 280}, () => ({
+  x: Math.random(), y: Math.random() * 0.38,
+  s: Math.random() * 1.5 + 0.5,
+  p: Math.random() * 6.28, sp: Math.random() * 0.025 + 0.008
+}));
+
+// Speed streaks
+const streaks = Array.from({length: 25}, () => ({
+  x: (Math.random() - 0.5) * 2, z: Math.random() * 35 + 2, sp: Math.random() * 0.4 + 0.5
+}));
+
+// Road posts
+const posts = Array.from({length: 14}, (_, i) => ({ z: i * 7 + 3 }));
+
+// Particles (beat sparks)
+let parts = [];
+function spark(x, y, n) {
+  for (let i = 0; i < n; i++) parts.push({
+    x, y, vx: (Math.random() - 0.5) * 7, vy: Math.random() * 3 + 1,
+    life: 1, dec: 0.025 + Math.random() * 0.03,
+    cy: Math.random() > 0.5
+  });
+}
+
+// Scanline pattern (created once, recreated on resize)
+let scanPat;
+function buildScanline() {
+  const oc = document.createElement('canvas'); oc.width = 4; oc.height = 4;
+  const ox = oc.getContext('2d');
+  ox.fillStyle = 'rgba(0,0,0,0.06)'; ox.fillRect(0, 0, 4, 2);
+  scanPat = c.createPattern(oc, 'repeat');
+}
+
+// ═══════════════════ DRAW ═══════════════════
+
+function drawSky() {
+  const hy = H * 0.4;
+  const g = c.createLinearGradient(0, 0, 0, hy);
+  g.addColorStop(0, '#000010'); g.addColorStop(0.5, '#080024');
+  g.addColorStop(0.8, '#180040'); g.addColorStop(1, '#2a004a');
+  c.fillStyle = g; c.fillRect(0, 0, W, hy);
+}
+
+function drawStars() {
+  for (const s of stars) {
+    const tw = 0.35 + 0.65 * Math.abs(Math.sin(t * s.sp + s.p));
+    c.fillStyle = `rgba(255,255,255,${tw * (0.45 + B.hi * 0.55)})`;
+    c.fillRect(s.x * W, s.y * H, s.s, s.s);
+  }
+}
+
+function drawSun() {
+  const hy = H * 0.4, cx = W / 2;
+  const r = Math.min(W, H) * 0.11;
+  const sy = hy - r * 0.25;
+  const pulse = 1 + B.mid * 0.08;
+
+  // Outer glow
+  const og = c.createRadialGradient(cx, sy, 0, cx, sy, r * 2.5 * pulse);
+  og.addColorStop(0, 'rgba(255,80,0,0.25)'); og.addColorStop(0.4, 'rgba(255,0,80,0.08)');
+  og.addColorStop(1, 'rgba(255,0,80,0)');
+  c.fillStyle = og; c.fillRect(0, sy - r * 3, W, r * 6);
+
+  c.save();
+  c.beginPath(); c.arc(cx, sy, r * pulse, 0, Math.PI * 2); c.clip();
+  const sg = c.createLinearGradient(cx, sy - r, cx, sy + r);
+  sg.addColorStop(0, '#ff6000'); sg.addColorStop(0.45, '#ff0060'); sg.addColorStop(1, '#bb00ee');
+  c.fillStyle = sg; c.fillRect(cx - r * 1.5, sy - r * 1.5, r * 3, r * 3);
+
+  // Horizontal slice lines
+  c.fillStyle = '#000010';
+  for (let i = 0; i < 9; i++) {
+    const lt = (i + 0.5) / 9, ly = sy - r + r * 2 * lt;
+    if (ly > sy) c.fillRect(cx - r * 1.5, ly, r * 3, r * 2 / 9 * (0.08 + lt * 0.42));
+  }
+  c.restore();
+}
+
+function drawMountains() {
+  const hy = H * 0.4;
+  c.fillStyle = '#08001a';
+  c.beginPath(); c.moveTo(0, hy);
+  for (let i = 0; i <= 30; i++) {
+    const x = i / 30 * W;
+    const h = Math.sin(i * 0.7) * 25 + Math.sin(i * 1.4) * 18 + Math.sin(i * 0.3) * 35;
+    c.lineTo(x, hy - Math.max(0, h));
+  }
+  c.lineTo(W, hy); c.closePath(); c.fill();
+}
+
+function drawHorizonGlow() {
+  const hy = H * 0.4, gh = 35 + B.bass * 30;
+  const g = c.createLinearGradient(0, hy - gh, 0, hy + gh * 0.6);
+  g.addColorStop(0, 'rgba(255,0,100,0)');
+  g.addColorStop(0.45, `rgba(255,0,100,${0.04 + B.bass * 0.14})`);
+  g.addColorStop(0.55, `rgba(255,0,100,${0.06 + B.bass * 0.18})`);
+  g.addColorStop(1, 'rgba(255,0,100,0)');
+  c.fillStyle = g; c.fillRect(0, hy - gh, W, gh * 1.6);
+}
+
+function drawRoad() {
+  const hy = H * 0.4, cx = W / 2, rh = H - hy;
+  const zN = 0.3, zF = 35, rW = 500, P = rh * zN;
+  const gs = 1.2;
+
+  // Surface
+  const rg = c.createLinearGradient(0, hy, 0, H);
+  rg.addColorStop(0, '#05000c'); rg.addColorStop(1, '#0e001c');
+  c.fillStyle = rg; c.fillRect(0, hy, W, rh);
+
+  // Horizontal grid
+  const off = (roadZ % gs) / gs;
+  for (let i = 0; i < 45; i++) {
+    const z = zN + (i + off) * (zF - zN) / 45;
+    const sy = hy + P / z;
+    if (sy <= hy || sy >= H) continue;
+    const d = (z - zN) / (zF - zN);
+    const hw = rW * P / z;
+    c.strokeStyle = `rgba(255,0,128,${0.22 * (1 - d * 0.85)})`;
+    c.lineWidth = 1;
+    c.beginPath(); c.moveTo(cx - hw, sy); c.lineTo(cx + hw, sy); c.stroke();
+  }
+
+  // Vertical grid
+  const vn = 13, vs = rW / vn * 2;
+  for (let i = -vn; i <= vn; i++) {
+    c.strokeStyle = `rgba(255,0,128,${0.12 * (1 - Math.abs(i) / vn * 0.65)})`;
+    c.lineWidth = 1;
+    c.beginPath(); c.moveTo(cx, hy); c.lineTo(cx + i * vs, H); c.stroke();
+  }
+
+  // Road edge glow
+  const ew = rW * 0.62;
+  for (let side = -1; side <= 1; side += 2) {
+    c.strokeStyle = 'rgba(0,255,255,0.2)';
+    c.lineWidth = 1.5;
+    c.beginPath();
+    for (let i = 0; i < 60; i++) {
+      const z = zN + i * (zF - zN) / 60;
+      const sy = hy + P / z, sx = cx + side * ew * P / z;
+      i === 0 ? c.moveTo(sx, sy) : c.lineTo(sx, sy);
+    }
+    c.stroke();
+  }
+}
+
+function drawPosts() {
+  const hy = H * 0.4, cx = W / 2, rh = H - hy, zN = 0.3, P = rh * zN, rW = 500;
+  const spd = 0.25 + B.bass * 0.6 + (beat ? 0.4 : 0);
+  for (const p of posts) {
+    p.z -= spd * 0.4;
+    if (p.z < zN + 0.2) p.z += 14 * 7;
+    const sy = hy + P / p.z;
+    if (sy <= hy || sy >= H - 60) continue;
+    const sc = P / (p.z * p.z);
+    const ph = Math.min(45, 35 * sc), pw = Math.max(1.5, 2.5 * sc);
+    for (let s = -1; s <= 1; s += 2) {
+      const sx = cx + s * rW * 0.68 * P / p.z;
+      c.fillStyle = '#181828';
+      c.fillRect(sx - pw / 2, sy - ph, pw, ph);
+      c.fillStyle = `rgba(0,255,255,${0.25 + B.mid * 0.35})`;
+      c.fillRect(sx - pw, sy - ph - 2, pw * 2, 2.5);
+    }
+  }
+}
+
+function drawStreaks() {
+  const hy = H * 0.4, cx = W / 2, rh = H - hy, zN = 0.3, P = rh * zN, rW = 500;
+  const spd = 0.25 + B.bass * 0.7;
+  for (const s of streaks) {
+    s.z -= spd * s.sp * 0.5;
+    if (s.z < zN) { s.z = 18 + Math.random() * 18; s.x = (Math.random() - 0.5) * 2; }
+    const sy = hy + P / s.z, sx = cx + s.x * rW * 0.45 * P / s.z;
+    if (sy <= hy || sy >= H - 80) continue;
+    const len = Math.min(18, P / (s.z * s.z) * 1.5);
+    const a = 0.28 * Math.max(0, 1 - s.z / 36);
+    c.strokeStyle = `rgba(0,255,255,${a})`; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(sx, sy); c.lineTo(sx, sy - len); c.stroke();
+  }
+}
+
+function drawCar() {
+  const cx = W / 2, baseY = H * 0.82;
+  c.save();
+  c.translate(cx + car.sx, baseY - car.by);
+  c.rotate(car.tilt);
+  const sc = Math.min(W / 1600, H / 900) * 1.1;
+  c.scale(sc, sc);
+
+  const hw = 160, fhw = 168, bw = 145, sw = 128, rw = 68, ch = 195;
+
+  // ── UNDERGLOW ──
+  const gi = 0.25 + car.glow * 0.75;
+  const ug = c.createRadialGradient(0, 10, 0, 0, 10, hw * 1.3);
+  ug.addColorStop(0, `rgba(255,0,128,${gi * 0.45})`);
+  ug.addColorStop(0.35, `rgba(255,0,128,${gi * 0.2})`);
+  ug.addColorStop(0.6, `rgba(0,255,255,${gi * 0.08})`);
+  ug.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = ug; c.fillRect(-hw * 1.3, -20, hw * 2.6, hw * 1.0);
+
+  // ── MAIN BODY ──
+  const bodyGrad = c.createLinearGradient(0, -ch, 0, 0);
+  bodyGrad.addColorStop(0, '#0e0020'); bodyGrad.addColorStop(0.4, '#090016');
+  bodyGrad.addColorStop(1, '#060010');
+  c.fillStyle = bodyGrad;
+  c.strokeStyle = `rgba(0,255,255,${0.12 + B.mid * 0.35})`;
+  c.lineWidth = 1.2;
+
+  c.beginPath();
+  c.moveTo(-hw, 0);
+  c.lineTo(hw, 0);
+  c.lineTo(hw, -28);
+  c.lineTo(fhw, -52);
+  c.lineTo(fhw - 3, -78);
+  c.lineTo(bw, -92);
+  c.lineTo(sw, -128);
+  c.lineTo(rw + 14, -152);
+  c.lineTo(rw + 4, -182);
+  c.lineTo(rw, -ch);
+  c.lineTo(-rw, -ch);
+  c.lineTo(-rw - 4, -182);
+  c.lineTo(-rw - 14, -152);
+  c.lineTo(-sw, -128);
+  c.lineTo(-bw, -92);
+  c.lineTo(-fhw + 3, -78);
+  c.lineTo(-fhw, -52);
+  c.lineTo(-hw, -28);
+  c.closePath();
+  c.fill(); c.stroke();
+
+  // ── REAR WINDSHIELD ──
+  c.fillStyle = '#080018';
+  c.strokeStyle = `rgba(0,255,255,${0.08 + B.mid * 0.18})`;
+  c.lineWidth = 1;
+  c.beginPath();
+  c.moveTo(-rw + 5, -155);
+  c.lineTo(-rw + 12, -188);
+  c.lineTo(rw - 12, -188);
+  c.lineTo(rw - 5, -155);
+  c.closePath();
+  c.fill(); c.stroke();
+
+  // ── SPOILER ──
+  const ea = 0.1 + B.mid * 0.4;
+  c.strokeStyle = `rgba(0,255,255,${ea * 0.7})`; c.lineWidth = 2;
+  c.beginPath();
+  c.moveTo(-rw - 18, -ch + 3);
+  c.lineTo(-rw - 8, -ch - 10);
+  c.lineTo(rw + 8, -ch - 10);
+  c.lineTo(rw + 18, -ch + 3);
+  c.stroke();
+  // Spoiler supports
+  c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(-rw + 5, -ch + 3); c.lineTo(-rw - 2, -ch - 8); c.stroke();
+  c.beginPath(); c.moveTo(rw - 5, -ch + 3); c.lineTo(rw + 2, -ch - 8); c.stroke();
+
+  // ── TAILLIGHT BAR ──
+  const tp = car.tail;
+  const tlY = -42, tlH = 12, tlW = hw * 0.82;
+
+  // Bloom
+  c.save();
+  const tb = c.createRadialGradient(0, tlY, 0, 0, tlY, tlW * 1.2);
+  tb.addColorStop(0, `rgba(255,0,0,${tp * 0.25})`);
+  tb.addColorStop(1, 'rgba(255,0,0,0)');
+  c.fillStyle = tb;
+  c.fillRect(-tlW * 1.2, tlY - tlW, tlW * 2.4, tlW * 2);
+
+  // Bar body
+  c.shadowColor = `rgba(255,0,0,${tp})`; c.shadowBlur = 12 + tp * 22;
+  c.fillStyle = `rgba(255,${20 + tp * 35 | 0},${15 + tp * 20 | 0},${0.55 + tp * 0.45})`;
+  c.fillRect(-tlW, tlY - tlH / 2, tlW * 2, tlH);
+  // Bright center
+  c.fillStyle = `rgba(255,${80 + tp * 175 | 0},${40 + tp * 80 | 0},${tp * 0.9})`;
+  c.fillRect(-tlW + 4, tlY - tlH / 4, (tlW - 4) * 2, tlH / 2);
+  // Individual segments
+  const segW = (tlW * 2 - 10) / 16;
+  for (let i = 0; i < 16; i++) {
+    c.fillStyle = `rgba(255,${150 + tp * 105 | 0},${50 + tp * 60 | 0},${tp * 0.5})`;
+    c.fillRect(-tlW + 5 + i * segW + 1, tlY - tlH / 3, segW - 2, tlH / 1.5);
+  }
+  c.shadowBlur = 0;
+  c.restore();
+
+  // ── LICENSE PLATE ──
+  const lpY = -18, lpW = 52, lpH = 14;
+  c.fillStyle = '#04000a';
+  c.fillRect(-lpW, lpY - lpH / 2, lpW * 2, lpH);
+  c.strokeStyle = `rgba(0,255,255,${0.15 + B.hi * 0.5})`;
+  c.lineWidth = 0.8;
+  c.strokeRect(-lpW, lpY - lpH / 2, lpW * 2, lpH);
+  c.save();
+  c.fillStyle = `rgba(0,255,255,${0.25 + B.hi * 0.75})`;
+  c.shadowColor = `rgba(0,255,255,${B.hi * 0.7})`; c.shadowBlur = 4 + B.hi * 12;
+  c.font = `bold ${lpH * 0.7}px "Courier New",monospace`;
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('CRUISE', 0, lpY);
+  c.restore();
+
+  // ── WHEELS ──
+  const wy = 4, wr = 18;
+  for (let s = -1; s <= 1; s += 2) {
+    const wx = s * hw * 0.72;
+    c.fillStyle = '#000'; c.beginPath(); c.arc(wx, wy, wr, Math.PI, 0); c.fill();
+    c.fillStyle = '#0a0a12'; c.beginPath(); c.arc(wx, wy, wr * 0.82, Math.PI, 0); c.fill();
+    c.fillStyle = `rgba(120,120,150,${0.25 + B.mid * 0.25})`;
+    c.beginPath(); c.arc(wx, wy - wr * 0.3, wr * 0.28, 0, Math.PI * 2); c.fill();
+  }
+
+  // ── ENGINE VENTS ──
+  for (let s = -1; s <= 1; s += 2) {
+    for (let i = 0; i < 4; i++) {
+      const vy = -100 - i * 7, vx = s * 105;
+      c.strokeStyle = `rgba(0,255,255,${0.06 + B.mid * 0.12})`; c.lineWidth = 0.8;
+      c.beginPath(); c.moveTo(vx - 14, vy); c.lineTo(vx + 14, vy); c.stroke();
+    }
+  }
+
+  // ── EDGE HIGHLIGHTS ──
+  c.strokeStyle = `rgba(0,255,255,${ea})`; c.lineWidth = 1;
+  // Roof edge
+  c.beginPath(); c.moveTo(-rw, -ch); c.lineTo(rw, -ch); c.stroke();
+  // Shoulders
+  c.beginPath(); c.moveTo(-bw, -92); c.lineTo(-sw, -128); c.stroke();
+  c.beginPath(); c.moveTo(bw, -92); c.lineTo(sw, -128); c.stroke();
+  // Fender crease
+  c.strokeStyle = `rgba(0,255,255,${ea * 0.5})`; c.lineWidth = 0.8;
+  c.beginPath(); c.moveTo(-fhw, -52); c.lineTo(-hw, -28); c.stroke();
+  c.beginPath(); c.moveTo(fhw, -52); c.lineTo(hw, -28); c.stroke();
+
+  // ── EXHAUST GLOW ──
+  for (let s = -1; s <= 1; s += 2) {
+    const ex = s * 60;
+    const eg = c.createRadialGradient(ex, 2, 0, ex, 2, 15);
+    eg.addColorStop(0, `rgba(255,100,0,${0.15 + B.bass * 0.3})`);
+    eg.addColorStop(1, 'rgba(255,60,0,0)');
+    c.fillStyle = eg; c.fillRect(ex - 15, -8, 30, 20);
+  }
+
+  c.restore();
+
+  // ── BEAT SPARKS ──
+  if (beat && audioOn) spark(cx + car.sx * sc, baseY - car.by * sc + 5, 12 + B.bass * 10 | 0);
+}
+
+function drawParticles() {
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.life -= p.dec;
+    if (p.life <= 0) { parts.splice(i, 1); continue; }
+    c.fillStyle = p.cy ? `rgba(0,255,255,${p.life})` : `rgba(255,140,0,${p.life})`;
+    c.fillRect(p.x - 1, p.y - 1, p.life * 3, p.life * 3);
+  }
+}
+
+function drawFX() {
+  // Scanlines
+  if (scanPat) { c.fillStyle = scanPat; c.fillRect(0, 0, W, H); }
+  // Vignette
+  const vg = c.createRadialGradient(W / 2, H / 2, W * 0.28, W / 2, H / 2, W * 0.78);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.55)');
+  c.fillStyle = vg; c.fillRect(0, 0, W, H);
+}
+
+// ═══════════════════ MAIN LOOP ═══════════════════
+let lt = 0;
+function frame(ts) {
+  const dt = Math.min((ts - lt) / 16.67, 3); lt = ts; t += 0.016 * dt;
+  audioAnalyze();
+  carUpdate();
+  const spd = (0.2 + B.bass * 0.65 + (beat ? 0.35 : 0)) * dt;
+  roadZ += spd;
+
+  c.clearRect(0, 0, W, H);
+  drawSky();
+  drawStars();
+  drawSun();
+  drawMountains();
+  drawHorizonGlow();
+  drawRoad();
+  drawPosts();
+  drawStreaks();
+  drawCar();
+  drawParticles();
+  drawFX();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// ═══════════════════ UI ═══════════════════
+const dropZone = document.getElementById('drop-zone');
+const np = document.getElementById('np');
+document.getElementById('pick').onclick = () => document.getElementById('fin').click();
+document.getElementById('fin').onchange = e => { if (e.target.files[0]) audioFile(e.target.files[0]); };
+document.getElementById('mic-btn').onclick = audioMic;
+document.body.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+document.body.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+document.body.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag');
+  if (e.dataTransfer.files[0]) audioFile(e.dataTransfer.files[0]);
+});
+})();
+</script>
+</body>
+</html>

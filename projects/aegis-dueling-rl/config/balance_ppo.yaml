@@ -1,0 +1,31 @@
+# Aegis — M1 trainer config: balance & locomotion via imitation (single agent, no self-play).
+# Run from the repo root (where Assets/ and config/ live):
+#   mlagents-learn config/balance_ppo.yaml --run-id=balance01 --time-scale=20 --no-graphics
+# then press Play in Unity. Watch reward climb:  tensorboard --logdir results
+
+behaviors:
+  Duelist:
+    trainer_type: ppo
+    hyperparameters:
+      batch_size: 2048
+      buffer_size: 20480
+      learning_rate: 3.0e-4
+      learning_rate_schedule: linear
+      beta: 5.0e-3            # entropy — keep exploration alive in continuous control
+      epsilon: 0.2
+      lambd: 0.95
+      num_epoch: 3
+    network_settings:
+      normalize: true         # essential for raw physics observations
+      hidden_units: 512
+      num_layers: 3
+      vis_encode_type: simple
+    reward_signals:
+      extrinsic:
+        gamma: 0.99
+        strength: 1.0
+    keep_checkpoints: 20
+    checkpoint_interval: 500000
+    max_steps: 30000000
+    time_horizon: 1000
+    summary_freq: 30000

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HealthBridge AI{% endblock %}</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="brand">
+            Health<em>Bridge</em> AI
+        </div>
+        <div class="brand-tag">
+            {% block nav_tag %}Health Intelligence Platform{% endblock %}
+        </div>
+        <div class="brand-credit">Designed by Carson Hicks</div>
+        {% block nav_links %}
+        <div class="nav-links">
+            <a href="/">New Analysis</a>
+            <a href="/methodology">Methodology</a>
+            <a href="#" onclick="window.print(); return false;">Print Report</a>
+        </div>
+        {% endblock %}
+    </nav>
+
+    <!-- Main Content -->
+    {% block content %}{% if content is defined %}{{ content|safe }}{% endif %}{% endblock %}
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading" aria-hidden="true">
+        <div class="loading-card">
+            <div class="loading-card-top">
+                <div>
+                    <div class="loading-kicker" id="loading-kicker">Initializing structured analysis</div>
+                    <h2 id="loading-title">Building your HealthBridge report</h2>
+                    <p id="loading-description">We validate the files, normalize the inputs, and assemble a report that keeps uncertainty visible.</p>
+                </div>
+                <div class="loading-pill" id="loading-pill">Combined Analysis</div>
+            </div>
+
+            <div class="loading-visual-grid">
+                <div class="loading-orbit">
+                    <div class="loading-orbit-ring ring-one"></div>
+                    <div class="loading-orbit-ring ring-two"></div>
+                    <div class="loading-orbit-ring ring-three"></div>
+                    <div class="loading-core">
+                        <span class="loading-core-label">Focus</span>
+                        <strong id="loading-focus">Cross-source validation</strong>
+                    </div>
+                </div>
+
+                <div class="loading-side">
+                    <div class="loading-side-card">
+                        <div class="loading-side-label">Current step</div>
+                        <div class="loading-side-value" id="loading-current-step">Validating uploads and collection context.</div>
+                    </div>
+                    <div class="loading-side-card subtle">
+                        <div class="loading-side-label">What happens next</div>
+                        <div class="loading-side-value" id="loading-next-step">Normalizing biomarkers and curated variants into a common schema.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="loading-progress">
+                <div class="loading-progress-bar">
+                    <div class="loading-progress-fill" id="loading-progress-fill"></div>
+                </div>
+                <div class="loading-progress-meta">
+                    <span id="loading-progress-label">Step 1 of 4</span>
+                    <span id="loading-progress-percent">8%</span>
+                </div>
+            </div>
+
+            <div class="loading-stage-list" id="loading-stage-list"></div>
+
+            <div class="loading-footer">
+                <span class="loading-footer-chip" id="loading-files">Waiting for uploads</span>
+                <span class="loading-footer-copy">Deterministic analysis runs before narrative generation.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application JavaScript -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Darwin's Doodles: An interactive 2D physics sandbox teaching Genetic Algorithms. Build creatures, set mutation rates, and watch walking behaviors evolve.">
+    <title>Darwin's Doodles - Creature Evolution Lab (Genetic Algorithm)</title>
+    
+    <!-- Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Mono&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-logo">
+                <span class="logo-icon">🧬</span>
+                <div class="logo-text">
+                    <h1>DARWIN'S DOODLES</h1>
+                    <p>Creature Evolution Lab &bull; Genetic Algorithm Sandbox</p>
+                </div>
+            </div>
+            <div class="header-status">
+                <div class="status-item">
+                    <span class="status-label">Gen</span>
+                    <span class="status-value highlight" id="gen-count">1</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Best Fitness</span>
+                    <span class="status-value highlight-green" id="best-fitness-val">0.00m</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Sim Time</span>
+                    <span class="status-value" id="sim-timer">0.0s</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace Grid -->
+        <main class="app-main">
+            <!-- Sidebar: Controls -->
+            <section class="sidebar-panel controls-sidebar" aria-label="Simulation Controls">
+                <div class="panel-section">
+                    <h2>Creature Preset</h2>
+                    <div class="preset-selector">
+                        <button class="preset-btn active" data-preset="biped">
+                            <span class="preset-icon">🚶</span> Biped
+                        </button>
+                        <button class="preset-btn" data-preset="crawler">
+                            <span class="preset-icon">🐛</span> Crawler
+                        </button>
+                        <button class="preset-btn" data-preset="quadruped">
+                            <span class="preset-icon">🐕</span> Quadruped
+                        </button>
+                        <button class="preset-btn" data-preset="starfish">
+                            <span class="preset-icon">⭐</span> Starfish
+                        </button>
+                        <button class="preset-btn" id="custom-preset-btn" data-preset="custom" style="grid-column: span 2; margin-top: 4px;">
+                            <span class="preset-icon">🛠️</span> Custom Creator
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2>Simulation Settings</h2>
+                    
+                    <div class="control-group">
+                        <label for="speed-slider">Sim Speed: <span id="speed-val">1x</span></label>
+                        <input type="range" id="speed-slider" min="1" max="10" value="1" step="1">
+                        <div class="speed-presets">
+                            <button class="speed-preset-btn" data-speed="1">1x</button>
+                            <button class="speed-preset-btn" data-speed="5">5x</button>
+                            <button class="speed-preset-btn" data-speed="10">10x</button>
+                            <button id="instant-btn" class="speed-preset-btn secondary">Instant Gen</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="terrain-select">Active Terrain</label>
+                        <select id="terrain-select">
+                            <option value="flat">Flat Ground</option>
+                            <option value="bumpy">Hills & Valleys</option>
+                            <option value="hurdles">Hurdles (Obstacles)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="duration-slider">Generation Timer: <span id="duration-val">10s</span></label>
+                        <input type="range" id="duration-slider" min="5" max="25" value="10" step="1">
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2>GA Hyperparameters</h2>
+                    
+                    <div class="control-group">
+                        <label for="pop-slider">Population Size: <span id="pop-val">30</span></label>
+                        <input type="range" id="pop-slider" min="10" max="60" value="30" step="2">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="mutation-slider">Mutation Rate: <span id="mutation-val">15%</span></label>
+                        <input type="range" id="mutation-slider" min="1" max="100" value="15" step="1">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="elitism-slider">Elitism Count: <span id="elitism-val">2</span></label>
+                        <input type="range" id="elitism-slider" min="0" max="6" value="2" step="1">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="selection-select">Selection Type</label>
+                        <select id="selection-select">
+                            <option value="tournament">Tournament Selection</option>
+                            <option value="roulette">Roulette Selection</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="play-pause-btn" class="primary-btn">
+                        <span class="btn-icon">⏸️</span> Pause Sim
+                    </button>
+                    <button id="reset-btn" class="danger-btn">
+                        <span class="btn-icon">🔄</span> Reset GA
+                    </button>
+                </div>
+            </section>
+
+            <!-- Simulation Viewport -->
+            <section class="simulation-viewport" aria-label="Simulation Canvas">
+                <div class="viewport-header">
+                    <span class="live-indicator"><span class="pulse"></span> LIVE SIMULATION</span>
+                    <span class="instructions-hint">Drag/pan canvas. Scroll to zoom. Hover creature to inspect.</span>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="sim-canvas"></canvas>
+                    <div id="editor-toolbar" class="editor-toolbar hidden">
+                        <button class="tool-btn active" data-tool="joint">🔘 Add Joint</button>
+                        <button class="tool-btn" data-tool="bone">🦴 Add Bone</button>
+                        <button class="tool-btn" data-tool="muscle">💪 Add Muscle</button>
+                        <button class="tool-btn" data-tool="erase">❌ Erase</button>
+                        <button class="tool-btn danger" id="clear-editor-btn">🧹 Clear</button>
+                        <button class="tool-btn success" id="save-creature-btn">🚀 Evolve</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sidebar: Telemetry & Genome -->
+            <section class="sidebar-panel telemetry-sidebar" aria-label="Telemetry and Analytics">
+                <div class="panel-section">
+                    <h2>Evolution Progress</h2>
+                    <div class="chart-container">
+                        <canvas id="telemetry-chart"></canvas>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-label">Avg Fitness</span>
+                            <span class="stat-value" id="avg-fitness-val">0.00m</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Peak Velocity</span>
+                            <span class="stat-value" id="peak-vel-val">0.0m/s</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2>Champion Genome</h2>
+                    <p class="section-desc">Evolved weights for the best runner's muscles:</p>
+                    <div class="genome-visualizer">
+                        <div class="genome-grid" id="genome-grid">
+                            <!-- Populated dynamically -->
+                            <div class="no-selection">No generation completed yet</div>
+                        </div>
+                    </div>
+                    <div class="muscle-waveforms">
+                        <div class="waveform-header">
+                            <span>Muscle Phase Offsets</span>
+                        </div>
+                        <div class="waveform-canvas-container">
+                            <canvas id="waveform-canvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer: Hall of Fame -->
+        <footer class="app-footer">
+            <div class="footer-title">
+                <span>🏆</span>
+                <h3>Hall of Fame</h3>
+                <p>Replay the elite champion of any past generation</p>
+            </div>
+            <div class="hall-of-fame-list" id="hall-of-fame-list">
+                <!-- Dynamically populated -->
+                <div class="empty-hall-msg">No champions archived. Evolve at least one generation.</div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/physics.js"></script>
+    <script src="js/presets.js"></script>
+    <script src="js/ga.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

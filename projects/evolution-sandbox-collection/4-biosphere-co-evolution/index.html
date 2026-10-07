@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Biosphere Co-Evolution: A continuous 2D predator-prey simulator comparing GA-evolved prey (Rabbits) and PPO-trained predators (Foxes).">
+    <title>Biosphere Co-Evolution - Predator-Prey Arms Race (GA vs. PPO)</title>
+    
+    <!-- Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Mono&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-logo">
+                <span class="logo-icon">🦊</span>
+                <div class="logo-text">
+                    <h1>BIOSPHERE CO-EVOLUTION</h1>
+                    <p>Predator-Prey Sandbox &bull; Genetic Algorithms vs. PPO Reinforcement Learning</p>
+                </div>
+            </div>
+            <div class="header-status">
+                <div class="status-item">
+                    <span class="status-label">Rabbits (GA)</span>
+                    <span class="status-value highlight-blue" id="rabbit-count">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Foxes (PPO)</span>
+                    <span class="status-value highlight-orange" id="fox-count">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Carrots (Food)</span>
+                    <span class="status-value highlight-green" id="carrot-count">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Season</span>
+                    <span class="status-value" id="season-badge">SPRING</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace Grid -->
+        <main class="app-main">
+            <!-- Sidebar: Controls & Sandbox -->
+            <section class="sidebar-panel controls-sidebar" aria-label="Ecosystem Controls">
+                <!-- Tab Controls -->
+                <div class="tab-header">
+                    <button class="tab-btn active" data-tab="sandbox">Ecosystem</button>
+                    <button class="tab-btn" data-tab="hyperparams">Learning</button>
+                    <button class="tab-btn" data-tab="rewards">Rewards</button>
+                </div>
+
+                <div class="tab-content" id="tab-sandbox">
+                    <div class="panel-section">
+                        <h2>Ecosystem Spawning</h2>
+                        <div class="spawn-buttons-grid">
+                            <button id="spawn-rabbit-btn" class="spawn-btn rabbit-style">🐰 +10 Rabbits</button>
+                            <button id="spawn-fox-btn" class="spawn-btn fox-style">🦊 +5 Foxes</button>
+                            <button id="spawn-carrot-btn" class="spawn-btn carrot-style">🥕 +25 Carrots</button>
+                            <button id="clear-all-btn" class="spawn-btn danger-style">🧹 Clear Map</button>
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <h2>Simulation Controls</h2>
+                        <div class="control-group">
+                            <label for="speed-slider">Sim Speed: <span id="speed-val">1x</span></label>
+                            <input type="range" id="speed-slider" min="1" max="5" value="1" step="1">
+                        </div>
+                        <div class="control-group">
+                            <label for="season-select">Active Season</label>
+                            <select id="season-select">
+                                <option value="spring">Spring (Abundant Carrots)</option>
+                                <option value="summer">Summer (Normal Growth)</option>
+                                <option value="winter">Winter (Scarce Carrots - High Starvation)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content hidden" id="tab-hyperparams">
+                    <div class="panel-section">
+                        <h2>Prey (GA) Parameters</h2>
+                        <div class="control-group">
+                            <label for="ga-mutation-slider">Mutation Rate: <span id="ga-mutation-val">15%</span></label>
+                            <input type="range" id="ga-mutation-slider" min="1" max="50" value="15" step="1">
+                        </div>
+                        <div class="control-group">
+                            <label for="ga-energy-slider">Birth Energy: <span id="ga-energy-val">200</span></label>
+                            <input type="range" id="ga-energy-slider" min="100" max="400" value="200" step="10">
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <h2>Predator (PPO) Parameters</h2>
+                        <div class="control-group">
+                            <label for="ppo-lr-slider">Learning Rate: <span id="ppo-lr-val">0.0003</span></label>
+                            <input type="range" id="ppo-lr-slider" min="1" max="20" value="3" step="1">
+                        </div>
+                        <div class="control-group">
+                            <label for="ppo-entropy-slider">Entropy Coeff: <span id="ppo-entropy-val">0.01</span></label>
+                            <input type="range" id="ppo-entropy-slider" min="0" max="100" value="10" step="5">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content hidden" id="tab-rewards">
+                    <div class="panel-section">
+                        <h2>Predator Reward Shaping</h2>
+                        <p class="section-desc">Tune what the Fox gets rewarded for:</p>
+                        
+                        <div class="control-group">
+                            <label for="r-catch-slider">Catch Rabbit: <span id="r-catch-val">+15.0</span></label>
+                            <input type="range" id="r-catch-slider" min="5" max="50" value="15" step="1">
+                        </div>
+                        <div class="control-group">
+                            <label for="r-starve-slider">Starvation Penalty: <span id="r-starve-val">-0.05</span></label>
+                            <input type="range" id="r-starve-slider" min="0" max="20" value="5" step="1">
+                        </div>
+                        <div class="control-group">
+                            <label for="r-approach-slider">Approach Reward: <span id="r-approach-val">+0.05</span></label>
+                            <input type="range" id="r-approach-slider" min="0" max="20" value="5" step="1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="play-pause-btn" class="primary-btn">
+                        <span class="btn-icon">⏸️</span> Pause Sim
+                    </button>
+                    <button id="reset-btn" class="danger-btn">
+                        <span class="btn-icon">🔄</span> Wipe Ecosystem
+                    </button>
+                </div>
+            </section>
+
+            <!-- Simulation Viewport -->
+            <section class="simulation-viewport" aria-label="Ecosystem Canvas">
+                <div class="viewport-header">
+                    <span class="live-indicator"><span class="pulse"></span> ECOSYSTEM SIMULATION</span>
+                    <span class="instructions-hint">Double-click entity to follow. Toggle checkboxes below to filter.</span>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="sim-canvas"></canvas>
+                </div>
+                <div class="viewport-footer">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="show-vision-chk" checked>
+                        <span class="checkmark"></span> Show Vision Cones
+                    </label>
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="show-target-chk" checked>
+                        <span class="checkmark"></span> Highlight Target Locks
+                    </label>
+                </div>
+            </section>
+
+            <!-- Sidebar: Telemetry & Analytics -->
+            <section class="sidebar-panel telemetry-sidebar" aria-label="Telemetry and Analytics">
+                <div class="panel-section">
+                    <h2>Ecosystem History</h2>
+                    <p class="section-desc">Lotka-Volterra population waves:</p>
+                    <div class="chart-container">
+                        <canvas id="telemetry-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2>Prey Evolved Adaptations</h2>
+                    <p class="section-desc">Average physical traits in Rabbit population:</p>
+                    <div class="trait-progress-grid">
+                        <div class="trait-progress-bar">
+                            <div class="trait-bar-header">
+                                <span>Max Running Speed</span>
+                                <span id="trait-speed-val" class="trait-val">1.2x</span>
+                            </div>
+                            <div class="progress-track">
+                                <div id="trait-speed-fill" class="progress-fill" style="width: 20%"></div>
+                            </div>
+                        </div>
+                        <div class="trait-progress-bar">
+                            <div class="trait-bar-header">
+                                <span>Sensory Vision Cone</span>
+                                <span id="trait-vision-val" class="trait-val">120px</span>
+                            </div>
+                            <div class="progress-track">
+                                <div id="trait-vision-fill" class="progress-fill blue-fill" style="width: 30%"></div>
+                            </div>
+                        </div>
+                        <div class="trait-progress-bar">
+                            <div class="trait-bar-header">
+                                <span>Physical Scale (Size)</span>
+                                <span id="trait-size-val" class="trait-val">10px</span>
+                            </div>
+                            <div class="progress-track">
+                                <div id="trait-size-fill" class="progress-fill gold-fill" style="width: 50%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2>PPO Telemetry (Foxes)</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-label">Crashes/Walls</span>
+                            <span class="stat-value text-red" id="ppo-crashes-val">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Rabbits Caught</span>
+                            <span class="stat-value text-green" id="ppo-catches-val">0</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer: Neural Activation Map -->
+        <footer class="app-footer">
+            <div class="footer-title">
+                <span>🧠</span>
+                <h3>Fox PPO Brain Activation Map</h3>
+                <p>Real-time Actor-Critic output policy probabilities</p>
+            </div>
+            <div class="neural-visual-panel" id="neural-visual-panel">
+                <!-- Neural Network node rendering -->
+                <div class="neural-node-group">
+                    <span class="net-action-label">Turn Left</span>
+                    <div class="net-activation-track"><div id="net-act-left" class="net-activation-fill" style="width: 25%"></div></div>
+                    <span class="net-action-prob" id="net-act-left-val">25%</span>
+                </div>
+                <div class="neural-node-group">
+                    <span class="net-action-label">Turn Right</span>
+                    <div class="net-activation-track"><div id="net-act-right" class="net-activation-fill" style="width: 25%"></div></div>
+                    <span class="net-action-prob" id="net-act-right-val">25%</span>
+                </div>
+                <div class="neural-node-group">
+                    <span class="net-action-label">Accelerate</span>
+                    <div class="net-activation-track"><div id="net-act-accel" class="net-activation-fill" style="width: 25%"></div></div>
+                    <span class="net-action-prob" id="net-act-accel-val">25%</span>
+                </div>
+                <div class="neural-node-group">
+                    <span class="net-action-label">Coast (Idle)</span>
+                    <div class="net-activation-track"><div id="net-act-coast" class="net-activation-fill" style="width: 25%"></div></div>
+                    <span class="net-action-prob" id="net-act-coast-val">25%</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/physics.js"></script>
+    <script src="js/network.js"></script>
+    <script src="js/ga.js"></script>
+    <script src="js/ppo.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

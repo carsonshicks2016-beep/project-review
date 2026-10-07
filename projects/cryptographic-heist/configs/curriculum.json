@@ -1,0 +1,21 @@
+{
+  "stages": [
+    "scripted_sandbox",
+    "evader_waypoints",
+    "single_pursuer_chase",
+    "multi_pursuer_containment",
+    "learned_pursuer_comms",
+    "evader_scanner",
+    "adversarial_jamming",
+    "authenticated_self_play"
+  ],
+  "defaults": {
+    "start_city_cols": 4,
+    "start_city_rows": 4,
+    "max_city_cols": 10,
+    "max_city_rows": 8,
+    "policy_hz": 30,
+    "rollout_seconds": 60
+  }
+}
+

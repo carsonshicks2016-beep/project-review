@@ -1,0 +1,5 @@
+numpy>=1.24
+pygame>=2.5
+sounddevice>=0.4   # optional: real-time engine/turbo sound (auto-disables if missing)
+torch>=2.0         # optional: only for the PyTorch RL upgrade path (brain.py)
+moderngl>=5.8      # 3D viewer (OpenGL)

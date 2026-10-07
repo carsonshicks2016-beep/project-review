@@ -1,0 +1,112 @@
+# PPO for the rally driver.
+#
+#   mlagents-learn config/rally_ppo.yaml --run-id=rally01
+#   ...then press Play in Unity.
+#
+# The behaviour name below MUST match BehaviorParameters.BehaviorName on the car,
+# which TrainingSceneBuilder sets to "RallyDriver". If they disagree, the trainer
+# connects and then sits there having never been sent an observation.
+
+behaviors:
+  RallyDriver:
+    trainer_type: ppo
+
+    hyperparameters:
+      # Driving is a smooth continuous-control problem, so it wants larger batches
+      # and fewer epochs than a sparse-reward task does.
+      batch_size: 2048
+      buffer_size: 20480
+      learning_rate: 3.0e-4
+      learning_rate_schedule: linear
+      beta: 5.0e-3          # entropy bonus; keeps it exploring throttle/steer early
+      beta_schedule: linear
+      epsilon: 0.2
+      epsilon_schedule: linear
+      lambd: 0.95
+      num_epoch: 3
+
+    network_settings:
+      # normalize matters here. The observation vector mixes speeds, slip ratios,
+      # dot products and a distance, and they are nowhere near the same scale.
+      normalize: true
+      hidden_units: 256
+      num_layers: 2
+      vis_encode_type: simple
+
+    reward_signals:
+      extrinsic:
+        # A stage takes a long time relative to the decision rate (20 Hz — five physics
+        # steps at the project's real 0.01 s timestep, not the 10 Hz long assumed), so the
+        # discount has to be long or the policy never learns that a corner it is
+        # about to arrive at is worth slowing down for.
+        gamma: 0.995
+        strength: 1.0
+
+    # Must be at least max_steps / checkpoint_interval or the earliest checkpoints are
+    # silently discarded. rally08 ate its own best policy that way: reward peaked at 87.8
+    # around 920k steps and RallyDriver-999940.onnx was gone long before the run ended,
+    # leaving nothing earlier than 5.5M on disk.
+    keep_checkpoints: 50
+    checkpoint_interval: 500000
+
+    # 25M, not 10M, because 10M was demonstrably not enough. rally08 and rally09 were BOTH
+    # still improving when they hit the ceiling — rally09's single best window (reward 78.1,
+    # 56 % finish) was at 9.94M, the last moments of the run. Neither policy converged; they
+    # ran out of budget, and every conclusion drawn from their endpoints was really a
+    # statement about the budget.
+    #
+    # This also stretches the linear learning-rate and entropy schedules over 25M. That is
+    # the intended effect: the annealing phase from 8M to 9.8M of rally08 sat flat, so there
+    # is no evidence the old schedule was decaying too slowly, and there is direct evidence
+    # the run was ending too early.
+    max_steps: 25000000
+    time_horizon: 128
+    summary_freq: 20000
+
+# ══════════════════════════════════════════════════════════════════════
+#  OBSTACLE CURRICULUM
+#
+#  Rocks on the road, ramped in rather than switched on. RallyAgent reads this
+#  parameter each time it draws a new stage (every stageRefreshEpisodes) and
+#  writes it to TrackGenerator.obstaclesPer100m.
+#
+#  This governs rocks in the RACING LINE only. The stage's scenery — ~259 trees
+#  and ~77 boulders, all tagged Obstacle and all episode-ending — is always
+#  present, including in lesson "clear". There is no such thing as a clean stage
+#  here; the curriculum is about what is in the driving line, not whether the
+#  stage has hazards.
+#
+#  Gated on `progress` (fraction of max_steps) rather than `reward`, because the
+#  reward scale on random stages is not yet known — the old 107 was measured on a
+#  single memorised course and is not a usable reference. Once rally07 has
+#  established a real scale, switch these to `measure: reward` with thresholds
+#  drawn from it, which gates on competence rather than on elapsed steps.
+# ══════════════════════════════════════════════════════════════════════
+environment_parameters:
+  obstacle_density:
+    curriculum:
+      # Thresholds are fractions of max_steps, so they were rescaled when max_steps went
+      # 10M -> 25M to hold the ABSOLUTE step positions rally08 and rally09 used:
+      #   0.06 x 25M = 1.5M   (was 0.15 x 10M)
+      #   0.16 x 25M = 4.0M   (was 0.40 x 10M)
+      # Without this, raising max_steps would silently delay the rocks to 3.75M and 10M and
+      # the run would no longer be comparable to either predecessor — turning a one-variable
+      # experiment about training length into a two-variable one.
+      - name: clear                 # scenery only, nothing in the racing line
+        completion_criteria:
+          measure: progress
+          behavior: RallyDriver
+          signal_smoothing: true
+          min_lesson_length: 100
+          threshold: 0.06
+        value: 0.0
+      - name: sparse                # ~1 rock every 200 m
+        completion_criteria:
+          measure: progress
+          behavior: RallyDriver
+          signal_smoothing: true
+          min_lesson_length: 100
+          threshold: 0.16
+        value: 0.5
+      - name: full                  # 2 per 100 m, the density the stage was authored for
+        value: 2.0

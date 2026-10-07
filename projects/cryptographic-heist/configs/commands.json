@@ -1,0 +1,555 @@
+{
+  "version": 1,
+  "commands": [
+    {
+      "id": "dashboard",
+      "group": "Run",
+      "label": "Command Center",
+      "description": "Run the local dashboard server on port 8788.",
+      "base": ["python3", "scripts/dashboard.py"],
+      "default_args": "--port 8788",
+      "tags": ["dashboard", "server"]
+    },
+    {
+      "id": "viewer",
+      "group": "Run",
+      "label": "Pygame Viewer",
+      "description": "Open the live cinematic chase viewer.",
+      "base": ["python3", "run.py"],
+      "default_args": "",
+      "tags": ["viewer", "live", "pygame"]
+    },
+    {
+      "id": "viewer_seeded",
+      "group": "Run",
+      "label": "Seeded Viewer",
+      "description": "Open the live viewer with a fixed seed.",
+      "base": ["python3", "scripts/run_viewer.py"],
+      "default_args": "--seed 11",
+      "tags": ["viewer", "seed"]
+    },
+    {
+      "id": "viewer_headless",
+      "group": "Test",
+      "label": "Headless Viewer Smoke",
+      "description": "Run the Pygame render loop in dummy video mode for CI-style checks.",
+      "base": ["python3", "run.py"],
+      "default_args": "--mute --max-frames 5",
+      "env": {"SDL_VIDEODRIVER": "dummy"},
+      "tags": ["viewer", "smoke"]
+    },
+    {
+      "id": "record_replay",
+      "group": "Replay",
+      "label": "Record Replay",
+      "description": "Record a scripted JSONL replay.",
+      "base": ["python3", "scripts/record_replay.py"],
+      "default_args": "replays/demo.jsonl --steps 1800",
+      "tags": ["replay", "record"]
+    },
+    {
+      "id": "play_replay",
+      "group": "Replay",
+      "label": "Play Replay",
+      "description": "Open a Pygame replay player from a recorded JSONL file.",
+      "base": ["python3", "scripts/play_replay.py"],
+      "default_args": "replays/demo.jsonl",
+      "tags": ["replay", "viewer", "pygame"]
+    },
+    {
+      "id": "summarize_replay",
+      "group": "Replay",
+      "label": "Validate Replay",
+      "description": "Validate and summarize a replay JSONL file.",
+      "base": ["python3", "scripts/render_replay.py"],
+      "default_args": "replays/demo.jsonl",
+      "tags": ["replay", "validate"]
+    },
+    {
+      "id": "replay_report",
+      "group": "Replay",
+      "label": "Replay Report",
+      "description": "Write a replay-only research report with chase, reward, comms/authentication, checksum, notable-event, and diagnostic evidence.",
+      "base": ["python3", "scripts/replay_report.py"],
+      "default_args": "replays/control_acceptance_active/downtown_chase_seed11.jsonl --json-out logs/replay_reports/downtown_chase_seed11_report.json",
+      "tags": ["replay", "report", "diagnostics", "research", "dashboard"]
+    },
+    {
+      "id": "verify_replay_fidelity",
+      "group": "Replay",
+      "label": "Replay Fidelity Gate",
+      "description": "Validate a replay, write stable state/radio checksums, and prove same-seed scripted determinism.",
+      "base": ["python3", "scripts/verify_replay_fidelity.py"],
+      "default_args": "replays/control_acceptance_active/downtown_chase_seed11.jsonl --json-out logs/replay_fidelity.json --scripted-determinism --scripted-seed 11 --scripted-steps 1200",
+      "tags": ["replay", "validate", "checksum", "determinism", "gate"]
+    },
+    {
+      "id": "verify_physics",
+      "group": "Test",
+      "label": "Physics Acceptance Gate",
+      "description": "Validate vehicle asymmetry, deterministic stepping, braking stability, collision recovery, and long-run finite-state behavior.",
+      "base": ["python3", "scripts/verify_physics.py"],
+      "default_args": "--json-out logs/physics_validation.json",
+      "tags": ["physics", "vehicle", "acceptance", "determinism", "gate"]
+    },
+    {
+      "id": "verify_env",
+      "group": "Test",
+      "label": "MARL Env Gate",
+      "description": "Validate the PettingZoo parallel API contract, action/observation spaces, finite stepping, determinism, truncation, and counterfactual reward probe.",
+      "base": ["python3", "scripts/verify_env.py"],
+      "default_args": "--json-out logs/env_validation.json",
+      "tags": ["env", "marl", "pettingzoo", "training", "gate"]
+    },
+    {
+      "id": "verify_spectator",
+      "group": "Test",
+      "label": "Spectator UI/Audio Gate",
+      "description": "Validate Pygame headless rendering, web replay cockpit contracts, dashboard replay links, and confidence-driven audio mapping.",
+      "base": ["python3", "scripts/verify_spectator.py"],
+      "default_args": "--json-out logs/spectator_validation.json",
+      "tags": ["spectator", "viewer", "audio", "dashboard", "gate"]
+    },
+    {
+      "id": "verify_operational_readiness",
+      "group": "Test",
+      "label": "Operational Readiness Gate",
+      "description": "Aggregate physics, replay, learned control, information warfare, self-play, dashboard, spectator, and differentiable-comms evidence into one manifest.",
+      "base": ["python3", "scripts/verify_operational_readiness.py"],
+      "default_args": "--json-out logs/operational_readiness.json",
+      "tags": ["operational", "readiness", "acceptance", "dashboard", "gate"]
+    },
+    {
+      "id": "build_evidence_bundle",
+      "group": "Test",
+      "label": "Research Evidence Bundle",
+      "description": "Bundle current readiness manifests, active replay reports, replay hashes, dashboard assets, and active checkpoint hashes into one reproducible JSON artifact.",
+      "base": ["python3", "scripts/build_evidence_bundle.py"],
+      "default_args": "--out logs/evidence_bundle.json",
+      "tags": ["operational", "evidence", "bundle", "research", "dashboard"]
+    },
+    {
+      "id": "verify_evidence_bundle",
+      "group": "Test",
+      "label": "Verify Evidence Bundle",
+      "description": "Re-hash bundle artifacts, revalidate active replays, and confirm replay report scores still match the current files.",
+      "base": ["python3", "scripts/verify_evidence_bundle.py"],
+      "default_args": "logs/evidence_bundle.json --json-out logs/evidence_bundle_verification.json",
+      "tags": ["operational", "evidence", "bundle", "verify", "research", "dashboard"]
+    },
+    {
+      "id": "eval_scripted",
+      "group": "Evaluate",
+      "label": "Scripted Evaluation",
+      "description": "Evaluate scripted baselines across seeds.",
+      "base": ["python3", "scripts/eval.py"],
+      "default_args": "--seeds 5 --steps 1800",
+      "tags": ["eval", "baseline"]
+    },
+    {
+      "id": "eval_acceptance_scenarios",
+      "group": "Evaluate",
+      "label": "Acceptance Scenarios",
+      "description": "Run replay-backed downtown chase, roadblock, spoof burst, and cipher shift gates.",
+      "base": ["python3", "scripts/eval_acceptance_scenarios.py"],
+      "default_args": "--seed 11 --record-dir replays/acceptance --out logs/acceptance_scenarios.json",
+      "tags": ["eval", "acceptance", "scenario", "replay", "dashboard"]
+    },
+    {
+      "id": "eval_acceptance_full_targets",
+      "group": "Evaluate",
+      "label": "Acceptance Full Targets",
+      "description": "Run the same scenario suite with the original downtown waypoint target enforced.",
+      "base": ["python3", "scripts/eval_acceptance_scenarios.py"],
+      "default_args": "--seed 11 --record-dir replays/acceptance_full --out logs/acceptance_full_targets.json --downtown-min-waypoints 3 --strict",
+      "tags": ["eval", "acceptance", "scenario", "replay", "milestone", "strict"]
+    },
+    {
+      "id": "eval_evader_checkpoint_acceptance",
+      "group": "Evaluate",
+      "label": "Evader Checkpoint Acceptance",
+      "description": "Run downtown acceptance with the learned evader checkpoint against scripted pursuers.",
+      "base": ["python3", "scripts/eval_acceptance_scenarios.py"],
+      "default_args": "--scenarios downtown_chase --seed 11 --evader-checkpoint checkpoints/evader_ppo.pt --record-dir replays/evader_checkpoint_acceptance --out logs/evader_checkpoint_acceptance.json",
+      "tags": ["eval", "acceptance", "checkpoint", "evader", "replay"]
+    },
+    {
+      "id": "eval_pursuer_team_checkpoint_acceptance",
+      "group": "Evaluate",
+      "label": "Pursuer Team Acceptance",
+      "description": "Run roadblock acceptance with the learned five-pursuer checkpoint.",
+      "base": ["python3", "scripts/eval_acceptance_scenarios.py"],
+      "default_args": "--scenarios roadblock --seed 11 --pursuer-team-checkpoint checkpoints/pursuer_team_ppo.pt --record-dir replays/pursuer_team_checkpoint_acceptance --out logs/pursuer_team_checkpoint_acceptance.json",
+      "tags": ["eval", "acceptance", "checkpoint", "pursuer", "team", "replay"]
+    },
+    {
+      "id": "eval_active_control_acceptance",
+      "group": "Evaluate",
+      "label": "Active Control Acceptance",
+      "description": "Run strict full-target acceptance with the active learned evader and pursuer-team pair.",
+      "base": ["python3", "scripts/eval_acceptance_scenarios.py"],
+      "default_args": "--seed 11 --evader-checkpoint models/control_active/evader_ppo.pt --pursuer-team-checkpoint models/control_active/pursuer_team_ppo.pt --record-dir replays/control_acceptance_active --out logs/control_acceptance_active.json --downtown-min-waypoints 3 --strict",
+      "tags": ["eval", "acceptance", "checkpoint", "active", "control", "replay", "strict"]
+    },
+    {
+      "id": "plan_curriculum_from_acceptance",
+      "group": "Evaluate",
+      "label": "Plan Curriculum Repairs",
+      "description": "Convert an acceptance manifest's diagnostics into prioritized dashboard training commands.",
+      "base": ["python3", "scripts/plan_curriculum_from_manifest.py"],
+      "default_args": "--manifest logs/acceptance_scenarios.json --out logs/curriculum_plan.json",
+      "tags": ["eval", "acceptance", "curriculum", "diagnostics", "dashboard"]
+    },
+    {
+      "id": "train_evader_imitation",
+      "group": "Train",
+      "label": "Train Evader Imitation",
+      "description": "Collect scripted evader data, add DAgger correction rollouts, and save the first useful driver checkpoint.",
+      "base": ["python3", "scripts/train_imitation.py"],
+      "default_args": "--out checkpoints/evader_imitation.pt --steps 12000 --epochs 20 --dagger-rounds 5 --dagger-steps 1200",
+      "tags": ["train", "checkpoint", "evader", "imitation", "dagger"]
+    },
+    {
+      "id": "train_evader_ppo",
+      "group": "Train",
+      "label": "Train Evader PPO",
+      "description": "Train the PPO evader driver with imitation warm start plus live and counterfactual information-warfare reward shaping.",
+      "base": ["python3", "scripts/train_evader_ppo.py"],
+      "default_args": "--out checkpoints/evader_ppo.pt --init-checkpoint checkpoints/evader_imitation.pt --bootstrap-imitation-if-missing --bootstrap-imitation-steps 12000 --bootstrap-imitation-epochs 20 --bootstrap-imitation-dagger-rounds 5 --bootstrap-imitation-dagger-steps 1200 --validation-steps 1200 --updates 8 --steps-per-update 512 --counterfactual-interval 16 --counterfactual-horizon-steps 24",
+      "tags": ["train", "ppo", "checkpoint", "evader", "imitation", "dagger", "information", "counterfactual"]
+    },
+    {
+      "id": "train_pursuer_ppo",
+      "group": "Train",
+      "label": "Train Pursuer PPO",
+      "description": "Train one PPO pursuer driver with decoder-accuracy, spoof-susceptibility, and counterfactual deception penalties.",
+      "base": ["python3", "scripts/train_pursuer_ppo.py"],
+      "default_args": "--out checkpoints/pursuer_ppo.pt --agent pursuer_0 --updates 8 --steps-per-update 512 --counterfactual-interval 16 --counterfactual-horizon-steps 24",
+      "tags": ["train", "ppo", "checkpoint", "pursuer", "authentication", "information", "counterfactual"]
+    },
+    {
+      "id": "train_pursuer_team_ppo",
+      "group": "Train",
+      "label": "Train Pursuer Team PPO",
+      "description": "Train a shared PPO driver for all five pursuers with live and counterfactual authentication penalties.",
+      "base": ["python3", "scripts/train_pursuer_team_ppo.py"],
+      "default_args": "--out checkpoints/pursuer_team_ppo.pt --updates 8 --steps-per-update 512 --counterfactual-interval 16 --counterfactual-horizon-steps 24",
+      "tags": ["train", "ppo", "checkpoint", "pursuer", "team", "containment", "authentication", "information", "counterfactual"]
+    },
+    {
+      "id": "train_evader_ppo_self_play",
+      "group": "Train",
+      "label": "Train Evader vs Team",
+      "description": "Train an evader PPO checkpoint against a saved learned pursuer-team opponent.",
+      "base": ["python3", "scripts/train_evader_ppo.py"],
+      "default_args": "--out checkpoints/evader_selfplay.pt --opponent-pursuer-team-checkpoint checkpoints/pursuer_team_ppo.pt --updates 8 --steps-per-update 512 --counterfactual-interval 16 --counterfactual-horizon-steps 24",
+      "tags": ["train", "ppo", "self-play", "checkpoint", "evader", "pursuer", "team", "counterfactual"]
+    },
+    {
+      "id": "train_pursuer_ppo_self_play",
+      "group": "Train",
+      "label": "Train Pursuer vs Evader",
+      "description": "Train one pursuer PPO checkpoint against a saved learned evader opponent.",
+      "base": ["python3", "scripts/train_pursuer_ppo.py"],
+      "default_args": "--out checkpoints/pursuer_selfplay.pt --agent pursuer_0 --opponent-evader-checkpoint checkpoints/evader_ppo.pt --updates 8 --steps-per-update 512 --counterfactual-interval 16 --counterfactual-horizon-steps 24",
+      "tags": ["train", "ppo", "self-play", "checkpoint", "pursuer", "evader", "counterfactual"]
+    },
+    {
+      "id": "train_pursuer_team_ppo_self_play",
+      "group": "Train",
+      "label": "Train Team vs Evader",
+      "description": "Train a shared five-pursuer PPO checkpoint against a saved learned evader opponent.",
+      "base": ["python3", "scripts/train_pursuer_team_ppo.py"],
+      "default_args": "--out checkpoints/pursuer_team_selfplay.pt --opponent-evader-checkpoint checkpoints/evader_ppo.pt --updates 8 --steps-per-update 512 --counterfactual-interval 16 --counterfactual-horizon-steps 24",
+      "tags": ["train", "ppo", "self-play", "checkpoint", "pursuer", "team", "evader", "counterfactual"]
+    },
+    {
+      "id": "train_scanner_decoder",
+      "group": "Train",
+      "label": "Train Scanner Decoder",
+      "description": "Train the evader scanner to translate radio-token history into future pursuer positions.",
+      "base": ["python3", "scripts/train_scanner_decoder.py"],
+      "default_args": "--out checkpoints/scanner_decoder.pt --steps 2400 --epochs 8",
+      "tags": ["train", "scanner", "decoder", "checkpoint", "comms"]
+    },
+    {
+      "id": "train_radio_policy",
+      "group": "Train",
+      "label": "Train Radio Policy",
+      "description": "Train pursuers to emit six-token English radio messages from observations.",
+      "base": ["python3", "scripts/train_radio_policy.py"],
+      "default_args": "--out checkpoints/radio_policy.pt --steps 3600 --epochs 12",
+      "tags": ["train", "radio", "comms", "checkpoint", "pursuer"]
+    },
+    {
+      "id": "train_jammer_policy",
+      "group": "Train",
+      "label": "Train Jammer Policy",
+      "description": "Train the evader to trigger spoof bursts, choose payload tokens, and target pursuers.",
+      "base": ["python3", "scripts/train_jammer_policy.py"],
+      "default_args": "--out checkpoints/jammer_policy.pt --steps 3600 --epochs 12",
+      "tags": ["train", "jammer", "jamming", "checkpoint", "evader", "comms"]
+    },
+    {
+      "id": "train_counterfactual_jammer_policy",
+      "group": "Train",
+      "label": "Train Counterfactual Jammer",
+      "description": "Train the evader jammer from paired jam/no-jam rollouts weighted by actual pursuer deviation.",
+      "base": ["python3", "scripts/train_counterfactual_jammer_policy.py"],
+      "default_args": "--out checkpoints/jammer_counterfactual.pt --steps 1200 --sample-every 12 --horizon-steps 72 --epochs 12",
+      "tags": ["train", "jammer", "jamming", "counterfactual", "checkpoint", "evader", "comms"]
+    },
+    {
+      "id": "run_information_cycle",
+      "group": "Train",
+      "label": "Train/Eval/Promote Stack",
+      "description": "Train scanner, radio, and heuristic or counterfactual jammer candidates, compare against the active stack, and optionally promote.",
+      "base": ["python3", "scripts/run_information_cycle.py"],
+      "default_args": "--name candidate --seed 11 --league-seeds 11,12,13 --promote --improvement-margin 0.01",
+      "tags": ["train", "eval", "league", "promotion", "scanner", "radio", "jammer", "counterfactual", "checkpoint"]
+    },
+    {
+      "id": "run_self_play_cycle",
+      "group": "Train",
+      "label": "Run Self-Play Cycle",
+      "description": "Alternate evader PPO, pursuer-team PPO, faction-specific pool-gated control promotion, and information-stack training.",
+      "base": ["python3", "scripts/run_self_play_cycle.py"],
+      "default_args": "--name selfplay --seed 11 --evader-updates 4 --team-updates 4 --steps-per-update 384 --league-seeds 11,12 --evader-control-improvement-margin 0.01 --pursuer-team-control-improvement-margin 0.01 --promotion-threshold 0.52",
+      "tags": ["train", "self-play", "ppo", "league", "promotion", "radio", "scanner", "jammer", "checkpoint"]
+    },
+    {
+      "id": "run_self_play_cycle_scenario_gated",
+      "group": "Train",
+      "label": "Scenario-Gated Self-Play",
+      "description": "Run self-play with learned control promotion gated by replay-backed downtown, roadblock, spoof, and cipher scenarios.",
+      "base": ["python3", "scripts/run_self_play_cycle.py"],
+      "default_args": "--name selfplay_scenario --seed 11 --evader-updates 4 --team-updates 4 --steps-per-update 384 --evader-init-checkpoint checkpoints/evader_ppo.pt --evader-validation-steps 1200 --evader-validation-seed 11 --league-seeds 11,12 --evader-control-improvement-margin 0.01 --pursuer-team-control-improvement-margin 0.01 --evaluate-control-scenarios --control-scenario-seed 31 --control-scenario-threshold 0.90 --evader-control-scenario-threshold 0.45 --pursuer-team-control-scenario-threshold 0.50 --promotion-threshold 0.52",
+      "tags": ["train", "self-play", "ppo", "league", "promotion", "scenario", "acceptance", "replay", "checkpoint"]
+    },
+    {
+      "id": "eval_control_pair",
+      "group": "Evaluate",
+      "label": "Control Pair League",
+      "description": "Score a learned evader and learned five-pursuer team together, optionally writing replay evidence.",
+      "base": ["python3", "scripts/eval_control_pair.py"],
+      "default_args": "--name active_control --evader models/control_active/evader_ppo.pt --pursuer-team models/control_active/pursuer_team_ppo.pt --seeds 11,12 --steps 900 --record-prefix replays/control_pair --out logs/control_pair_manifest.json",
+      "tags": ["eval", "control", "self-play", "league", "checkpoint", "replay", "metrics"]
+    },
+    {
+      "id": "eval_control_league",
+      "group": "Evaluate",
+      "label": "Control Pool League",
+      "description": "Score a control candidate against historical evader/team pool opponents before promotion.",
+      "base": ["python3", "scripts/eval_control_league.py"],
+      "default_args": "--name candidate_control --evader models/control_active/evader_ppo.pt --pursuer-team models/control_active/pursuer_team_ppo.pt --pool-dir models/control_pool --seeds 11,12 --steps 600 --max-opponents 3 --record-prefix replays/control_league --out logs/control_league_manifest.json",
+      "tags": ["eval", "control", "self-play", "league", "checkpoint", "pool", "promotion", "replay", "metrics"]
+    },
+    {
+      "id": "list_control_pool",
+      "group": "Evaluate",
+      "label": "List Control Pool",
+      "description": "Inspect historical evader/pursuer-team checkpoint pairs archived by self-play.",
+      "base": ["python3", "scripts/list_control_pool.py"],
+      "default_args": "--pool-dir models/control_pool",
+      "tags": ["eval", "control", "self-play", "league", "checkpoint", "pool"]
+    },
+    {
+      "id": "watch_evader_checkpoint",
+      "group": "Train",
+      "label": "Watch Evader Checkpoint",
+      "description": "Run a saved evader checkpoint against scripted pursuers and optionally record a replay.",
+      "base": ["python3", "scripts/watch_policy.py"],
+      "default_args": "--checkpoint checkpoints/evader_imitation.pt --steps 1200 --record replays/evader_checkpoint.jsonl",
+      "tags": ["checkpoint", "watch", "replay"]
+    },
+    {
+      "id": "watch_evader_ppo_checkpoint",
+      "group": "Train",
+      "label": "Record Evader PPO Replay",
+      "description": "Run a PPO evader checkpoint against scripted pursuers and record a replay.",
+      "base": ["python3", "scripts/watch_policy.py"],
+      "default_args": "--checkpoint checkpoints/evader_ppo.pt --steps 1200 --record replays/evader_ppo.jsonl",
+      "tags": ["checkpoint", "ppo", "watch", "replay"]
+    },
+    {
+      "id": "watch_pursuer_ppo_checkpoint",
+      "group": "Train",
+      "label": "Record Pursuer PPO Replay",
+      "description": "Run a PPO pursuer checkpoint in the scripted chase and record a replay.",
+      "base": ["python3", "scripts/watch_pursuer_policy.py"],
+      "default_args": "--checkpoint checkpoints/pursuer_ppo.pt --steps 1200 --record replays/pursuer_ppo.jsonl",
+      "tags": ["checkpoint", "ppo", "watch", "replay", "pursuer"]
+    },
+    {
+      "id": "watch_pursuer_team_ppo_checkpoint",
+      "group": "Train",
+      "label": "Record Pursuer Team Replay",
+      "description": "Run a learned five-pursuer team checkpoint and record a replay.",
+      "base": ["python3", "scripts/watch_pursuer_team_policy.py"],
+      "default_args": "--checkpoint checkpoints/pursuer_team_ppo.pt --steps 1200 --record replays/pursuer_team_ppo.jsonl",
+      "tags": ["checkpoint", "ppo", "watch", "replay", "pursuer", "team"]
+    },
+    {
+      "id": "watch_scanner_decoder",
+      "group": "Train",
+      "label": "Record Scanner Replay",
+      "description": "Run a scanner decoder checkpoint and record replay frames with learned predictions.",
+      "base": ["python3", "scripts/watch_scanner_decoder.py"],
+      "default_args": "--checkpoint checkpoints/scanner_decoder.pt --steps 1200 --record replays/scanner_decoder.jsonl",
+      "tags": ["checkpoint", "scanner", "decoder", "replay", "comms"]
+    },
+    {
+      "id": "watch_radio_policy",
+      "group": "Train",
+      "label": "Record Radio Policy Replay",
+      "description": "Run learned pursuer radio messages with scripted driving and record a replay.",
+      "base": ["python3", "scripts/watch_radio_policy.py"],
+      "default_args": "--checkpoint checkpoints/radio_policy.pt --steps 1200 --record replays/radio_policy.jsonl",
+      "tags": ["checkpoint", "radio", "comms", "replay", "pursuer"]
+    },
+    {
+      "id": "watch_jammer_policy",
+      "group": "Train",
+      "label": "Record Jammer Replay",
+      "description": "Run learned evader jamming with scripted driving and record spoof events.",
+      "base": ["python3", "scripts/watch_jammer_policy.py"],
+      "default_args": "--checkpoint checkpoints/jammer_policy.pt --steps 1200 --record replays/jammer_policy.jsonl",
+      "tags": ["checkpoint", "jammer", "jamming", "comms", "replay", "evader"]
+    },
+    {
+      "id": "watch_adversarial_stack",
+      "group": "Evaluate",
+      "label": "Record Adversarial Stack",
+      "description": "Run learned radio, scanner, and jammer together, then write replay and metrics.",
+      "base": ["python3", "scripts/watch_adversarial_stack.py"],
+      "default_args": "--radio checkpoints/radio_policy.pt --scanner checkpoints/scanner_decoder.pt --jammer checkpoints/jammer_policy.pt --steps 1200 --record replays/adversarial_stack.jsonl --json-out replays/adversarial_stack_metrics.json",
+      "tags": ["checkpoint", "radio", "scanner", "jammer", "adversarial", "eval", "replay", "metrics"]
+    },
+    {
+      "id": "eval_authentication_curriculum",
+      "group": "Evaluate",
+      "label": "Authentication Curriculum Eval",
+      "description": "Run paired jammed/no-spoof episodes and measure counterfactual spoof susceptibility.",
+      "base": ["python3", "scripts/eval_authentication_curriculum.py"],
+      "default_args": "--radio checkpoints/radio_policy.pt --scanner checkpoints/scanner_decoder.pt --jammer checkpoints/jammer_policy.pt --steps 1200 --record-prefix replays/auth_curriculum --json-out replays/auth_curriculum_metrics.json",
+      "tags": ["checkpoint", "radio", "scanner", "jammer", "authentication", "counterfactual", "eval", "metrics"]
+    },
+    {
+      "id": "eval_checkpoint_league",
+      "group": "Evaluate",
+      "label": "Checkpoint League Score",
+      "description": "Aggregate authentication metrics over seeds and optionally promote an active radio/scanner/jammer stack.",
+      "base": ["python3", "scripts/eval_checkpoint_league.py"],
+      "default_args": "--name candidate --radio checkpoints/radio_policy.pt --scanner checkpoints/scanner_decoder.pt --jammer checkpoints/jammer_policy.pt --seeds 11,12,13 --steps 1200 --record-prefix logs/checkpoint_league --out logs/checkpoint_league_manifest.json",
+      "tags": ["checkpoint", "league", "promotion", "authentication", "eval", "metrics"]
+    },
+    {
+      "id": "eval_v2_checkpoint_league",
+      "group": "Evaluate",
+      "label": "V2 Long Checkpoint League",
+      "description": "Run a longer multi-seed authentication league for research-grade comms/scanner/jamming evidence.",
+      "base": ["python3", "scripts/eval_checkpoint_league.py"],
+      "default_args": "--name v2_candidate --radio checkpoints/radio_policy.pt --scanner checkpoints/scanner_decoder.pt --jammer checkpoints/jammer_policy.pt --seeds 11,12,13,14,15 --steps 1800 --record-prefix logs/v2_checkpoint_league --out logs/v2_checkpoint_league_manifest.json",
+      "tags": ["v2", "checkpoint", "league", "authentication", "scanner", "jammer", "research", "eval", "metrics"]
+    },
+    {
+      "id": "build_v2_report",
+      "group": "Evaluate",
+      "label": "V2 Research Report",
+      "description": "Build the JSON and Markdown v2 report from long league, replay, spectator, and evidence artifacts.",
+      "base": ["python3", "scripts/build_v2_report.py"],
+      "default_args": "--league-manifest logs/v2_checkpoint_league_manifest.json --out logs/v2_research_report.json --markdown-out logs/v2_research_report.md",
+      "tags": ["v2", "research", "report", "evaluation", "dashboard", "evidence"]
+    },
+    {
+      "id": "watch_evader_checkpoint_live",
+      "group": "Run",
+      "label": "Live Checkpoint Viewer",
+      "description": "Open the Pygame viewer with a learned evader checkpoint controlling the chase.",
+      "base": ["python3", "scripts/watch_policy_viewer.py"],
+      "default_args": "--checkpoint checkpoints/evader_ppo.pt",
+      "tags": ["checkpoint", "viewer", "pygame"]
+    },
+    {
+      "id": "watch_pursuer_checkpoint_live",
+      "group": "Run",
+      "label": "Live Pursuer Checkpoint",
+      "description": "Open the Pygame viewer with a learned pursuer checkpoint controlling one police car.",
+      "base": ["python3", "scripts/watch_pursuer_policy_viewer.py"],
+      "default_args": "--checkpoint checkpoints/pursuer_ppo.pt",
+      "tags": ["checkpoint", "viewer", "pygame", "pursuer"]
+    },
+    {
+      "id": "watch_pursuer_team_checkpoint_live",
+      "group": "Run",
+      "label": "Live Pursuer Team",
+      "description": "Open the Pygame viewer with a learned five-pursuer checkpoint controlling the police team.",
+      "base": ["python3", "scripts/watch_pursuer_team_policy_viewer.py"],
+      "default_args": "--checkpoint checkpoints/pursuer_team_ppo.pt",
+      "tags": ["checkpoint", "viewer", "pygame", "pursuer", "team"]
+    },
+    {
+      "id": "watch_scanner_decoder_live",
+      "group": "Run",
+      "label": "Live Scanner Decoder",
+      "description": "Open the Pygame viewer with learned scanner predictions and confidence.",
+      "base": ["python3", "scripts/watch_scanner_decoder_viewer.py"],
+      "default_args": "--checkpoint checkpoints/scanner_decoder.pt",
+      "tags": ["checkpoint", "viewer", "pygame", "scanner", "decoder"]
+    },
+    {
+      "id": "watch_radio_policy_live",
+      "group": "Run",
+      "label": "Live Radio Policy",
+      "description": "Open the Pygame viewer with learned pursuer radio tokens.",
+      "base": ["python3", "scripts/watch_radio_policy_viewer.py"],
+      "default_args": "--checkpoint checkpoints/radio_policy.pt",
+      "tags": ["checkpoint", "viewer", "pygame", "radio", "comms"]
+    },
+    {
+      "id": "watch_jammer_policy_live",
+      "group": "Run",
+      "label": "Live Jammer Policy",
+      "description": "Open the Pygame viewer with learned evader spoof bursts.",
+      "base": ["python3", "scripts/watch_jammer_policy_viewer.py"],
+      "default_args": "--checkpoint checkpoints/jammer_policy.pt",
+      "tags": ["checkpoint", "viewer", "pygame", "jammer", "jamming", "comms"]
+    },
+    {
+      "id": "watch_adversarial_stack_live",
+      "group": "Run",
+      "label": "Live Adversarial Stack",
+      "description": "Open the Pygame viewer with learned radio, scanner predictions, and evader spoof bursts.",
+      "base": ["python3", "scripts/watch_adversarial_stack_viewer.py"],
+      "default_args": "--radio checkpoints/radio_policy.pt --scanner checkpoints/scanner_decoder.pt --jammer checkpoints/jammer_policy.pt",
+      "tags": ["checkpoint", "viewer", "pygame", "radio", "scanner", "jammer", "adversarial"]
+    },
+    {
+      "id": "train_smoke",
+      "group": "Train",
+      "label": "Training Smoke",
+      "description": "Run the PettingZoo-style training environment with random actions.",
+      "base": ["python3", "scripts/train.py"],
+      "default_args": "--cycles 120",
+      "tags": ["train", "smoke"]
+    },
+    {
+      "id": "unit_tests",
+      "group": "Test",
+      "label": "Unit Test Suite",
+      "description": "Run all Python unit tests.",
+      "base": ["python3", "-m", "unittest", "discover", "-s", "tests"],
+      "default_args": "",
+      "tags": ["test"]
+    },
+    {
+      "id": "compileall",
+      "group": "Test",
+      "label": "Compile Check",
+      "description": "Byte-compile package, scripts, app entrypoint, and tests.",
+      "base": ["python3", "-m", "compileall", "crypt_heist", "scripts", "run.py", "tests"],
+      "default_args": "",
+      "tags": ["test", "compile"]
+    }
+  ]
+}

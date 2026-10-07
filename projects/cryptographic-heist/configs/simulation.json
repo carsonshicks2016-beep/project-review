@@ -1,0 +1,23 @@
+{
+  "seed": 11,
+  "physics_hz": 120,
+  "policy_hz": 30,
+  "episode_seconds": 90,
+  "city": {
+    "cols": 8,
+    "rows": 6,
+    "block": 78.0,
+    "road": 26.0
+  },
+  "vehicles": {
+    "evader": "evader",
+    "pursuer": "pursuer",
+    "pursuer_count": 5
+  },
+  "comms": {
+    "message_len": 6,
+    "jamming_budget": 7,
+    "cipher_period_seconds": 18.0
+  }
+}
+

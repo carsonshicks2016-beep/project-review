@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}HealthBridge AI - Methodology{% endblock %}
+{% block nav_tag %}Methodology & Trust{% endblock %}
+
+{% block content %}
+<div class="hero hero-compact">
+    <div class="hero-eyebrow">Methodology</div>
+    <h1>How HealthBridge builds its report.</h1>
+    <p>Engine version {{ engine_version }}. This page explains the logic and guardrails behind the report so results can be reviewed like a product, not just consumed like a story.</p>
+</div>
+
+<div class="results-container">
+    <div class="section-heading section-heading-tight">
+        <div class="section-eyebrow">Core Design</div>
+        <h2>Trust comes from explicit structure.</h2>
+    </div>
+
+    <div class="trust-strip">
+        {% for section in methodology_sections %}
+        <div class="trust-card">
+            <div class="trust-card-title">{{ section.title }}</div>
+            <div class="trust-card-body">{{ section.body }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="section-heading section-heading-tight">
+        <div class="section-eyebrow">Product Principles</div>
+        <h2>Design choices intended to reduce overreach.</h2>
+    </div>
+
+    <div class="bullet-panel">
+        {% for item in guardrails %}
+        <div class="bullet-row">{{ item }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="section-heading section-heading-tight">
+        <div class="section-eyebrow">Why It Looks Credible</div>
+        <h2>What the UI emphasizes on purpose.</h2>
+    </div>
+
+    <div class="trust-strip">
+        {% for marker in trust_markers %}
+        <div class="trust-card">
+            <div class="trust-card-title">{{ marker.title }}</div>
+            <div class="trust-card-body">{{ marker.body }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="hero-panel methodology-cta">
+        <div class="hero-panel-title">Using This In Demos</div>
+        <div class="hero-panel-item-body">Lead with combined analysis, because that is where the product can credibly show convergence, confidence, and next-step reasoning instead of just listing isolated markers.</div>
+        <a href="/" class="btn btn-primary">Start New Analysis</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}HealthBridge AI - Analysis Recovery{% endblock %}
+{% block nav_tag %}Analysis Recovery{% endblock %}
+
+{% block content %}
+<div class="hero hero-compact">
+    <div class="hero-eyebrow">Report Recovery</div>
+    <h1>{{ error_title }}</h1>
+    <p>{{ error_body }}</p>
+
+    <div class="analysis-recovery-grid">
+        <div class="analysis-recovery-card">
+            <div class="analysis-recovery-label">Requested workflow</div>
+            <div class="analysis-recovery-value">{{ requested_mode_label }}</div>
+            <div class="analysis-recovery-copy">HealthBridge stopped before a trustworthy report could be finalized.</div>
+        </div>
+        <div class="analysis-recovery-card">
+            <div class="analysis-recovery-label">Recommended next move</div>
+            <div class="analysis-recovery-value">Retry with cleaner source files</div>
+            <div class="analysis-recovery-copy">Portal PDFs with selectable text and raw DNA exports work best.</div>
+        </div>
+    </div>
+
+    <div class="section-block section-block-tight">
+        <div class="section-heading section-heading-tight">
+            <div class="section-eyebrow">What Went Wrong</div>
+            <h2>HealthBridge surfaced the issue instead of forcing a weak report.</h2>
+        </div>
+        <div class="analysis-detail-stack">
+            {% for detail in error_details %}
+            <div class="analysis-detail-card">
+                <div class="analysis-detail-title">{{ detail.source }}</div>
+                <div class="analysis-detail-body">{{ detail.message }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="section-block section-block-tight">
+        <div class="section-heading section-heading-tight">
+            <div class="section-eyebrow">Recovery Steps</div>
+            <h2>Fastest ways to get back to a clean run.</h2>
+        </div>
+        <div class="analysis-step-stack">
+            {% for step in recovery_steps %}
+            <div class="analysis-step-row">
+                <div class="analysis-step-index">{{ loop.index }}</div>
+                <div class="analysis-step-copy">{{ step }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="hero-actions">
+        <a href="/" class="btn btn-primary">Return Home</a>
+        <a href="/methodology" class="btn btn-secondary">Review Methodology</a>
+    </div>
+</div>
+
+<div class="trust-strip">
+    {% for marker in trust_markers %}
+    <div class="trust-card">
+        <div class="trust-card-title">{{ marker.title }}</div>
+        <div class="trust-card-body">{{ marker.body }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
