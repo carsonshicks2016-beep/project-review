@@ -1,0 +1,209 @@
+/*
+ * LIVE panel — F3 agent stream embedded in the dashboard content region.
+ * Reuses LiveViewport chrome classes from train; scoped layout lives here.
+ */
+
+.dash-main:has(.dash-live) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 0.75rem;
+}
+
+.dash-live {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: var(--dash-gap, 0.75rem);
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.dash-live-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.55rem 0.75rem;
+  flex-shrink: 0;
+}
+
+.dash-live-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.dash-live-field > label {
+  font-size: var(--dash-label-size, 0.62rem);
+  letter-spacing: var(--dash-label-track, 0.14em);
+  text-transform: uppercase;
+  color: var(--dash-muted, #8b97a4);
+}
+
+.dash-live-field input[type="text"],
+.dash-live-field input[type="number"],
+.dash-live-field select {
+  min-width: 8rem;
+  max-width: 22rem;
+  padding: 0.32rem 0.45rem;
+  color: var(--dash-ink, #f6f4e9);
+  background: var(--dash-bg-raised, #161d25);
+  border: 1px solid var(--dash-line-control, rgba(255, 255, 255, 0.22));
+  border-radius: var(--dash-radius, 1px);
+  font: 0.72rem var(--dash-font-ui, ui-monospace, monospace);
+}
+
+.dash-live-field input.wide {
+  min-width: 14rem;
+  max-width: 28rem;
+  width: min(28rem, 42vw);
+}
+
+.dash-live-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.dash-live-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--dash-soft, #9aa7b4);
+  cursor: pointer;
+  user-select: none;
+}
+
+.dash-live-toggle input {
+  accent-color: var(--dash-accent, #f2d21a);
+}
+
+.dash-live-note {
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--dash-muted, #8b97a4);
+  border-left: 2px solid var(--dash-accent-dim, #9a8a18);
+  padding: 0.35rem 0.65rem;
+  background: rgba(242, 210, 26, 0.05);
+}
+
+.dash-live-note[hidden],
+.dash-live-error[hidden] {
+  display: none;
+}
+
+.dash-live-error {
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--dash-bad, #ff6c62);
+  border: 1px solid rgba(223, 51, 64, 0.4);
+  background: rgba(223, 51, 64, 0.1);
+  padding: 0.45rem 0.65rem;
+  white-space: pre-wrap;
+}
+
+.dash-live-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--dash-soft, #9aa7b4);
+  flex-shrink: 0;
+}
+
+.dash-live-status b {
+  font-weight: 500;
+  color: var(--dash-ink, #f6f4e9);
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-live-status [data-state="streaming"],
+.dash-live-status [data-state="running"] {
+  color: var(--dash-ok, #47d978);
+}
+
+.dash-live-status [data-state="error"] {
+  color: var(--dash-bad, #ff6c62);
+}
+
+.dash-live-viewport {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 16rem;
+  min-width: 0;
+  background: #000;
+}
+
+/* LiveViewport chrome (normally from train.css) — keep panel self-contained. */
+.dash-live-viewport .train-viewport-wrap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: #000;
+  overflow: hidden;
+}
+
+.dash-live-viewport .train-viewport-wrap .train-view {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.dash-live-viewport .train-hud-host {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  container-type: inline-size;
+}
+
+.dash-live-viewport .train-viewport-empty {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8b97a4;
+  background: rgba(5, 7, 9, 0.72);
+  pointer-events: none;
+}
+
+.dash-live-viewport .train-viewport-empty[hidden] {
+  display: none;
+}
+
+.dash-live-viewport.is-fs-local {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  min-height: 100vh;
+  background: #000;
+  padding: 0;
+}
+
+.dash-live-viewport.is-fs-local .train-viewport-wrap {
+  border: none;
+}
+
+.dash-live-fs-exit {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  z-index: 20;
+}

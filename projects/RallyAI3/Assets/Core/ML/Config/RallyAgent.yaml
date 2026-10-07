@@ -1,0 +1,37 @@
+behaviors:
+  RallyAgent:
+    trainer_type: ppo
+    hyperparameters:
+      batch_size: 1024
+      buffer_size: 10240
+      learning_rate: 3.0e-4
+      beta: 5.0e-3
+      epsilon: 0.2
+      lambd: 0.95
+      num_epoch: 3
+      learning_rate_schedule: linear
+    network_settings:
+      normalize: true
+      hidden_units: 256
+      num_layers: 3
+      # LSTM Integration (Crucial for handling partial observability and Night Mode)
+      memory:
+        sequence_length: 16
+        memory_size: 256
+    reward_signals:
+      extrinsic:
+        gamma: 0.99
+        strength: 1.0
+    max_steps: 10000000
+    time_horizon: 64
+    summary_freq: 10000
+
+environment_parameters:
+  # Base Friction Modifier
+  track_friction: 1.0
+  # Track Complexity (0.0 = Straight, 1.0 = Highly curved/hills)
+  track_complexity: 0.0
+  # Damage Enabled boolean (0 or 1)
+  damage_enabled: 0.0
+  # Weather Mode (0=Clear, 1=Rain, 2=Snow, 3=Night)
+  weather_mode: 0.0

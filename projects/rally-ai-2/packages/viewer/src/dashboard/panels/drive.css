@@ -1,0 +1,378 @@
+/*
+ * DRIVE / HUMAN BASELINE panel.
+ *
+ * Layout only — colour and control primitives come from theme.css tokens.
+ * LiveViewport chrome is re-declared here (as in live.css) so the panel does
+ * not depend on train.css being loaded.
+ */
+
+.dash-drive {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dash-space, 0.75rem);
+  min-width: 0;
+}
+
+.dash-drive .dash-section-hd.is-bad .dash-meta {
+  color: var(--dash-bad, #ff6c62);
+}
+
+.dash-drive .dash-section-hd.is-warn .dash-meta {
+  color: var(--dash-accent, #f2d21a);
+}
+
+.dash-drive .dash-section-hd.is-good .dash-meta {
+  color: var(--dash-good, #47d978);
+}
+
+.dash-drive-lede,
+.dash-drive-body {
+  margin: 0;
+  max-width: 96ch;
+  font-size: var(--dash-meta-size, 0.68rem);
+  line-height: 1.6;
+  color: var(--dash-soft, #9aa7b4);
+}
+
+.dash-drive-note {
+  margin: 0;
+  max-width: 104ch;
+  font-size: 0.64rem;
+  line-height: 1.6;
+  color: var(--dash-faint, #6f7b88);
+}
+
+.dash-drive-note[hidden] {
+  display: none;
+}
+
+/* --- session controls ---------------------------------------------------- */
+
+.dash-drive-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.55rem 0.9rem;
+}
+
+.dash-drive-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.dash-drive-field > label {
+  font-size: var(--dash-label-size, 0.62rem);
+  letter-spacing: var(--dash-label-track, 0.14em);
+  text-transform: uppercase;
+  color: var(--dash-muted, #8b97a4);
+}
+
+.dash-drive-field input {
+  width: 7rem;
+  padding: 0.32rem 0.45rem;
+  color: var(--dash-ink, #f6f4e9);
+  background: var(--dash-bg-raised, #161d25);
+  border: 1px solid var(--dash-line-control, rgba(255, 255, 255, 0.22));
+  border-radius: var(--dash-radius, 1px);
+  font: 0.72rem var(--dash-font-ui, ui-monospace, monospace);
+}
+
+.dash-drive-field input:disabled {
+  opacity: 0.45;
+}
+
+.dash-drive-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-bottom: 0.15rem;
+}
+
+.dash-drive-name {
+  color: var(--dash-ink, #f6f4e9);
+}
+
+.dash-drive-pill {
+  padding: 0.12rem 0.45rem;
+  border: 1px solid var(--dash-line, rgba(246, 244, 233, 0.14));
+  border-radius: var(--dash-radius, 1px);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  color: var(--dash-muted, #8b97a4);
+  white-space: nowrap;
+}
+
+.dash-drive-pill.good {
+  border-color: rgba(71, 217, 120, 0.5);
+  color: var(--dash-good, #47d978);
+}
+
+.dash-drive-pill.bad {
+  border-color: rgba(223, 51, 64, 0.5);
+  color: #ff8d86;
+}
+
+.dash-drive-api {
+  flex-wrap: wrap;
+  font-size: var(--dash-meta-size, 0.68rem);
+}
+
+.dash-drive-api code {
+  color: var(--dash-soft, #9aa7b4);
+}
+
+.dash-drive-status {
+  margin: 0;
+  font-size: var(--dash-meta-size, 0.68rem);
+  line-height: 1.55;
+  color: var(--dash-soft, #9aa7b4);
+}
+
+.dash-drive-status.bad {
+  color: #ff8d86;
+}
+
+.dash-drive-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: 0.5rem 0.9rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--dash-line-soft, rgba(246, 244, 233, 0.1));
+  border-bottom: 1px solid var(--dash-line-soft, rgba(246, 244, 233, 0.1));
+}
+
+.dash-drive-stats .dash-stat.on .dash-stat-value {
+  color: var(--dash-ok, #47d978);
+}
+
+/* --- viewport (lazily created on first drive) ---------------------------- */
+
+.dash-drive-viewport {
+  position: relative;
+  min-width: 0;
+  background: #000;
+}
+
+.dash-drive-viewport.is-live {
+  height: 21rem;
+  min-height: 16rem;
+}
+
+.dash-drive-viewport .train-viewport-wrap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: #000;
+  overflow: hidden;
+}
+
+.dash-drive-viewport .train-viewport-wrap .train-view {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.dash-drive-viewport .train-hud-host {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  container-type: inline-size;
+}
+
+.dash-drive-viewport .train-viewport-empty {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dash-muted, #8b97a4);
+  background: rgba(5, 7, 9, 0.72);
+  pointer-events: none;
+}
+
+.dash-drive-viewport .train-viewport-empty[hidden] {
+  display: none;
+}
+
+/* --- held-out chips ------------------------------------------------------ */
+
+.dash-drive-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.dash-drive-chip {
+  min-width: 2.7rem;
+  padding: 0.25rem 0.4rem;
+  font: 0.7rem var(--dash-font-ui, ui-monospace, monospace);
+  color: var(--dash-soft, #9aa7b4);
+  background: var(--dash-bg-inset, rgba(0, 0, 0, 0.35));
+  border: 1px solid var(--dash-line, rgba(246, 244, 233, 0.14));
+  border-radius: var(--dash-radius, 1px);
+  cursor: pointer;
+}
+
+.dash-drive-chip:hover {
+  color: var(--dash-ink, #f6f4e9);
+  background: var(--dash-bg-hover, #243141);
+}
+
+.dash-drive-chip.done {
+  border-color: rgba(71, 217, 120, 0.5);
+  color: var(--dash-good, #47d978);
+}
+
+.dash-drive-chip.current {
+  border-color: var(--dash-accent, #f2d21a);
+  color: var(--dash-accent, #f2d21a);
+}
+
+/* --- baseline table ------------------------------------------------------ */
+
+.dash-drive-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem 1.4rem;
+}
+
+.dash-drive-source {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.dash-drive-source .dash-muted.bad {
+  color: #ff8d86;
+}
+
+.dash-drive-mini {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+}
+
+label.dash-drive-mini {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.dash-drive-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.7rem;
+}
+
+.dash-drive-table th {
+  text-align: left;
+  font-weight: 400;
+  font-size: var(--dash-label-size, 0.62rem);
+  letter-spacing: var(--dash-label-track, 0.14em);
+  text-transform: uppercase;
+  color: var(--dash-muted, #8b97a4);
+  padding: 0.3rem 0.6rem 0.3rem 0;
+  border-bottom: 1px solid var(--dash-line, rgba(246, 244, 233, 0.14));
+}
+
+.dash-drive-table td {
+  padding: 0.3rem 0.6rem 0.3rem 0;
+  border-bottom: 1px solid var(--dash-line-soft, rgba(246, 244, 233, 0.1));
+  color: var(--dash-ink, #f6f4e9);
+  vertical-align: top;
+}
+
+.dash-drive-table td.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-drive-table td.bad {
+  color: #ff8d86;
+}
+
+.dash-drive-invariants td:first-child {
+  width: 9rem;
+  font-size: var(--dash-label-size, 0.62rem);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dash-muted, #8b97a4);
+}
+
+.dash-drive-empty {
+  margin: 0;
+  padding: 0.65rem 0.8rem;
+  border: 1px dashed var(--dash-line, rgba(246, 244, 233, 0.14));
+  background: rgba(5, 7, 9, 0.45);
+  font-size: var(--dash-meta-size, 0.68rem);
+  line-height: 1.6;
+  color: var(--dash-muted, #8b97a4);
+}
+
+/* --- protocol + export --------------------------------------------------- */
+
+.dash-drive-protocol {
+  align-items: start;
+  gap: 1.4rem;
+}
+
+.dash-drive-cmd {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.dash-drive-steps {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: var(--dash-meta-size, 0.68rem);
+  line-height: 1.75;
+  color: var(--dash-soft, #9aa7b4);
+}
+
+.dash-drive-export {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.dash-drive-paths {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.dash-drive-paths li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.3rem 0.45rem;
+  background: var(--dash-bg-inset, rgba(0, 0, 0, 0.35));
+  border: 1px solid var(--dash-line-soft, rgba(246, 244, 233, 0.1));
+}
+
+.dash-drive-paths code {
+  word-break: break-all;
+  font-size: 0.68rem;
+  color: var(--dash-ink, #f6f4e9);
+}
+
+@media (max-width: 960px) {
+  .dash-drive-protocol {
+    grid-template-columns: 1fr;
+  }
+}

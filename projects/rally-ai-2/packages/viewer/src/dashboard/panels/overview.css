@@ -1,0 +1,219 @@
+/*
+ * Overview / Home panel — sparse geometric composition.
+ * Tokens come from dashboard theme.css / shell vars.
+ */
+
+.ov {
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  max-width: 52rem;
+  padding: 0.25rem 0 1.5rem;
+}
+
+.ov-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--dash-line, rgba(246, 244, 233, 0.12));
+}
+
+.ov-hero-brand {
+  font-family: var(--dash-font-display, var(--hud-font, Impact, sans-serif));
+  font-size: clamp(2.4rem, 7vw, 4.2rem);
+  line-height: 0.92;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dash-accent, var(--yellow, #f2d21a));
+}
+
+.ov-hero-line {
+  margin: 0;
+  max-width: 36rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+  color: var(--dash-soft, #9aa7b4);
+}
+
+.ov-run {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.85rem 1.1rem;
+  align-items: baseline;
+}
+
+.ov-run-state {
+  font-family: var(--dash-font-display, var(--hud-font, Impact, sans-serif));
+  font-size: 1.15rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ov-run-state.ok {
+  color: var(--dash-ok, var(--green, #47d978));
+}
+
+.ov-run-state.warn {
+  color: var(--dash-warn, var(--yellow, #f2d21a));
+}
+
+.ov-run-state.bad {
+  color: var(--dash-bad, #ff6c62);
+}
+
+.ov-run-state.muted {
+  color: var(--dash-muted, #8b97a4);
+}
+
+.ov-run-meta {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--dash-muted, #8b97a4);
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+}
+
+.ov-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--dash-line, rgba(246, 244, 233, 0.12));
+}
+
+.ov-metric-value {
+  font-family: var(--dash-font-display, var(--hud-font, Impact, sans-serif));
+  font-size: clamp(1.35rem, 3vw, 1.9rem);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--dash-ink, var(--white, #f6f4e9));
+}
+
+.ov-metric-sub {
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  color: var(--dash-faint, #6f7b88);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ov-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ov-actions a.dash-btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ov-hint {
+  margin: 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--dash-faint, #6f7b88);
+}
+
+.ov-phases {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.ov-phase {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.45rem 0.3rem 0.5rem;
+  border: 1px solid var(--dash-line, rgba(246, 244, 233, 0.12));
+  background: rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+
+.ov-phase:hover {
+  border-color: rgba(246, 244, 233, 0.28);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ov-phase-id {
+  font-family: var(--dash-font-display, var(--hud-font, Impact, sans-serif));
+  font-size: 1.05rem;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.ov-phase-mark {
+  width: 100%;
+  height: 3px;
+  background: var(--dash-faint, #6f7b88);
+}
+
+.ov-phase[data-status="done"] .ov-phase-mark {
+  background: var(--dash-ok, var(--green, #47d978));
+}
+
+.ov-phase[data-status="partial"] .ov-phase-mark {
+  background: var(--dash-warn, var(--yellow, #f2d21a));
+}
+
+.ov-phase[data-status="blocked"] .ov-phase-mark {
+  background: var(--dash-bad, #ff6c62);
+}
+
+.ov-phase[data-status="not-started"] .ov-phase-mark {
+  background: #3a4450;
+}
+
+.ov-phase-status {
+  font-size: 0.52rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dash-muted, #8b97a4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ov-phase-tip {
+  margin: 0;
+  font-size: 0.65rem;
+  letter-spacing: 0.03em;
+  color: var(--dash-faint, #6f7b88);
+  min-height: 2.4em;
+}
+
+@media (max-width: 900px) {
+  .ov-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ov-phases {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .ov-run {
+    grid-template-columns: 1fr;
+  }
+
+  .ov-phases {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}

@@ -1,0 +1,363 @@
+/*
+ * RallyAI dashboard design tokens + panel primitives.
+ *
+ * Import once from the dashboard shell (`shell.ts`). Do not re-import from
+ * panels — DashboardApp already pulls shell → theme.
+ *
+ * Token map (for sibling agents)
+ * ─────────────────────────────────────────────────────────────────────────
+ * Colour (shared with shell chrome)
+ *   --dash-bg            stage void (#050709)
+ *   --dash-surface       rail / denser panels (#080a0c)
+ *   --dash-surface-2     inset rail / secondary (#0c1014)
+ *   --dash-bg-raised     controls (#161d25)
+ *   --dash-bg-hover      control hover (#243141)
+ *   --dash-bg-inset      chart / code wells
+ *   --dash-text          primary ink (--white / #f6f4e9)
+ *   --dash-ink           alias of --dash-text
+ *   --dash-muted         secondary labels (#8b97a4)
+ *   --dash-faint         tertiary (#6f7b88)
+ *   --dash-soft          metric row labels (#9aa7b4)
+ *   --dash-line          hairline (rgba white ~0.14)
+ *   --dash-line-soft     softer dividers (~0.1)
+ *   --dash-line-control  button border
+ *   --dash-accent        brand yellow
+ *   --dash-good / --dash-ok   running / success
+ *   --dash-bad           error / crash
+ *   --dash-spark         reward sparkline (#C8FF3D)
+ *   --dash-blue          HUD brand strip
+ *
+ * Type
+ *   --dash-font / --dash-font-ui       monospace body (--ui-font)
+ *   --dash-display / --dash-font-display  heavy numerals (--hud-font)
+ *
+ * Space / geometry
+ *   --dash-space, --dash-space-sm      rem gaps (not --dash-pad — shell uses
+ *                                      that as a padding shorthand)
+ *   --dash-radius                      1px — sharp, not pill
+ *
+ * Layout classes (panels)
+ *   .dash-section / .dash-section-hd / .dash-section-body
+ *   .dash-stack / .dash-stack-tight / .dash-row / .dash-row-between
+ *   .dash-grid / .dash-grid-2 / .dash-grid-3
+ *   .dash-label / .dash-value / .dash-numeral / .dash-muted
+ *   .dash-stat (+ .large) / .dash-metric-row
+ *   .dash-btn (+ .armed | .danger) / .dash-btn-row
+ *   .dash-code / .dash-sparkline / .dash-banner / .dash-empty
+ *
+ * Aesthetic: dark stage, sharp geometry, hairline borders, monospace metrics.
+ * No purple gradients, cream/terracotta, broadsheet, glow soup, or emoji.
+ * Shell chrome (nav, stage header) lives in dashboard.css — do not restyle
+ * .dash-brand / .dash-title page chrome from here.
+ */
+
+.dash-app {
+  /* Panel extras + aliases; shell may redefine chrome tokens after import. */
+  --dash-bg-raised: #1a1a1a;
+  --dash-bg-hover: #2a2a2a;
+  --dash-bg-inset: rgba(0, 0, 0, 0.5);
+  --dash-ink: var(--dash-text, var(--white, #ffffff));
+  --dash-faint: #555555;
+  --dash-soft: #888888;
+  --dash-line-control: #444444;
+  --dash-ok: var(--dash-good, var(--green, #00ff00));
+  --dash-warn: var(--dash-accent, var(--orange, #ff6600));
+  --dash-spark: #ff6600;
+  --dash-blue: var(--blue, #0033cc);
+  --dash-font-ui: var(--dash-font, var(--ui-font, ui-monospace, "SF Mono", Menlo, Consolas, monospace));
+  --dash-font-display: var(--dash-display, var(--hud-font, "Arial Black", Impact, Haettenschweiler, system-ui, sans-serif));
+  --dash-space: 0.75rem;
+  --dash-space-sm: 0.35rem;
+  --dash-radius: 0px;
+  --dash-label-size: 0.65rem;
+  --dash-label-track: 0.15em;
+  --dash-body-size: 0.8rem;
+  --dash-meta-size: 0.65rem;
+}
+
+/* --- typography (panel content) ---------------------------------------- */
+
+.dash-label {
+  font-size: var(--dash-label-size);
+  letter-spacing: var(--dash-label-track);
+  text-transform: uppercase;
+  color: var(--dash-muted, #8b97a4);
+}
+
+.dash-value {
+  font-family: var(--dash-font-ui);
+  font-size: var(--dash-body-size);
+  font-variant-numeric: tabular-nums;
+  color: var(--dash-ink);
+}
+
+.dash-numeral {
+  font-family: var(--dash-font-display);
+  font-size: clamp(2rem, 6vw, 4.5rem);
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--dash-ink);
+}
+
+.dash-muted {
+  color: var(--dash-muted, #8b97a4);
+  font-size: var(--dash-meta-size);
+}
+
+.dash-faint {
+  color: var(--dash-faint);
+  font-size: var(--dash-meta-size);
+}
+
+/* --- layout primitives -------------------------------------------------- */
+
+.dash-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dash-space);
+  min-width: 0;
+}
+
+.dash-stack-tight {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dash-space-sm);
+  min-width: 0;
+}
+
+.dash-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dash-space-sm);
+  min-width: 0;
+}
+
+.dash-row-between {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.dash-grid {
+  display: grid;
+  gap: var(--dash-space);
+  min-width: 0;
+}
+
+.dash-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--dash-space);
+}
+
+.dash-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--dash-space);
+}
+
+/* Sections — preferred over cards. Hairline header, no lifted surfaces. */
+
+.dash-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dash-space-sm);
+  min-width: 0;
+  padding-bottom: var(--dash-space);
+  border-bottom: 1px solid var(--dash-line);
+}
+
+.dash-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.dash-section-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--dash-line-soft);
+}
+
+.dash-section-hd .dash-section-title {
+  font-size: var(--dash-label-size);
+  letter-spacing: var(--dash-label-track);
+  text-transform: uppercase;
+  color: var(--dash-muted, #8b97a4);
+}
+
+.dash-section-hd .dash-meta {
+  font-size: var(--dash-meta-size);
+  letter-spacing: 0.04em;
+  color: var(--dash-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dash-space-sm);
+  min-width: 0;
+  padding-top: 0.35rem;
+}
+
+/* Stat: label over value (train-metric-block pattern). */
+
+.dash-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.dash-stat.large .dash-stat-value {
+  font-family: var(--dash-font-display);
+  font-size: clamp(2rem, 6vw, 4.5rem);
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+}
+
+.dash-stat-label {
+  font-size: var(--dash-label-size);
+  letter-spacing: var(--dash-label-track);
+  text-transform: uppercase;
+  color: var(--dash-muted, #8b97a4);
+}
+
+.dash-stat-value {
+  font-family: var(--dash-font-ui);
+  font-size: var(--dash-body-size);
+  font-variant-numeric: tabular-nums;
+  color: var(--dash-ink);
+}
+
+.dash-stat-value.warn,
+.dash-stat-value.bad {
+  color: var(--dash-bad, #ff6c62);
+}
+
+.dash-stat-value.ok {
+  color: var(--dash-ok);
+}
+
+.dash-metric-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  color: var(--dash-soft);
+}
+
+.dash-metric-row span:last-child {
+  color: var(--dash-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-metric-row span.warn {
+  color: var(--dash-bad, #ff6c62);
+}
+
+/* Controls — match train-actions sharpness. */
+
+.dash-btn {
+  padding: 0.35rem 0.55rem;
+  color: #fff;
+  background: var(--dash-bg-raised);
+  border: 1px solid var(--dash-line-control);
+  border-radius: var(--dash-radius);
+  font: 0.72rem var(--dash-font-ui);
+  cursor: pointer;
+  letter-spacing: 0.04em;
+}
+
+.dash-btn:hover:not(:disabled) {
+  background: var(--dash-bg-hover);
+}
+
+.dash-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dash-btn.armed {
+  border-color: var(--dash-ok);
+  color: var(--dash-ok);
+}
+
+.dash-btn.danger:hover:not(:disabled) {
+  border-color: var(--dash-bad, var(--red, #df3340));
+  color: #ff8d86;
+}
+
+.dash-btn-row {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+/* Code / pre — for CLI snippets, paths, JSON stubs. */
+
+.dash-code {
+  margin: 0;
+  padding: 0.55rem 0.85rem;
+  font-family: var(--dash-font-ui);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+  color: var(--dash-ink);
+  background: var(--dash-bg-inset);
+  border: 1px solid var(--dash-line-soft);
+  border-radius: var(--dash-radius);
+  overflow: auto;
+  white-space: pre;
+  max-height: 16rem;
+}
+
+/* Sparkline host — thick chart on hairline grid (see train Sparkline). */
+
+.dash-sparkline {
+  display: block;
+  width: 100%;
+  min-height: 5.5rem;
+  height: 100%;
+  border: 1px solid var(--dash-line);
+  background: var(--dash-bg-inset);
+}
+
+.dash-banner {
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--dash-bad);
+  border: 1px solid var(--dash-bad);
+  background: rgba(255, 0, 0, 0.1);
+  padding: 0.55rem 0.7rem;
+  white-space: pre-wrap;
+  max-height: 5rem;
+  overflow: auto;
+}
+
+.dash-empty {
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  text-align: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dash-muted);
+  border: 1px dashed var(--dash-line);
+  background: var(--dash-surface-2);
+}
+
+@media (max-width: 960px) {
+  .dash-grid-2,
+  .dash-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
