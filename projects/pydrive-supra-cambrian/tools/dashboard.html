@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supra-Cambrian Evolution Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="dashboard-container">
+    <header class="header">
+      <div class="logo">
+        <span class="emoji-logo">🏎️</span>
+        <div class="brand-text">
+          <h1>Supra-Cambrian</h1>
+          <span class="subtitle">Co-Evolution Command Center</span>
+        </div>
+      </div>
+      <div class="status">
+        <div class="status-indicator"></div>
+        <span id="status-text">Monitoring Training Loop</span>
+      </div>
+    </header>
+
+    <main class="grid-layout">
+      <!-- Left Column: Charts -->
+      <section class="charts-section card">
+        <h2>Fitness Evolution</h2>
+        <div class="chart-container">
+          <canvas id="fitnessChart"></canvas>
+        </div>
+      </section>
+
+      <!-- Right Column: Current Leaderboard -->
+      <section class="leaderboard-section card">
+        <div class="section-header">
+          <h2>Latest Generation Leaderboard</h2>
+          <span class="badge" id="current-gen-badge">Gen --</span>
+        </div>
+        <div class="table-container">
+          <table id="leaderboard-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Genome ID</th>
+                <th>Fitness</th>
+                <th>Mass (kg)</th>
+                <th>Grip (μ)</th>
+                <th>Downforce</th>
+                <th>Drag</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Data injected via JS -->
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--text-secondary);">Waiting for data...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="dashboard.js"></script>
+</body>
+</html>

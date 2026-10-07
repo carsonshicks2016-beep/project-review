@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#060a0b" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23080c0d'/%3E%3Cpath d='M14 13h38v9H24v8h24v9H24v12H14z' fill='%23e4ff5f'/%3E%3C/svg%3E"
+    />
+    <meta
+      name="description"
+      content="Deterministic Fable Five brain observatory for the Mazda 787B and Porsche 919 Evo on the Nordschleife."
+    />
+    <title>Fable Observatory</title>
+  </head>
+  <body>
+    <div id="app" class="app-shell" data-weather="dry" data-workspace="cinematic" data-controls="closed">
+      <canvas id="stage" aria-label="Live three-dimensional Fable Five brain playback"></canvas>
+      <div class="cinematic-frame" aria-hidden="true"></div>
+
+      <header class="identity-rail" aria-live="polite">
+        <div class="brand-lockup">
+          <span class="mark">F5</span>
+          <span><small>Fable Five</small><strong>OBSERVATORY</strong></span>
+        </div>
+        <div class="session-primary">
+          <strong id="identity-car">UNRESOLVED</strong>
+          <span id="identity-edition">—</span>
+          <span id="identity-stage">—</span>
+          <span class="connection-pill" id="connection-state" data-state="connecting">CONNECTING</span>
+        </div>
+        <dl class="identity-grid">
+          <div class="checkpoint-cell"><dt>Brain</dt><dd id="identity-checkpoint">NO CHECKPOINT</dd></div>
+          <div><dt>Class</dt><dd id="identity-classification">UNVERIFIED PLAYBACK</dd></div>
+          <div><dt>Drivetrain</dt><dd id="identity-drivetrain">—</dd></div>
+          <div><dt>Observation</dt><dd id="identity-observation">—</dd></div>
+          <div><dt>Compatibility</dt><dd id="identity-compatibility">—</dd></div>
+          <div class="hash-cell"><dt>Exact SHA-256</dt><dd id="identity-hash">HASH UNAVAILABLE</dd></div>
+        </dl>
+        <button class="warning-summary" id="warning-toggle" type="button" data-hidden="true" aria-expanded="false">
+          <span id="warning-count">0</span> notices
+        </button>
+        <div class="identity-warnings" id="identity-warnings" data-hidden="true"></div>
+      </header>
+
+      <section class="broadcast-hud" aria-label="Primary race telemetry">
+        <div class="shot-readout">
+          <span class="live-dot"></span>
+          <strong id="camera-shot">TRACKSIDE · 135MM</strong>
+          <small id="telemetry-stage">FABLE</small>
+        </div>
+        <div class="hero-telemetry">
+          <div class="speed-block"><strong id="telemetry-speed">000</strong><span>KM/H</span></div>
+          <div class="gear-block"><span>GEAR</span><strong id="telemetry-gear">N</strong><small id="telemetry-rpm">0000 RPM</small></div>
+        </div>
+        <div class="lap-readout">
+          <span><small>LAP</small><strong id="telemetry-lap">—</strong></span>
+          <span><small>PROGRESS</small><strong id="telemetry-progress">0.00%</strong></span>
+          <span><small>DELTA</small><strong id="telemetry-delta">—</strong></span>
+        </div>
+      </section>
+
+      <div class="track-truth-badge">
+        <i></i>
+        <span>AUTHORITY</span>
+        <strong>PYTHON TRUTH</strong>
+      </div>
+
+      <nav class="workspace-rail" aria-label="Observatory workspaces">
+        <button id="mode-cinematic" class="active" type="button" aria-pressed="true"><span>01</span>CINEMA</button>
+        <button id="toggle-engineer" type="button" aria-pressed="false"><span>02</span>ENGINEER</button>
+        <button id="toggle-xray" type="button" aria-pressed="false"><span>03</span>BRAIN</button>
+        <button id="toggle-replay" type="button" aria-pressed="false"><span>04</span>REPLAY</button>
+        <button id="toggle-controls" type="button" aria-pressed="false"><span>05</span>VIEW</button>
+        <button id="toggle-audio" type="button" aria-pressed="false"><span>◌</span>AUDIO OFF</button>
+      </nav>
+
+      <aside class="telemetry-column workspace-panel" id="engineer-overlay" data-open="false">
+        <div class="panel-heading">
+          <div><small>Workspace 02</small><strong>Race Engineering</strong></div>
+          <button class="icon-button" type="button" data-toggle-panel="engineer-overlay" aria-label="Close Engineer overlay">×</button>
+        </div>
+        <div class="control-telemetry">
+          <label><span>Throttle</span><meter id="telemetry-throttle" min="0" max="1" value="0"></meter></label>
+          <label><span>Brake</span><meter id="telemetry-brake" min="0" max="1" value="0"></meter></label>
+          <label><span>Steer</span><meter id="telemetry-steer" min="-1" max="1" value="0"></meter></label>
+          <label><span>Pace</span><meter id="telemetry-pace" min="0" max="1.3" value="0"></meter></label>
+        </div>
+        <dl class="telemetry-list">
+          <div><dt>Surface state</dt><dd id="telemetry-surface">TRACK</dd></div>
+          <div><dt>MGU output</dt><dd id="telemetry-mgu">—</dd></div>
+          <div><dt>Hybrid SOC</dt><dd id="telemetry-soc">—</dd></div>
+          <div><dt>Fable validity</dt><dd id="telemetry-fable">—</dd></div>
+          <div><dt>Boost command</dt><dd id="telemetry-boost">—</dd></div>
+          <div><dt>Active aero</dt><dd id="telemetry-aero">—</dd></div>
+          <div><dt>Collision / visual</dt><dd id="telemetry-collision">—</dd></div>
+        </dl>
+        <div class="subhead"><span>TYRE STATE</span><small>LOAD · GRIP · SLIP</small></div>
+        <div class="wheel-grid" id="wheel-grid" aria-label="Per-wheel load, grip and slip"></div>
+        <p class="truth-note">Amber geometry is the authoritative Fable collision footprint. Vehicle bodywork and scenery remain visual-only.</p>
+      </aside>
+
+      <aside class="brain-panel workspace-panel" id="brain-overlay" data-open="false">
+        <div class="panel-heading">
+          <div><small>Workspace 03</small><strong>Brain X-Ray</strong></div>
+          <button class="icon-button" type="button" data-toggle-panel="brain-overlay" aria-label="Close Brain X-Ray overlay">×</button>
+        </div>
+        <div class="brain-actions">
+          <div><span>STEER</span><strong id="brain-steer">+0.000</strong></div>
+          <div><span>LONG</span><strong id="brain-long">+0.000</strong></div>
+          <div><span>GEAR Δ</span><strong id="brain-gear">+0.000</strong></div>
+          <div><span>CRITIC</span><strong id="brain-critic">—</strong></div>
+        </div>
+        <div class="network-stage">
+          <div class="brain-node source">OBS</div><i></i><div class="brain-node hidden">128</div><i></i><div class="brain-node hidden alt">128</div><i></i><div class="brain-node output">ACT</div>
+        </div>
+        <div class="policy-std" id="brain-std">Policy std —</div>
+        <span class="brain-layer-label">Hidden layer one · live activation</span>
+        <div class="brain-strip brain-hidden" id="brain-layer-one" aria-label="First hidden-layer activity"></div>
+        <span class="brain-layer-label">Hidden layer two · live activation</span>
+        <div class="brain-strip brain-hidden" id="brain-layer-two" aria-label="Second hidden-layer activity"></div>
+        <span class="brain-layer-label">Normalized observation ribbon</span>
+        <div class="brain-strip brain-observations" id="brain-strip" aria-label="Normalized policy observation activity"></div>
+        <div class="brain-groups" id="brain-groups"></div>
+        <div class="brain-sensitivity" id="brain-sensitivity">Sensitivity / not intent — waiting</div>
+        <p id="brain-note">Waiting for policy telemetry.</p>
+      </aside>
+
+      <nav class="view-deck" id="view-controls" data-open="false" aria-label="Observatory camera and environment controls">
+        <div class="panel-heading">
+          <div><small>Workspace 05</small><strong>Director Controls</strong></div>
+          <button class="icon-button" id="close-controls" type="button" aria-label="Close view controls">×</button>
+        </div>
+        <label>
+          <span>Camera system</span>
+          <select id="camera-mode">
+            <option value="broadcast" selected>Broadcast Director</option>
+            <option value="chase">Chase</option>
+            <option value="roof">Roof / Onboard</option>
+            <option value="trackside">Trackside Telephoto</option>
+            <option value="drone">Aerial</option>
+            <option value="free">Free Orbit</option>
+          </select>
+        </label>
+        <label>
+          <span>Lighting preset</span>
+          <select id="weather-mode">
+            <option value="dry" selected>Dry Daylight</option>
+            <option value="dusk">Golden Dusk</option>
+            <option value="night">Night Session</option>
+          </select>
+        </label>
+        <p>Camera position affects only the audio listener and presentation. It never enters physics, observations, or policy inference.</p>
+      </nav>
+
+      <section class="replay-deck" id="replay-overlay" data-open="false">
+        <div class="replay-heading">
+          <span><small>Workspace 04</small><strong>Replay Control</strong></span>
+          <button class="icon-button" type="button" data-toggle-panel="replay-overlay" aria-label="Close Replay overlay">×</button>
+        </div>
+        <div class="transport-row">
+          <button id="control-pause" type="button">PAUSE</button>
+          <button id="control-step" type="button">STEP</button>
+          <button id="control-reset" type="button">RESET</button>
+          <label>RATE
+            <select id="control-speed">
+              <option value="0.25">0.25×</option>
+              <option value="0.5">0.5×</option>
+              <option value="1" selected>1×</option>
+              <option value="2">2×</option>
+            </select>
+          </label>
+          <output id="replay-clock">00:00.000</output>
+          <span id="replay-mode">LIVE</span>
+        </div>
+        <label class="scrubber">
+          <span>120 SECOND MEMORY</span>
+          <input id="control-scrub" type="range" min="0" max="120" step="0.1" value="0" />
+        </label>
+        <div class="replay-events" id="replay-events" aria-live="polite"><span>Session event log ready.</span></div>
+      </section>
+
+      <div class="loading-card" id="loading-card">
+        <span class="eyebrow">Fable Five · Visual World</span>
+        <strong id="loading-title">Preparing the Nordschleife</strong>
+        <div class="loading-track"><i id="loading-progress"></i></div>
+        <small id="loading-detail">Loading deterministic truth geometry.</small>
+      </div>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supra-Cambrian Command Center</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧬</text></svg>">
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/pitwall.css">
+  <style>
+    .console-out {
+      background: #000;
+      color: #0f0;
+      font-family: monospace;
+      padding: 10px;
+      height: 400px;
+      overflow-y: scroll;
+      white-space: pre-wrap;
+      margin-top: 10px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">S</span>
+      <div>
+        <div class="eyebrow">Supra-Cambrian Ops</div>
+        <h1>Command <b>Center</b></h1>
+      </div>
+    </div>
+    <div class="top-actions">
+      <div class="sysmeta">
+        <span id="task-chip" class="chip">0 running</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="ops">Ops</button>
+    <button class="tab" data-tab="coevo">Co-Evolution</button>
+  </nav>
+
+  <main class="content">
+    <!-- OPS TAB -->
+    <section class="panel active ops-panel" id="tab-ops">
+      <section class="ops-hero">
+        <div>
+          <div class="eyebrow">Morphological Co-Evolution</div>
+          <h2>Active Pipeline Control</h2>
+        </div>
+      </section>
+
+      <section class="ops-grid">
+        <div class="ops-card ops-live" style="grid-column: span 12;">
+          <div class="ops-card-head">
+            <div><span class="eyebrow">Pit Wall</span><h3>Active Runs</h3></div>
+            <button class="mini" id="ops-refresh">refresh</button>
+          </div>
+          <div id="ops-active-runs" class="ops-run-list">
+            <!-- Injected via JS -->
+          </div>
+          
+          <div class="ops-card-head" style="margin-top: 20px;">
+            <div><span class="eyebrow">Live Telemetry</span><h3>Console Output</h3></div>
+          </div>
+          <div id="console-output" class="console-out">No active stream...</div>
+        </div>
+      </section>
+    </section>
+
+    <!-- CO-EVOLUTION TAB -->
+    <section class="panel" id="tab-coevo">
+      <div class="section-title">
+        <div>
+          <span class="eyebrow">Evolutionary Deck</span>
+          <h2>Pipeline Configuration</h2>
+        </div>
+      </div>
+      
+      <div class="train-cards" id="train-cards">
+        <div class="tc" style="max-width: 600px;">
+          <h2>🧬 Co-Evolution GA + PPO</h2>
+          <div class="sub">Evolve Morphology & Brain simultaneously</div>
+          
+          <div class="ctl">
+            <label>Generations: <b id="val-gens">3</b></label>
+            <input type="range" id="input-gens" min="1" max="50" step="1" value="3" style="width:100%">
+          </div>
+          
+          <div class="ctl">
+            <label>Population Size: <b id="val-pop">4</b></label>
+            <input type="range" id="input-pop" min="2" max="64" step="2" value="4" style="width:100%">
+          </div>
+          
+          <div class="ctl">
+            <label>PPO Inner Iters: <b id="val-iters">25</b></label>
+            <input type="range" id="input-iters" min="10" max="1000" step="5" value="25" style="width:100%">
+          </div>
+
+          <div class="ctl">
+            <label>Track Base</label>
+            <div class="seg" id="input-track" data-val="club">
+              <button class="on" data-v="club">Club</button>
+              <button data-v="national">National</button>
+              <button data-v="sprint">Sprint</button>
+            </div>
+          </div>
+          
+          <div class="ctl">
+            <label>Output Log JSON</label>
+            <input id="input-out" value="evolution_log.json" autocomplete="off" style="width:100%; padding: 5px;">
+          </div>
+          
+          <div class="actions">
+            <button class="go" id="btn-launch">Launch Co-Evolution</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
