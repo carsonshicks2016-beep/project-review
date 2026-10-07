@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GA Drone Racing - Dashboard & Editor</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./src/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="app">
+    
+    <!-- LEFT PANEL: Training Controls -->
+    <div id="left-panel" class="panel">
+      <a href="./boids.html" style="display:block; text-align:center; padding:8px 10px; margin-bottom:14px; background:linear-gradient(90deg, rgba(0,240,255,0.15), rgba(255,51,102,0.15)); border:1px solid rgba(0,240,255,0.4); border-radius:6px; color:#00f0ff; text-decoration:none; font-family:monospace; font-size:11px; font-weight:bold; letter-spacing:0.5px; transition:all 0.2s ease;">🧬 LAUNCH APEXFLOCK (ML BOIDS) →</a>
+      <h2>Training Controls</h2>
+      
+      <div class="section">
+        <h3>Trainer</h3>
+        <div class="toolbar">
+          <button id="btn-trainer-ga" class="btn tool active" title="Genetic algorithm: evolves network weights directly">Evolution</button>
+          <button id="btn-trainer-ppo" class="btn tool" title="Proximal Policy Optimization: gradient-based reinforcement learning">PPO</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Environment</h3>
+        <div class="toolbar">
+          <button id="btn-env-outdoor" class="btn tool active" title="Low-poly alpine valley with procedural terrain, trees, water, and atmospheric sunlight">Outdoor</button>
+          <button id="btn-env-lidar" class="btn tool" title="Dark cyber LiDAR point-cloud scan">LiDAR Cyber</button>
+        </div>
+      </div>
+
+      <div class="control-group section">
+        <button id="btn-toggle-sim" class="btn active">Pause Sim</button>
+        <button id="btn-turbo" class="btn">Turbo: OFF</button>
+        <div id="ga-only-pop" style="margin-top: 15px;">
+            <label style="display: flex; justify-content: space-between;">
+                Pop Size: <span id="ui-pop-size-val" class="highlight">120</span>
+            </label>
+            <input type="range" id="slider-pop-size" min="10" max="500" step="10" value="120" style="width: 100%; margin-top: 5px;">
+        </div>
+      </div>
+      
+      <div class="control-group section">
+        <label>Status: <span id="ui-status" class="highlight">Evolving...</span></label>
+        <label><span id="ui-gen-label">Generation:</span> <span id="ui-gen" class="highlight">0</span></label>
+        <label>Gates Passed: <span id="ui-gates" class="highlight">0 / 16</span></label>
+        <label>Curriculum: <span id="ui-stage" class="highlight">0 / 15</span></label>
+        <label>Wall hits: <span id="ui-wall-hits" class="highlight">n/a</span></label>
+        <div id="ppo-stats" hidden>
+          <label>Env steps: <span id="ui-ppo-steps" class="highlight">0</span></label>
+          <label>Mean return: <span id="ui-ppo-return" class="highlight">0</span></label>
+          <label>Entropy: <span id="ui-ppo-entropy" class="highlight">0</span></label>
+          <label>Approx KL: <span id="ui-ppo-kl" class="highlight">0</span></label>
+          <label>Value loss: <span id="ui-ppo-vloss" class="highlight">0</span></label>
+        </div>
+        <label>Top Speed: <span id="ui-speed" class="highlight">0.0 km/h</span></label>
+      </div>
+
+      <div class="section">
+        <h3>Best Run</h3>
+        <label>Record: <span id="ui-best-run" class="highlight">None yet</span></label>
+        <button id="btn-open-replay" class="btn outline" title="Open the best recorded run in its own window">▶ Watch Best Run</button>
+      </div>
+
+      <div class="section">
+        <h3 id="brain-io-title">Genome Management</h3>
+        <button id="btn-save-drone" class="btn outline">Save Best Drone</button>
+        <button id="btn-load-drone" class="btn outline">Load Drone</button>
+      </div>
+
+      <div class="section">
+        <h3>Camera</h3>
+        <button id="btn-cam" class="btn outline">Cam: CHASE</button>
+      </div>
+
+      <div class="section">
+        <h3>Commentary</h3>
+        <button id="btn-commentary" class="btn active" title="The drone narrates its own run from live telemetry">Commentary: ON</button>
+        <button id="btn-commentary-speak" class="btn outline" title="Read the commentary aloud with the browser's speech synthesis">Speech: OFF</button>
+      </div>
+
+      <div class="section">
+        <h3>World</h3>
+        <button id="btn-solid-world" class="btn active" title="Voxelize the LiDAR scan so the drone collides with walls and can sense them">Solid World: loading…</button>
+        <button id="btn-voxel-overlay" class="btn outline" title="Show the occupancy cells used for collision">Show Collision Cells</button>
+      </div>
+
+      <div class="section">
+        <h3>Rendering</h3>
+        <button id="btn-edl" class="btn active" title="Eye-dome lighting: darkens depth discontinuities so the point cloud reads as solid geometry">Depth Shading: ON</button>
+        <button id="btn-fpv-stab" class="btn active" title="Stabilized keeps some bank but holds the horizon. Raw is rigid to the airframe, like real goggles.">FPV: Stabilized</button>
+      </div>
+      
+      <!-- New Openable Side Panel for Brain Stats -->
+      <div class="section">
+        <h3 id="btn-toggle-brain" style="cursor: pointer; display: flex; justify-content: space-between;">
+            Brain Stats <span>▼</span>
+        </h3>
+        <div id="brain-stats-panel" style="display: none; padding-top: 10px; font-size: 13px; color: #b3b3cc;">
+            <p style="margin: 5px 0;"><strong>Name:</strong> <span id="ui-brain-name" class="highlight">N/A</span></p>
+            <p style="margin: 5px 0;"><strong>Generation:</strong> <span id="ui-brain-gen" class="highlight">0</span></p>
+            <p style="margin: 5px 0;"><strong>Lineage:</strong> <br/><span id="ui-brain-lineage" style="font-size: 11px; opacity: 0.8; display: block; margin-top: 4px;">None</span></p>
+            <p style="margin: 10px 0 5px 0;"><strong>Network Size:</strong> 496 Weights</p>
+            <p style="margin: 5px 0;"><strong>Topology:</strong> <span id="ui-brain-topology">[14, 16, 12, 4]</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER PANEL: Viewport & Telemetry -->
+    <div id="center-panel">
+      <!-- 3D Canvas goes here -->
+      <div id="viewport"></div>
+      
+      <!-- Telemetry Graph -->
+      <div id="bottom-panel" class="panel">
+        <div class="graph-header" id="graph-header">Fitness Over Generations</div>
+        <canvas id="fitness-graph"></canvas>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: Track Editor -->
+    <div id="right-panel" class="panel">
+      <div class="panel-header">TRACK STUDIO</div>
+      
+      <button id="btn-mode-editor" class="btn primary outline">Enter Editor Mode</button>
+      
+      <div id="editor-tools" class="disabled">
+        
+        <div class="section-divider">TRANSFORM TOOLS</div>
+        <div class="toolbar">
+          <button id="btn-gizmo-translate" class="btn tool active" title="Move (W)">✥ Move</button>
+          <button id="btn-gizmo-rotate" class="btn tool" title="Rotate (E)">↻ Rotate</button>
+          <button id="btn-gizmo-scale" class="btn tool" title="Scale (R)">⤡ Scale</button>
+        </div>
+        
+        <div class="section-divider">GATE MANAGEMENT</div>
+        <div class="toolbar-column">
+          <button id="btn-add-gate" class="btn outline">+ Add New Gate</button>
+          <button id="btn-remove-gate" class="btn danger outline">- Remove Selected</button>
+        </div>
+        <div class="selection-info mt-10">
+          Selected: <span id="ui-selected-gate" class="highlight">None</span>
+        </div>
+        
+        <div class="section-divider">CAMERA TOOLS</div>
+        <button id="btn-set-cam" class="btn outline" style="width:100%;" title="Set the current view as the Trackside camera">🎥 Set Trackside View</button>
+        
+        <div class="section-divider">OUTDOOR TRACK</div>
+        <div class="toolbar">
+          <button id="btn-save-track-outdoor" class="btn outline success" title="Save custom Outdoor track to local storage">💾 Save Outdoor</button>
+          <button id="btn-load-track-outdoor" class="btn outline" title="Load custom Outdoor track from local storage">📂 Load Outdoor</button>
+        </div>
+
+        <div class="section-divider">LIDAR TRACK</div>
+        <div class="toolbar">
+          <button id="btn-save-track-lidar" class="btn outline success" title="Save custom LiDAR track to local storage">💾 Save LiDAR</button>
+          <button id="btn-load-track-lidar" class="btn outline" title="Load custom LiDAR track from local storage">📂 Load LiDAR</button>
+        </div>
+
+        <button id="btn-reset-track" class="btn danger outline mt-10">Reset Current Track</button>
+
+      </div>
+    </div>
+
+  </div>
+
+  <div id="toast-container"></div>
+  <script type="module" src="./src/main_v3.js"></script>
+</body>
+</html>

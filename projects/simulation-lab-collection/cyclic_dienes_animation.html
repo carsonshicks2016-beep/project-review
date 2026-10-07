@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyclic Dienes: Structure, Reactivity & Aromaticity</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    input[type=range] {
+      accent-color: var(--primary, #3b82f6);
+    }
+  </style>
+</head>
+<body class="bg-transparent text-[var(--foreground)] antialiased p-2 sm:p-3 select-none">
+  <div class="bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)] rounded-xl p-3 sm:p-4 shadow-sm max-w-2xl mx-auto flex flex-col gap-2.5">
+    
+    <!-- Header with title & tabs -->
+    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] pb-2.5">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <h1 class="text-[var(--foreground)] font-bold text-base sm:text-lg tracking-tight">Cyclic Dienes Explorer</h1>
+        </div>
+        <p class="text-[var(--muted-foreground)] text-xs mt-0.5">Conformational Lock &bull; Diels-Alder Reactivity &bull; Aromaticity</p>
+      </div>
+      
+      <!-- Tab Selector -->
+      <div class="inline-flex bg-[var(--background,#0f172a15)] border border-[var(--border)] rounded-lg p-0.5 text-xs font-medium">
+        <button id="tab-scis" class="tab-btn px-2 py-1 rounded-md transition-colors bg-[var(--card)] shadow-xs font-semibold text-[var(--foreground)]">s-cis Lock</button>
+        <button id="tab-da" class="tab-btn px-2 py-1 rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Diels-Alder</button>
+        <button id="tab-aro" class="tab-btn px-2 py-1 rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Aromaticity (Cp⁻)</button>
+        <button id="tab-iso" class="tab-btn px-2 py-1 rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)]">1,3 vs 1,4</button>
+      </div>
+    </div>
+
+    <!-- Canvas Animation Stage -->
+    <div class="relative w-full rounded-lg overflow-hidden border border-[var(--border)] bg-[var(--background,#0206170a)] flex items-center justify-center">
+      <canvas id="animCanvas" class="w-full block" style="height: 220px;"></canvas>
+      
+      <!-- Overlay Floating Badge for Key Concept -->
+      <div id="statusBadge" class="absolute top-2 left-2.5 pointer-events-none px-2 py-0.5 rounded-full text-[10px] font-mono tracking-wide bg-[var(--card)]/90 backdrop-blur-sm border border-[var(--border)] text-[var(--foreground)] shadow-xs">
+        Phase: Analyzing...
+      </div>
+    </div>
+
+    <!-- Interactive Controls Bar -->
+    <div class="flex items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-1.5">
+        <button id="playBtn" class="flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--primary,#3b82f6)] text-[var(--primary-foreground,#ffffff)] hover:opacity-90 active:scale-95 transition-all shadow-xs">
+          <svg id="playIcon" class="w-3.5 h-3.5 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <svg id="pauseIcon" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+        <button id="resetBtn" title="Restart" class="flex items-center justify-center w-7 h-7 rounded-lg border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--border)]/30 active:scale-95 transition-all">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        </button>
+      </div>
+
+      <!-- Scrubber slider -->
+      <div class="flex-1 flex items-center gap-2">
+        <span class="text-[10px] text-[var(--muted-foreground)] font-mono">Progress</span>
+        <input id="scrubber" type="range" min="0" max="1000" value="0" class="flex-1 h-1.5 bg-[var(--border)] rounded-lg cursor-pointer">
+      </div>
+
+      <!-- Speed selector -->
+      <div class="flex items-center gap-1 text-[11px] text-[var(--muted-foreground)] font-mono">
+        <button id="speed05" class="px-1.5 py-0.5 rounded border border-transparent hover:border-[var(--border)]">0.5x</button>
+        <button id="speed1" class="px-1.5 py-0.5 rounded bg-[var(--border)]/50 text-[var(--foreground)] font-semibold">1x</button>
+        <button id="speed2" class="px-1.5 py-0.5 rounded border border-transparent hover:border-[var(--border)]">2x</button>
+      </div>
+    </div>
+
+    <!-- Explanatory Note & Chemical Insight -->
+    <div id="explanationCard" class="bg-[var(--card)] border border-[var(--border)] rounded-lg p-2.5 text-xs leading-relaxed">
+      <div class="flex items-start gap-2">
+        <div id="accentIcon" class="mt-0.5 text-blue-500 font-bold text-sm">💡</div>
+        <div>
+          <span id="conceptTitle" class="font-semibold text-[var(--foreground)]">s-cis Conformation Lock:</span>
+          <span id="conceptDesc" class="text-[var(--muted-foreground)] ml-1">
+            Unlike acyclic 1,3-butadiene which freely equilibrates between s-trans and s-cis, cyclopentadiene is rigid—permanently locked in the active s-cis geometry needed for Diels-Alder cycloadditions.
+          </span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Theme and Canvas Setup
+    const canvas = document.getElementById('animCanvas');
+    const ctx = canvas.getContext('2d');
+    const playBtn = document.getElementById('playBtn');
+    const playIcon = document.getElementById('playIcon');
+    const pauseIcon = document.getElementById('pauseIcon');
+    const resetBtn = document.getElementById('resetBtn');
+    const scrubber = document.getElementById('scrubber');
+    const statusBadge = document.getElementById('statusBadge');
+    const conceptTitle = document.getElementById('conceptTitle');
+    const conceptDesc = document.getElementById('conceptDesc');
+    const accentIcon = document.getElementById('accentIcon');
+
+    let isPlaying = true;
+    let progress = 0; // 0.0 to 1.0
+    let speed = 1.0;
+    let activeTab = 'scis';
+    let lastTimestamp = 0;
+
+    // Tabs
+    const tabs = {
+      scis: document.getElementById('tab-scis'),
+      da: document.getElementById('tab-da'),
+      aro: document.getElementById('tab-aro'),
+      iso: document.getElementById('tab-iso')
+    };
+
+    function setTab(tabKey) {
+      activeTab = tabKey;
+      progress = 0;
+      scrubber.value = 0;
+      Object.keys(tabs).forEach(k => {
+        if (k === tabKey) {
+          tabs[k].className = "tab-btn px-2 py-1 rounded-md transition-colors bg-[var(--card)] shadow-xs font-semibold text-[var(--foreground)]";
+        } else {
+          tabs[k].className = "tab-btn px-2 py-1 rounded-md transition-colors text-[var(--muted-foreground)] hover:text-[var(--foreground)]";
+        }
+      });
+      updateExplanations();
+    }
+
+    Object.keys(tabs).forEach(k => {
+      tabs[k].addEventListener('click', () => setTab(k));
+    });
+
+    // Speed buttons
+    const spdButtons = {
+      0.5: document.getElementById('speed05'),
+      1.0: document.getElementById('speed1'),
+      2.0: document.getElementById('speed2')
+    };
+    function setSpeed(s) {
+      speed = s;
+      [0.5, 1.0, 2.0].forEach(val => {
+        if (val === s) {
+          spdButtons[val].className = "px-1.5 py-0.5 rounded bg-[var(--border)]/50 text-[var(--foreground)] font-semibold";
+        } else {
+          spdButtons[val].className = "px-1.5 py-0.5 rounded border border-transparent hover:border-[var(--border)]";
+        }
+      });
+    }
+    spdButtons[0.5].addEventListener('click', () => setSpeed(0.5));
+    spdButtons[1.0].addEventListener('click', () => setSpeed(1.0));
+    spdButtons[2.0].addEventListener('click', () => setSpeed(2.0));
+
+    // Play / Pause / Reset
+    playBtn.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      if (isPlaying) {
+        playIcon.classList.add('hidden');
+        pauseIcon.classList.remove('hidden');
+      } else {
+        playIcon.classList.remove('hidden');
+        pauseIcon.classList.add('hidden');
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      progress = 0;
+      scrubber.value = 0;
+    });
+
+    scrubber.addEventListener('input', (e) => {
+      progress = parseFloat(e.target.value) / 1000;
+    });
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.resetTransform();
+      ctx.scale(dpr, dpr);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function updateExplanations() {
+      if (activeTab === 'scis') {
+        conceptTitle.innerText = "s-cis Conformation Lock:";
+        conceptDesc.innerText = "Acyclic 1,3-butadiene exists ~97% in the unreactive s-trans form. In cyclopentadiene, the 5-membered ring rigidly locks the conjugated diene in s-cis (dihedral 0°), making orbital overlap instantaneous.";
+        accentIcon.innerText = "🔒";
+        statusBadge.innerText = "Comparison: Acyclic Rotation vs Rigid Ring Lock";
+      } else if (activeTab === 'da') {
+        conceptTitle.innerText = "Diels-Alder [4+2] Cycloaddition:";
+        conceptDesc.innerText = "Cyclopentadiene reacts at blazing speed with dienophiles (e.g., ethylene). Six π-electrons move in a concerted cyclic transition state to form bicyclo[2.2.1]hept-2-ene (norbornene).";
+        accentIcon.innerText = "⚡";
+        statusBadge.innerText = "Mechanism: Concerted [4+2] Cycloaddition";
+      } else if (activeTab === 'aro') {
+        conceptTitle.innerText = "Acidity & Aromaticity (pKa ≈ 16):";
+        conceptDesc.innerText = "Cyclopentadiene is ~10³⁰ times more acidic than ordinary alkanes! Losing a proton from the sp³ CH₂ generates the planar cyclopentadienyl anion (Cp⁻), completing a 6 π-electron Hückel aromatic sextet.";
+        accentIcon.innerText = "✨";
+        statusBadge.innerText = "Deprotonation: sp³ → Aromatic Sextet (4n+2, n=1)";
+      } else if (activeTab === 'iso') {
+        conceptTitle.innerText = "Conjugated (1,3) vs. Isolated (1,4):";
+        conceptDesc.innerText = "In 1,3-cyclohexadiene, adjacent double bonds overlap to form a continuous 4-carbon π-system. In 1,4-cyclohexadiene (Birch product), two sp³ carbons isolate the π-bonds, preventing resonance delocalization.";
+        accentIcon.innerText = "🔬";
+        statusBadge.innerText = "Orbital Overlap: Conjugated vs Isolated π-Systems";
+      }
+    }
+    updateExplanations();
+
+    // Color helper adapting to theme
+    function getColors() {
+      const isLight = document.documentElement.classList.contains('light') || 
+                      (!document.documentElement.classList.contains('dark') && window.matchMedia('(prefers-color-scheme: light)').matches);
+      return {
+        bg: isLight ? '#f8fafc' : '#0f172a',
+        carbon: isLight ? '#1e293b' : '#f1f5f9',
+        carbonSubtle: isLight ? '#64748b' : '#94a3b8',
+        bond: isLight ? '#334155' : '#cbd5e1',
+        piBond: '#3b82f6', // blue
+        arrow: '#f59e0b', // amber
+        accentGlow: '#10b981', // emerald
+        pOrbitalPos: 'rgba(59, 130, 246, 0.45)', // blue lobe
+        pOrbitalNeg: 'rgba(249, 115, 22, 0.45)', // orange lobe
+        aromaticGold: '#eab308' // gold
+      };
+    }
+
+    // Drawing primitives
+    function drawLine(ctx, x1, y1, x2, y2, color, width = 2, dashed = false) {
+      ctx.save();
+      ctx.beginPath();
+      if (dashed) ctx.setLineDash([4, 4]);
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawAtom(ctx, x, y, label = 'C', color = '#cbd5e1', radius = 6) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      if (label && label !== 'C') {
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, x, y);
+      }
+      ctx.restore();
+    }
+
+    function drawCurvedArrow(ctx, startX, startY, ctrlX, ctrlY, endX, endY, color = '#f59e0b') {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+      ctx.stroke();
+
+      // Arrowhead
+      const angle = Math.atan2(endY - ctrlY, endX - ctrlX);
+      ctx.beginPath();
+      ctx.moveTo(endX, endY);
+      ctx.lineTo(endX - 7 * Math.cos(angle - Math.PI / 6), endY - 7 * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(endX - 7 * Math.cos(angle + Math.PI / 6), endY - 7 * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawPOrbital(ctx, x, y, angle = 0, scale = 1.0, alpha = 0.5) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      
+      // Positive Lobe (Top / Blue)
+      ctx.beginPath();
+      ctx.ellipse(0, -12 * scale, 6 * scale, 11 * scale, 0, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(59, 130, 246, ${alpha})`;
+      ctx.fill();
+      ctx.strokeStyle = `rgba(59, 130, 246, ${alpha + 0.3})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Negative Lobe (Bottom / Orange)
+      ctx.beginPath();
+      ctx.ellipse(0, 12 * scale, 6 * scale, 11 * scale, 0, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(249, 115, 22, ${alpha})`;
+      ctx.fill();
+      ctx.strokeStyle = `rgba(249, 115, 22, ${alpha + 0.3})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // SCENE 1: s-cis vs s-trans Conformation Lock
+    function renderSceneScis(w, h, p) {
+      const colors = getColors();
+      
+      // Divide canvas into Left (Acyclic 1,3-Butadiene) and Right (Cyclopentadiene)
+      const midX = w / 2;
+      drawLine(ctx, midX, 15, midX, h - 15, colors.bond, 1, true);
+
+      // LEFT: Acyclic 1,3-Butadiene rotating around C2-C3
+      const leftCx = midX * 0.5;
+      const cy = h * 0.52;
+
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillStyle = colors.carbon;
+      ctx.textAlign = 'center';
+      ctx.fillText("1,3-Butadiene (Acyclic)", leftCx, 24);
+      
+      // Rotation angle oscillating between 0 (s-trans) and 180 deg (s-cis)
+      const rotPhase = (Math.sin(p * Math.PI * 2 - Math.PI / 2) + 1) / 2; // 0 to 1
+      const isTrans = rotPhase < 0.5;
+
+      ctx.font = '10px monospace';
+      ctx.fillStyle = isTrans ? '#10b981' : '#f59e0b';
+      ctx.fillText(isTrans ? "s-trans (favored ~97%, stable)" : "s-cis (~3%, sterically hindered)", leftCx, 40);
+
+      // Central C2-C3 bond
+      const c2 = { x: leftCx - 24, y: cy + 10 };
+      const c3 = { x: leftCx + 24, y: cy - 10 };
+
+      // C1 and C4 positions rotating
+      const theta = rotPhase * Math.PI;
+      const c1 = { x: c2.x - 36, y: c2.y - 20 };
+      const c4Dist = 38;
+      const c4Angle = Math.PI * 0.25 - theta; 
+      const c4 = { x: c3.x + c4Dist * Math.cos(c4Angle), y: c3.y - c4Dist * Math.sin(c4Angle) };
+
+      // Double bond C1=C2
+      drawLine(ctx, c1.x, c1.y, c2.x, c2.y, colors.bond, 3);
+      drawLine(ctx, c1.x - 2, c1.y + 4, c2.x - 2, c2.y + 4, colors.piBond, 2);
+
+      // Single bond C2-C3 (rotatable)
+      drawLine(ctx, c2.x, c2.y, c3.x, c3.y, '#93c5fd', 2.5);
+      
+      // Double bond C3=C4
+      drawLine(ctx, c3.x, c3.y, c4.x, c4.y, colors.bond, 3);
+      const perpX = -(c4.y - c3.y) / c4Dist * 4;
+      const perpY = (c4.x - c3.x) / c4Dist * 4;
+      drawLine(ctx, c3.x + perpX, c3.y + perpY, c4.x + perpX, c4.y + perpY, colors.piBond, 2);
+
+      // Rotation indicator arrow around C2-C3
+      const rotCenterX = (c2.x + c3.x) / 2;
+      const rotCenterY = (c2.y + c3.y) / 2;
+      ctx.beginPath();
+      ctx.arc(rotCenterX, rotCenterY, 14, 0, Math.PI * 1.5);
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      drawAtom(ctx, c1.x, c1.y, '1', colors.carbon, 5);
+      drawAtom(ctx, c2.x, c2.y, '2', colors.carbon, 5);
+      drawAtom(ctx, c3.x, c3.y, '3', colors.carbon, 5);
+      drawAtom(ctx, c4.x, c4.y, '4', colors.carbon, 5);
+
+      // RIGHT: 1,3-Cyclopentadiene (Rigidly locked s-cis)
+      const rightCx = midX + midX * 0.5;
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillStyle = colors.carbon;
+      ctx.fillText("1,3-Cyclopentadiene (Cyclic)", rightCx, 24);
+
+      ctx.font = '10px monospace';
+      ctx.fillStyle = '#10b981';
+      ctx.fillText("LOCKED s-cis (100% active!)", rightCx, 40);
+
+      // 5-membered ring coordinates
+      const r = 42;
+      const ringPts = [];
+      for (let i = 0; i < 5; i++) {
+        const a = -Math.PI / 2 + (i * 2 * Math.PI / 5);
+        ringPts.push({ x: rightCx + r * Math.cos(a), y: cy + r * Math.sin(a) });
+      }
+
+      // Draw ring bonds
+      drawLine(ctx, ringPts[4].x, ringPts[4].y, ringPts[0].x, ringPts[0].y, colors.bond, 2.5);
+      drawLine(ctx, ringPts[0].x, ringPts[0].y, ringPts[1].x, ringPts[1].y, colors.bond, 2.5);
+
+      // C1=C2 double bond
+      drawLine(ctx, ringPts[1].x, ringPts[1].y, ringPts[2].x, ringPts[2].y, colors.bond, 3);
+      const inX12 = (rightCx - (ringPts[1].x + ringPts[2].x) / 2) * 0.18;
+      const inY12 = (cy - (ringPts[1].y + ringPts[2].y) / 2) * 0.18;
+      drawLine(ctx, ringPts[1].x + inX12, ringPts[1].y + inY12, ringPts[2].x + inX12, ringPts[2].y + inY12, colors.piBond, 2);
+
+      // C2-C3 central single bond (the LOCKED s-cis bond)
+      drawLine(ctx, ringPts[2].x, ringPts[2].y, ringPts[3].x, ringPts[3].y, '#10b981', 3.5);
+
+      // C3=C4 double bond
+      drawLine(ctx, ringPts[3].x, ringPts[3].y, ringPts[4].x, ringPts[4].y, colors.bond, 3);
+      const inX34 = (rightCx - (ringPts[3].x + ringPts[4].x) / 2) * 0.18;
+      const inY34 = (cy - (ringPts[3].y + ringPts[4].y) / 2) * 0.18;
+      drawLine(ctx, ringPts[3].x + inX34, ringPts[3].y + inY34, ringPts[4].x + inX34, ringPts[4].y + inY34, colors.piBond, 2);
+
+      // Pulsing lock highlight on C2-C3
+      const pulse = Math.sin(p * Math.PI * 4) * 0.3 + 0.7;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc((ringPts[2].x + ringPts[3].x) / 2, (ringPts[2].y + ringPts[3].y) / 2, 14 * pulse, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(16, 185, 129, ${pulse * 0.6})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+
+      // Draw carbons
+      drawAtom(ctx, ringPts[0].x, ringPts[0].y, 'C', '#94a3b8', 6);
+      ctx.font = 'bold 9px sans-serif';
+      ctx.fillStyle = colors.carbonSubtle;
+      ctx.fillText("CH₂ (sp³)", ringPts[0].x, ringPts[0].y - 10);
+
+      drawAtom(ctx, ringPts[1].x, ringPts[1].y, 'C', colors.carbon, 5);
+      drawAtom(ctx, ringPts[2].x, ringPts[2].y, 'C', colors.carbon, 5);
+      drawAtom(ctx, ringPts[3].x, ringPts[3].y, 'C', colors.carbon, 5);
+      drawAtom(ctx, ringPts[4].x, ringPts[4].y, 'C', colors.carbon, 5);
+
+      // Callout under right side
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = '#10b981';
+      ctx.textAlign = 'center';
+      ctx.fillText("Rigid ring prevents C2-C3 rotation", rightCx, h - 22);
+      ctx.fillStyle = colors.carbonSubtle;
+      ctx.fillText("Diene ends are perpetually primed for overlap", rightCx, h - 10);
+    }
+
+    // SCENE 2: Diels-Alder Reaction ([4+2] Cycloaddition)
+    function renderSceneDA(w, h, p) {
+      const colors = getColors();
+      const cx = w / 2;
+      const cy = h * 0.48;
+
+      const stage = p < 0.45 ? 'Reactants & Electron Push' : (p < 0.75 ? 'Transition State [‡]' : 'Bicyclo Product (Norbornene)');
+
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillStyle = colors.carbon;
+      ctx.textAlign = 'center';
+      ctx.fillText(`Diels-Alder: Cyclopentadiene (4π) + Ethylene (2π) → Norbornene`, cx, 20);
+
+      ctx.font = '10px monospace';
+      ctx.fillStyle = p < 0.45 ? '#3b82f6' : (p < 0.75 ? '#f59e0b' : '#10b981');
+      ctx.fillText(`Stage: ${stage}`, cx, 36);
+
+      // Transition interpolation variable t (0 to 1)
+      const t = Math.min(Math.max((p - 0.25) / 0.55, 0), 1);
+      const easeT = t * t * (3 - 2 * t);
+      const separation = (1 - easeT) * 75;
+
+      // Diene vertices (left side)
+      const d1 = { x: cx - 55 + easeT * 15, y: cy - 35 };
+      const d2 = { x: cx - 85 + easeT * 15, y: cy - 18 };
+      const d3 = { x: cx - 85 + easeT * 15, y: cy + 18 };
+      const d4 = { x: cx - 55 + easeT * 15, y: cy + 35 };
+      const d5 = { x: cx - 35 + easeT * 15, y: cy - 5 - easeT * 22 };
+
+      // Dienophile vertices (right side)
+      const e1 = { x: cx + separation - easeT * 15, y: cy - 35 };
+      const e2 = { x: cx + separation - easeT * 15, y: cy + 35 };
+
+      // Diene bonds
+      drawLine(ctx, d5.x, d5.y, d1.x, d1.y, colors.carbonSubtle, 2);
+      drawLine(ctx, d5.x, d5.y, d4.x, d4.y, colors.carbonSubtle, 2);
+
+      // C2-C3: single to double
+      drawLine(ctx, d2.x, d2.y, d3.x, d3.y, colors.bond, 2.5);
+      if (t > 0.4) {
+        const doubleAlpha = Math.min((t - 0.4) / 0.5, 1);
+        ctx.save();
+        ctx.strokeStyle = `rgba(59, 130, 246, ${doubleAlpha})`;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(d2.x + 5, d2.y);
+        ctx.lineTo(d3.x + 5, d3.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // C1=C2: double to single
+      drawLine(ctx, d1.x, d1.y, d2.x, d2.y, colors.bond, 2.5);
+      if (t < 0.8) {
+        const doubleAlpha = Math.max(1 - t / 0.8, 0);
+        ctx.save();
+        ctx.strokeStyle = `rgba(59, 130, 246, ${doubleAlpha})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(d1.x - 3, d1.y + 4);
+        ctx.lineTo(d2.x - 3, d2.y + 4);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // C3=C4: double to single
+      drawLine(ctx, d3.x, d3.y, d4.x, d4.y, colors.bond, 2.5);
+      if (t < 0.8) {
+        const doubleAlpha = Math.max(1 - t / 0.8, 0);
+        ctx.save();
+        ctx.strokeStyle = `rgba(59, 130, 246, ${doubleAlpha})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(d3.x - 3, d3.y - 4);
+        ctx.lineTo(d4.x - 3, d4.y - 4);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Dienophile C1=C2
+      drawLine(ctx, e1.x, e1.y, e2.x, e2.y, colors.bond, 2.5);
+      if (t < 0.7) {
+        const doubleAlpha = Math.max(1 - t / 0.7, 0);
+        ctx.save();
+        ctx.strokeStyle = `rgba(59, 130, 246, ${doubleAlpha})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(e1.x + 4, e1.y);
+        ctx.lineTo(e2.x + 4, e2.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // New Sigma Bonds
+      if (t < 0.2) {
+        drawLine(ctx, d1.x, d1.y, e1.x, e1.y, 'rgba(148, 163, 184, 0.4)', 1.5, true);
+        drawLine(ctx, d4.x, d4.y, e2.x, e2.y, 'rgba(148, 163, 184, 0.4)', 1.5, true);
+      } else if (t < 0.85) {
+        drawLine(ctx, d1.x, d1.y, e1.x, e1.y, '#f59e0b', 2.5, true);
+        drawLine(ctx, d4.x, d4.y, e2.x, e2.y, '#f59e0b', 2.5, true);
+      } else {
+        drawLine(ctx, d1.x, d1.y, e1.x, e1.y, '#10b981', 3);
+        drawLine(ctx, d4.x, d4.y, e2.x, e2.y, '#10b981', 3);
+      }
+
+      // Curved arrows (p < 0.4)
+      if (p < 0.4) {
+        drawCurvedArrow(ctx, (d1.x + d2.x) / 2, (d1.y + d2.y) / 2, cx - 10, cy - 48, (d1.x + e1.x) / 2, (d1.y + e1.y) / 2);
+        drawCurvedArrow(ctx, (e1.x + e2.x) / 2, (e1.y + e2.y) / 2, cx + 25, cy + 20, (d4.x + e2.x) / 2, (d4.y + e2.y) / 2);
+        drawCurvedArrow(ctx, (d3.x + d4.x) / 2, (d3.y + d4.y) / 2, d3.x - 15, cy, (d2.x + d3.x) / 2, (d2.y + d3.y) / 2);
+      }
+
+      // Draw atoms
+      drawAtom(ctx, d1.x, d1.y, 'C', colors.carbon, 5);
+      drawAtom(ctx, d2.x, d2.y, 'C', colors.carbon, 5);
+      drawAtom(ctx, d3.x, d3.y, 'C', colors.carbon, 5);
+      drawAtom(ctx, d4.x, d4.y, 'C', colors.carbon, 5);
+      drawAtom(ctx, d5.x, d5.y, 'CH₂', '#93c5fd', 7);
+
+      drawAtom(ctx, e1.x, e1.y, 'C', colors.carbon, 5);
+      drawAtom(ctx, e2.x, e2.y, 'C', colors.carbon, 5);
+
+      // Bottom caption
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      if (t >= 0.85) {
+        ctx.fillStyle = '#10b981';
+        ctx.fillText("✓ Bicyclo[2.2.1]hept-2-ene formed with upward methylene bridge!", cx, h - 14);
+      } else if (t > 0.2) {
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillText("Concerted 6-electron cyclic transition state [‡]", cx, h - 14);
+      } else {
+        ctx.fillStyle = colors.carbonSubtle;
+        ctx.fillText("3 pairs of electrons shift simultaneously in a single concerted step", cx, h - 14);
+      }
+    }
+
+    // SCENE 3: Aromaticity & Unusual Acidity (Cyclopentadienyl Anion)
+    function renderSceneAro(w, h, p) {
+      const colors = getColors();
+      const cx = w / 2;
+      const cy = h * 0.5;
+
+      const deprotT = Math.min(Math.max((p - 0.35) / 0.3, 0), 1);
+      const isAromatic = deprotT >= 0.95;
+
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillStyle = colors.carbon;
+      ctx.textAlign = 'center';
+      ctx.fillText("Acidity of Cyclopentadiene: Transformation into Aromatic Sextet", cx, 20);
+
+      ctx.font = '10px monospace';
+      if (isAromatic) {
+        ctx.fillStyle = '#eab308';
+        ctx.fillText("Cyclopentadienyl Anion (Cp⁻) — 6π e⁻ Aromatic (4n+2, n=1)!", cx, 36);
+      } else {
+        ctx.fillStyle = colors.carbonSubtle;
+        ctx.fillText("Cyclopentadiene — Non-aromatic (sp³ CH₂ interrupts π loop)", cx, 36);
+      }
+
+      // 5-membered ring points
+      const r = 46;
+      const ringPts = [];
+      for (let i = 0; i < 5; i++) {
+        const a = -Math.PI / 2 + (i * 2 * Math.PI / 5);
+        ringPts.push({ x: cx + r * Math.cos(a), y: cy + 6 + r * Math.sin(a) });
+      }
+
+      const c5 = ringPts[0];
+      const hDist = 24 + deprotT * 50;
+      const hPos = { x: c5.x + deprotT * 30, y: c5.y - hDist };
+      const basePos = { x: c5.x + 70 - (1 - deprotT) * 20, y: c5.y - 35 };
+
+      // Ring single bonds
+      drawLine(ctx, ringPts[4].x, ringPts[4].y, c5.x, c5.y, colors.bond, 2.5);
+      drawLine(ctx, c5.x, c5.y, ringPts[1].x, ringPts[1].y, colors.bond, 2.5);
+      drawLine(ctx, ringPts[2].x, ringPts[2].y, ringPts[3].x, ringPts[3].y, colors.bond, 2.5);
+
+      if (!isAromatic) {
+        drawLine(ctx, ringPts[1].x, ringPts[1].y, ringPts[2].x, ringPts[2].y, colors.bond, 3);
+        const inX12 = (cx - (ringPts[1].x + ringPts[2].x) / 2) * 0.18;
+        const inY12 = (cy + 6 - (ringPts[1].y + ringPts[2].y) / 2) * 0.18;
+        drawLine(ctx, ringPts[1].x + inX12, ringPts[1].y + inY12, ringPts[2].x + inX12, ringPts[2].y + inY12, colors.piBond, 2);
+
+        drawLine(ctx, ringPts[3].x, ringPts[3].y, ringPts[4].x, ringPts[4].y, colors.bond, 3);
+        const inX34 = (cx - (ringPts[3].x + ringPts[4].x) / 2) * 0.18;
+        const inY34 = (cy + 6 - (ringPts[3].y + ringPts[4].y) / 2) * 0.18;
+        drawLine(ctx, ringPts[3].x + inX34, ringPts[3].y + inY34, ringPts[4].x + inX34, ringPts[4].y + inY34, colors.piBond, 2);
+      } else {
+        // AROMATIC SEXTET CIRCLE
+        ctx.save();
+        const pulse = Math.sin(p * Math.PI * 6) * 0.15 + 0.85;
+        ctx.beginPath();
+        ctx.arc(cx, cy + 6, 26, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(234, 179, 8, ${pulse})`;
+        ctx.lineWidth = 3;
+        ctx.setLineDash([5, 4]);
+        ctx.stroke();
+
+        ctx.fillStyle = `rgba(234, 179, 8, ${0.15 * pulse})`;
+        ctx.fill();
+
+        ctx.font = 'bold 16px sans-serif';
+        ctx.fillStyle = '#eab308';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText("⊖", cx, cy + 6);
+        ctx.restore();
+      }
+
+      // C-H bond breaking
+      if (deprotT < 0.8) {
+        drawLine(ctx, c5.x, c5.y, hPos.x, hPos.y, '#f59e0b', 2, deprotT > 0.1);
+        drawAtom(ctx, hPos.x, hPos.y, 'H', '#f8fafc', 5);
+      }
+
+      // Base label
+      if (p > 0.2 && deprotT < 0.9) {
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillStyle = '#38bdf8';
+        ctx.textAlign = 'center';
+        ctx.fillText(":B (Base)", basePos.x, basePos.y);
+        drawCurvedArrow(ctx, basePos.x - 10, basePos.y, (basePos.x + hPos.x) / 2, basePos.y - 15, hPos.x + 6, hPos.y - 6, '#38bdf8');
+      }
+
+      // Draw ring atoms
+      ringPts.forEach((pt, idx) => {
+        const isSp2 = isAromatic || idx > 0;
+        drawAtom(ctx, pt.x, pt.y, 'C', isSp2 ? colors.carbon : '#94a3b8', 5.5);
+      });
+
+      // Bottom callout
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      if (isAromatic) {
+        ctx.fillStyle = '#eab308';
+        ctx.fillText("Stable Hückel Aromatic Ring (6 π-electrons delocalized across all 5 carbons)", cx, h - 14);
+      } else {
+        ctx.fillStyle = colors.carbonSubtle;
+        ctx.fillText("pKa = 16 (Unprecedented hydrocarbon acidity due to aromatic conjugate base)", cx, h - 14);
+      }
+    }
+
+    // SCENE 4: Conjugated (1,3) vs Isolated (1,4) Cyclohexadiene
+    function renderSceneIso(w, h, p) {
+      const colors = getColors();
+      const midX = w / 2;
+      drawLine(ctx, midX, 15, midX, h - 15, colors.bond, 1, true);
+
+      const cy = h * 0.52;
+
+      // LEFT: 1,3-Cyclohexadiene (Conjugated)
+      const leftCx = midX * 0.5;
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillStyle = colors.carbon;
+      ctx.textAlign = 'center';
+      ctx.fillText("1,3-Cyclohexadiene", leftCx, 24);
+
+      ctx.font = '10px monospace';
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillText("Conjugated (Continuous π-system)", leftCx, 40);
+
+      // 6-membered ring coordinates
+      const r = 38;
+      const c13 = [];
+      for (let i = 0; i < 6; i++) {
+        const a = (i * Math.PI / 3);
+        c13.push({ x: leftCx + r * Math.cos(a), y: cy + r * Math.sin(a) });
+      }
+
+      for (let i = 0; i < 6; i++) {
+        const next = (i + 1) % 6;
+        drawLine(ctx, c13[i].x, c13[i].y, c13[next].x, c13[next].y, colors.bond, 2.5);
+      }
+      drawLine(ctx, c13[0].x * 0.85 + leftCx * 0.15, c13[0].y * 0.85 + cy * 0.15, c13[1].x * 0.85 + leftCx * 0.15, c13[1].y * 0.85 + cy * 0.15, colors.piBond, 2);
+      drawLine(ctx, c13[2].x * 0.85 + leftCx * 0.15, c13[2].y * 0.85 + cy * 0.15, c13[3].x * 0.85 + leftCx * 0.15, c13[3].y * 0.85 + cy * 0.15, colors.piBond, 2);
+
+      // Animated π-electron wave flowing across carbons 0-1-2-3
+      const wavePhase = (p * Math.PI * 4) % (Math.PI * 2);
+      for (let i = 0; i <= 3; i++) {
+        const orbitalScale = 0.9 + Math.sin(wavePhase + i * 0.8) * 0.25;
+        drawPOrbital(ctx, c13[i].x, c13[i].y, 0, orbitalScale, 0.4);
+      }
+
+      c13.forEach((pt, i) => drawAtom(ctx, pt.x, pt.y, 'C', (i <= 3) ? colors.carbon : '#94a3b8', 4.5));
+
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillText("✓ Adjacent p-orbitals overlap directly", leftCx, h - 22);
+      ctx.fillStyle = colors.carbonSubtle;
+      ctx.fillText("UV λmax = 256 nm, Diels-Alder active", leftCx, h - 10);
+
+      // RIGHT: 1,4-Cyclohexadiene (Isolated)
+      const rightCx = midX + midX * 0.5;
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillStyle = colors.carbon;
+      ctx.fillText("1,4-Cyclohexadiene", rightCx, 24);
+
+      ctx.font = '10px monospace';
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillText("Isolated (Birch reduction product)", rightCx, 40);
+
+      const c14 = [];
+      for (let i = 0; i < 6; i++) {
+        const a = (i * Math.PI / 3);
+        c14.push({ x: rightCx + r * Math.cos(a), y: cy + r * Math.sin(a) });
+      }
+
+      for (let i = 0; i < 6; i++) {
+        const next = (i + 1) % 6;
+        drawLine(ctx, c14[i].x, c14[i].y, c14[next].x, c14[next].y, colors.bond, 2.5);
+      }
+      drawLine(ctx, c14[0].x * 0.85 + rightCx * 0.15, c14[0].y * 0.85 + cy * 0.15, c14[1].x * 0.85 + rightCx * 0.15, c14[1].y * 0.85 + cy * 0.15, colors.piBond, 2);
+      drawLine(ctx, c14[3].x * 0.85 + rightCx * 0.15, c14[3].y * 0.85 + cy * 0.15, c14[4].x * 0.85 + rightCx * 0.15, c14[4].y * 0.85 + cy * 0.15, colors.piBond, 2);
+
+      drawPOrbital(ctx, c14[0].x, c14[0].y, 0, 0.85, 0.35);
+      drawPOrbital(ctx, c14[1].x, c14[1].y, 0, 0.85, 0.35);
+      drawPOrbital(ctx, c14[3].x, c14[3].y, 0, 0.85, 0.35);
+      drawPOrbital(ctx, c14[4].x, c14[4].y, 0, 0.85, 0.35);
+
+      ctx.font = 'bold 9px sans-serif';
+      ctx.fillStyle = '#ef4444';
+      ctx.fillText("sp³ barrier", c14[2].x, c14[2].y - 8);
+      ctx.fillText("sp³ barrier", c14[5].x, c14[5].y + 12);
+
+      c14.forEach((pt, i) => drawAtom(ctx, pt.x, pt.y, 'C', (i === 2 || i === 5) ? '#ef4444' : colors.carbon, 4.5));
+
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillText("✗ No conjugation (isolated alkenes)", rightCx, h - 22);
+      ctx.fillStyle = colors.carbonSubtle;
+      ctx.fillText("UV < 200 nm, cannot do Diels-Alder [4+2]", rightCx, h - 10);
+    }
+
+    // Main animation loop
+    function animate(timestamp) {
+      if (!lastTimestamp) lastTimestamp = timestamp;
+      const dt = (timestamp - lastTimestamp) / 1000;
+      lastTimestamp = timestamp;
+
+      if (isPlaying) {
+        progress += (dt * 0.25 * speed);
+        if (progress > 1.0) progress = 0;
+        scrubber.value = Math.floor(progress * 1000);
+      }
+
+      const rect = canvas.getBoundingClientRect();
+      ctx.clearRect(0, 0, rect.width, rect.height);
+
+      if (activeTab === 'scis') {
+        renderSceneScis(rect.width, rect.height, progress);
+      } else if (activeTab === 'da') {
+        renderSceneDA(rect.width, rect.height, progress);
+      } else if (activeTab === 'aro') {
+        renderSceneAro(rect.width, rect.height, progress);
+      } else if (activeTab === 'iso') {
+        renderSceneIso(rect.width, rect.height, progress);
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

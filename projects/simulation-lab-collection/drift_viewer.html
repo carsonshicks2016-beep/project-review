@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>峠 DRIFT MASTER // MIDNIGHT TOKYO SPEC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700;800&family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07090e;
+      --panel-bg: rgba(10, 13, 20, 0.88);
+      --neon-cyan: #00f0ff;
+      --neon-magenta: #ff0055;
+      --neon-gold: #ffbe0b;
+      --neon-green: #00f59b;
+      --neon-orange: #ff5400;
+      --text-muted: #79869c;
+      --font-display: 'Orbitron', -apple-system, sans-serif;
+      --font-sub: 'Rajdhani', -apple-system, sans-serif;
+      --font-jp: 'Noto Sans JP', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background: var(--bg);
+      color: #fff;
+      font-family: var(--font-sub);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Scanline & Vignette CRT Effect */
+    .vignette-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at center, transparent 55%, rgba(4, 6, 10, 0.75) 100%);
+      z-index: 5;
+    }
+
+    /* Top Tokyo Spec Header */
+    header {
+      height: 64px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border-bottom: 2px solid rgba(0, 240, 255, 0.25);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-kanji {
+      font-family: var(--font-jp);
+      font-size: 26px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #ff0055, #ffbe0b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 20px rgba(255, 0, 85, 0.4);
+    }
+
+    .brand-title {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 2.5px;
+      color: #fff;
+      text-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
+    }
+
+    .brand-tag {
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      color: var(--neon-cyan);
+      border: 1px solid var(--neon-cyan);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 700;
+      background: rgba(0, 240, 255, 0.1);
+    }
+
+    .controls-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      background: rgba(255, 255, 255, 0.05);
+      color: #b0c0d8;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-family: var(--font-sub);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn:hover {
+      background: rgba(0, 240, 255, 0.15);
+      border-color: var(--neon-cyan);
+      color: #fff;
+      box-shadow: 0 0 14px rgba(0, 240, 255, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .btn.active {
+      background: linear-gradient(135deg, var(--neon-cyan), #00a8ff);
+      color: #050810;
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 18px rgba(0, 240, 255, 0.6);
+      font-weight: 800;
+    }
+
+    .btn-fire.active {
+      background: linear-gradient(135deg, #ff0055, #ff5400);
+      color: #fff;
+      border-color: #ff0055;
+      box-shadow: 0 0 20px rgba(255, 0, 85, 0.7);
+    }
+
+    .btn-audio {
+      border-color: rgba(255, 190, 11, 0.4);
+      color: var(--neon-gold);
+    }
+
+    .btn-audio.active {
+      background: rgba(255, 190, 11, 0.2);
+      border-color: var(--neon-gold);
+      box-shadow: 0 0 12px rgba(255, 190, 11, 0.4);
+    }
+
+    /* Main Viewport */
+    #viewport-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: #06080d;
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Manga Speedlines Canvas */
+    #speedlines-canvas {
+      pointer-events: none;
+      z-index: 4;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    /* HUD Overlay */
+    .hud-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      padding: 24px 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      z-index: 6;
+    }
+
+    /* Top Left Score & Multiplier Block */
+    .hud-score-card {
+      background: linear-gradient(145deg, rgba(14, 18, 28, 0.92), rgba(8, 10, 16, 0.95));
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      border-left: 5px solid var(--neon-cyan);
+      padding: 18px 24px;
+      border-radius: 12px;
+      width: fit-content;
+      box-shadow: 0 10px 36px rgba(0, 0, 0, 0.7), inset 0 0 20px rgba(0, 240, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .score-jp-label {
+      font-family: var(--font-jp);
+      font-size: 11px;
+      color: var(--neon-cyan);
+      letter-spacing: 2px;
+      margin-bottom: 2px;
+    }
+
+    .score-value {
+      font-family: var(--font-display);
+      font-size: 44px;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1;
+      letter-spacing: 2px;
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+    }
+
+    .combo-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .multiplier-tag {
+      font-family: var(--font-display);
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--neon-gold);
+      text-shadow: 0 0 14px rgba(255, 190, 11, 0.7);
+      transition: all 0.2s ease;
+    }
+
+    .multiplier-tag.on-fire {
+      color: #ff0055;
+      text-shadow: 0 0 24px #ff0055, 0 0 40px #ff5400;
+      animation: pulseFire 0.3s infinite alternate;
+    }
+
+    @keyframes pulseFire {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.08); }
+    }
+
+    .active-pts {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--neon-green);
+      letter-spacing: 1px;
+    }
+
+    .grace-meter-container {
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+
+    .grace-meter-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta));
+      transition: width 0.05s linear;
+    }
+
+    /* Stunt Stream (Bilingual Japanese / English popups) */
+    .stunt-stream {
+      position: absolute;
+      top: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      pointer-events: none;
+    }
+
+    .stunt-card {
+      background: linear-gradient(135deg, rgba(255, 0, 85, 0.95), rgba(255, 84, 0, 0.95));
+      border: 2px solid #fff;
+      color: #fff;
+      padding: 12px 28px;
+      border-radius: 40px;
+      box-shadow: 0 0 35px rgba(255, 0, 85, 0.85);
+      animation: stuntPop 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, stuntFade 0.45s ease 2.0s forwards;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .stunt-card-jp {
+      font-family: var(--font-jp);
+      font-size: 13px;
+      letter-spacing: 3px;
+      color: var(--neon-gold);
+      font-weight: 900;
+    }
+
+    .stunt-card-en {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    .stunt-card-pts {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 800;
+      color: #ffffaa;
+    }
+
+    @keyframes stuntPop {
+      0% { transform: scale(0.5) translateY(-30px); opacity: 0; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    @keyframes stuntFade {
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-40px); }
+    }
+
+    /* Bottom Instruments Bar (Defi-Style Gauges) */
+    .hud-bottom {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .instruments-panel {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      background: linear-gradient(180deg, rgba(14, 18, 28, 0.88), rgba(7, 9, 14, 0.95));
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-bottom: 3px solid var(--neon-gold);
+      padding: 14px 22px;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    .gauge-wrapper {
+      position: relative;
+      width: 110px;
+      height: 110px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gauge-canvas {
+      position: absolute;
+      inset: 0;
+    }
+
+    .gauge-center-text {
+      position: relative;
+      text-align: center;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .gauge-num {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1;
+      color: #fff;
+    }
+
+    .gauge-unit {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      margin-top: 2px;
+    }
+
+    /* Status & Controls Guide */
+    .telemetry-summary {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding-left: 8px;
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .status-badge {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      color: var(--neon-cyan);
+      text-transform: uppercase;
+      text-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
+    }
+
+    .status-badge.sliding {
+      color: var(--neon-orange);
+      text-shadow: 0 0 18px rgba(255, 84, 0, 0.8);
+      animation: blinkText 0.4s infinite alternate;
+    }
+
+    @keyframes blinkText {
+      0% { opacity: 0.8; }
+      100% { opacity: 1; text-shadow: 0 0 25px var(--neon-magenta); }
+    }
+
+    .help-keyboard {
+      background: rgba(14, 18, 28, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      color: #8fa0b8;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .help-keyboard kbd {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 3px 7px;
+      border-radius: 4px;
+      color: #fff;
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 700;
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="vignette-overlay"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <span class="brand-kanji">峠</span>
+      <div>
+        <div class="brand-title">DRIFT MASTER</div>
+        <div class="brand-tag">TOKYO SPEC // ML 2.0</div>
+      </div>
+    </div>
+
+    <!-- Track Layouts -->
+    <div class="controls-group">
+      <button class="btn active" id="btn-track-touge" onclick="switchTrack('touge')">🌙 Akina Touge</button>
+      <button class="btn" id="btn-track-gymkhana" onclick="switchTrack('gymkhana')">🌆 Neo Docks</button>
+      <button class="btn" id="btn-track-stadium" onclick="switchTrack('stadium')">🏁 Stadium Arena</button>
+    </div>
+
+    <!-- AI / Human Mode -->
+    <div class="controls-group">
+      <button class="btn active" id="btn-mode-ai" onclick="setMode('AI')">🤖 AI Pilot</button>
+      <button class="btn btn-fire" id="btn-mode-human" onclick="setMode('HUMAN')">🎮 JDM Manual (WASD)</button>
+    </div>
+
+    <!-- Camera & Audio -->
+    <div class="controls-group">
+      <button class="btn active" id="btn-cam-chase" onclick="setCam('chase')">🎥 Chase</button>
+      <button class="btn" id="btn-cam-top" onclick="setCam('top')">🗺️ Track</button>
+      <button class="btn btn-audio" id="btn-audio" onclick="toggleAudio()">🔊 Audio: OFF</button>
+      <button class="btn" onclick="resetSim()">↺ Reset</button>
+    </div>
+  </header>
+
+  <!-- Viewport -->
+  <div id="viewport-container">
+    <canvas id="track-canvas"></canvas>
+    <canvas id="skid-canvas"></canvas>
+    <canvas id="main-canvas"></canvas>
+    <canvas id="speedlines-canvas"></canvas>
+
+    <!-- HUD Overlay -->
+    <div class="hud-overlay">
+      <!-- Top Left: Score & Multiplier -->
+      <div class="hud-score-card">
+        <div class="score-jp-label">ドリフトスコア // COMBO PTS</div>
+        <div class="score-value" id="hud-score">0</div>
+        <div class="combo-row">
+          <div class="multiplier-tag" id="hud-multiplier">x1.0</div>
+          <div class="active-pts" id="hud-active-pts">+0</div>
+        </div>
+        <div class="grace-meter-container">
+          <div class="grace-meter-fill" id="hud-grace-bar"></div>
+        </div>
+      </div>
+
+      <!-- Bilingual Stunt Popups -->
+      <div class="stunt-stream" id="stunt-stream"></div>
+
+      <!-- Bottom Gauges & Telemetry -->
+      <div class="hud-bottom">
+        <div class="instruments-panel">
+          <!-- Speedometer Dial -->
+          <div class="gauge-wrapper">
+            <canvas class="gauge-canvas" id="speedo-gauge" width="110" height="110"></canvas>
+            <div class="gauge-center-text">
+              <div class="gauge-num" id="hud-speed">0</div>
+              <div class="gauge-unit">KM/H</div>
+            </div>
+          </div>
+
+          <!-- Drift Angle Dial -->
+          <div class="gauge-wrapper">
+            <canvas class="gauge-canvas" id="angle-gauge" width="110" height="110"></canvas>
+            <div class="gauge-center-text">
+              <div class="gauge-num" id="hud-angle">0°</div>
+              <div class="gauge-unit">SLIP ANGLE</div>
+            </div>
+          </div>
+
+          <!-- G-Force Meter Dial -->
+          <div class="gauge-wrapper">
+            <canvas class="gauge-canvas" id="gforce-gauge" width="110" height="110"></canvas>
+            <div class="gauge-center-text">
+              <div class="gauge-num" id="hud-gforce">0.0</div>
+              <div class="gauge-unit">G-FORCE</div>
+            </div>
+          </div>
+
+          <div class="telemetry-summary">
+            <div style="font-size: 11px; color: var(--text-muted); letter-spacing: 1px; font-weight: 700;">CHASSIS STATE</div>
+            <div class="status-badge" id="hud-status">CRUISING</div>
+            <div style="font-size: 13px; color: #b8c8dc; font-weight: 700;" id="hud-substatus">Traction 100%</div>
+          </div>
+        </div>
+
+        <div class="help-keyboard" id="help-hint">
+          <span><kbd>W</kbd> Throttle</span>
+          <span><kbd>S</kbd> Brake</span>
+          <span><kbd>A</kbd><kbd>D</kbd> Countersteer</span>
+          <span><kbd>SPACE</kbd> <b>E-Brake</b></span>
+          <span><kbd>M</kbd> Switch AI/Manual</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // -------------------------------------------------------------
+    // Canvas & Layer Setup
+    // -------------------------------------------------------------
+    const container = document.getElementById("viewport-container");
+    const trackCanvas = document.getElementById("track-canvas");
+    const skidCanvas = document.getElementById("skid-canvas");
+    const mainCanvas = document.getElementById("main-canvas");
+    const speedlinesCanvas = document.getElementById("speedlines-canvas");
+
+    const trackCtx = trackCanvas.getContext("2d");
+    const skidCtx = skidCanvas.getContext("2d");
+    const ctx = mainCanvas.getContext("2d");
+    const slCtx = speedlinesCanvas.getContext("2d");
+
+    let width, height;
+    function resize() {
+      width = container.clientWidth;
+      height = container.clientHeight;
+      [trackCanvas, skidCanvas, mainCanvas, speedlinesCanvas].forEach(c => {
+        c.width = width;
+        c.height = height;
+      });
+      renderTrackBackground();
+    }
+    window.addEventListener("resize", resize);
+
+    // -------------------------------------------------------------
+    // Procedural Web Audio Synthesizer (Engine, Tire Squeal, Turbo BOV)
+    // -------------------------------------------------------------
+    let audioCtx = null;
+    let audioEnabled = false;
+    let engineOsc = null;
+    let engineGain = null;
+    let tireNoiseNode = null;
+    let tireNoiseGain = null;
+
+    function initAudio() {
+      if (audioCtx) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+
+        // 1. Engine sound (dual oscillator saw + triangle)
+        engineOsc = audioCtx.createOscillator();
+        engineOsc.type = "sawtooth";
+        engineOsc.frequency.setValueAtTime(55, audioCtx.currentTime);
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(450, audioCtx.currentTime);
+
+        engineGain = audioCtx.createGain();
+        engineGain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+
+        engineOsc.connect(filter);
+        filter.connect(engineGain);
+        engineGain.connect(audioCtx.destination);
+        engineOsc.start();
+
+        // 2. Tire screech generator (bandpassed white noise)
+        const bufferSize = audioCtx.sampleRate * 2;
+        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+
+        const whiteNoise = audioCtx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+        whiteNoise.loop = true;
+
+        const screechFilter = audioCtx.createBiquadFilter();
+        screechFilter.type = "bandpass";
+        screechFilter.frequency.setValueAtTime(1200, audioCtx.currentTime);
+        screechFilter.Q.setValueAtTime(3.5, audioCtx.currentTime);
+
+        tireNoiseGain = audioCtx.createGain();
+        tireNoiseGain.gain.setValueAtTime(0.0, audioCtx.currentTime);
+
+        whiteNoise.connect(screechFilter);
+        screechFilter.connect(tireNoiseGain);
+        tireNoiseGain.connect(audioCtx.destination);
+        whiteNoise.start();
+
+        audioEnabled = true;
+        document.getElementById("btn-audio").classList.add("active");
+        document.getElementById("btn-audio").innerText = "🔊 Audio: ON";
+      } catch (err) {
+        console.warn("Web Audio not allowed or failed:", err);
+      }
+    }
+
+    function toggleAudio() {
+      if (!audioCtx) {
+        initAudio();
+      } else {
+        audioEnabled = !audioEnabled;
+        if (engineGain) engineGain.gain.setValueAtTime(audioEnabled ? 0.08 : 0.0, audioCtx.currentTime);
+        if (tireNoiseGain && !audioEnabled) tireNoiseGain.gain.setValueAtTime(0.0, audioCtx.currentTime);
+        document.getElementById("btn-audio").classList.toggle("active", audioEnabled);
+        document.getElementById("btn-audio").innerText = audioEnabled ? "🔊 Audio: ON" : "🔇 Audio: OFF";
+      }
+    }
+
+    function triggerTurboBlowoff() {
+      if (!audioCtx || !audioEnabled) return;
+      // High-pitched hiss flutter: psshh-tsu-tsu
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(3500, now);
+      osc.frequency.exponentialRampToValueAtTime(800, now + 0.35);
+
+      gain.gain.setValueAtTime(0.09, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.36);
+    }
+
+    // -------------------------------------------------------------
+    // Track Environments (Touge Pass, Neo Docks, Stadium)
+    // -------------------------------------------------------------
+    function createTougeTrack() {
+      const centerline = [];
+      const inner = [];
+      const outer = [];
+      const numPts = 260;
+      const hw = 7.8;
+
+      for (let i = 0; i < numPts; i++) {
+        const t = (i / numPts) * 2 * Math.PI;
+        const r = 52.0 + 24.0 * Math.cos(2 * t) + 15.0 * Math.sin(3 * t);
+        const x = r * Math.cos(t) * 1.55;
+        const y = r * Math.sin(t) * 1.15;
+        centerline.push({ x, y });
+      }
+
+      for (let i = 0; i < numPts; i++) {
+        const prev = centerline[(i - 1 + numPts) % numPts];
+        const next = centerline[(i + 1) % numPts];
+        const dx = next.x - prev.x;
+        const dy = next.y - prev.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const nx = -dy / len;
+        const ny = dx / len;
+        const p = centerline[i];
+        inner.push({ x: p.x - nx * hw, y: p.y - ny * hw });
+        outer.push({ x: p.x + nx * hw, y: p.y + ny * hw });
+      }
+
+      const clippingZones = [
+        { x: centerline[35].x, y: centerline[35].y + 4.0, type: "INSIDE APEX", pts: 1200 },
+        { x: centerline[95].x - 4.5, y: centerline[95].y, type: "OUTSIDE ZONE", pts: 1500 },
+        { x: centerline[160].x, y: centerline[160].y - 4.0, type: "INSIDE APEX", pts: 1200 },
+        { x: centerline[220].x + 4.5, y: centerline[220].y, type: "OUTSIDE ZONE", pts: 1500 },
+      ];
+
+      return {
+        name: "Akina Touge",
+        theme: "touge",
+        centerline,
+        inner,
+        outer,
+        obstacles: [],
+        clippingZones,
+        spawn: { x: centerline[0].x, y: centerline[0].y, yaw: 0.0, speed: 14.0 }
+      };
+    }
+
+    function createGymkhanaTrack() {
+      const w = 58, h = 44;
+      const outer = [{x: -w, y: -h}, {x: w, y: -h}, {x: w, y: h}, {x: -w, y: h}];
+      const centerline = [];
+      const inner = [{x: -4, y: -4}, {x: 4, y: -4}, {x: 4, y: 4}, {x: -4, y: 4}];
+      for (let i = 0; i < 120; i++) {
+        const t = (i / 120) * 2 * Math.PI;
+        centerline.push({ x: 36 * Math.cos(t), y: 28 * Math.sin(t) });
+      }
+
+      const obstacles = [
+        [{x: -24, y: -4}, {x: -16, y: -4}, {x: -16, y: 4}, {x: -24, y: 4}], // Left Shipping Container
+        [{x: 16, y: -4}, {x: 24, y: -4}, {x: 24, y: 4}, {x: 16, y: 4}],   // Right Shipping Container
+        [{x: -3, y: 16}, {x: 3, y: 16}, {x: 3, y: 22}, {x: -3, y: 22}],   // North Barrier
+        [{x: -3, y: -22}, {x: 3, y: -22}, {x: 3, y: -16}, {x: -3, y: -16}] // South Barrier
+      ];
+
+      const clippingZones = [
+        { x: -20, y: 7.0, type: "DONUT PIN", pts: 2000 },
+        { x: 20, y: -7.0, type: "DONUT PIN", pts: 2000 },
+        { x: 52, y: 0, type: "WALL TAP", pts: 3000 },
+        { x: -52, y: 0, type: "WALL TAP", pts: 3000 },
+      ];
+
+      return {
+        name: "Neo Docks",
+        theme: "cyber",
+        centerline,
+        inner,
+        outer,
+        obstacles,
+        clippingZones,
+        spawn: { x: -30, y: -22, yaw: 0.0, speed: 12.0 }
+      };
+    }
+
+    function createStadiumTrack() {
+      const centerline = [];
+      const inner = [];
+      const outer = [];
+      const numPts = 220;
+      const hw = 9.2;
+
+      for (let i = 0; i < numPts; i++) {
+        const t = (i / numPts) * 2 * Math.PI;
+        const x = 68.0 * Math.cos(t);
+        const y = 39.0 * Math.sin(t) * (1.0 + 0.32 * Math.cos(t));
+        centerline.push({ x, y });
+      }
+
+      for (let i = 0; i < numPts; i++) {
+        const prev = centerline[(i - 1 + numPts) % numPts];
+        const next = centerline[(i + 1) % numPts];
+        const dx = next.x - prev.x;
+        const dy = next.y - prev.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const nx = -dy / len;
+        const ny = dx / len;
+        const p = centerline[i];
+        inner.push({ x: p.x - nx * hw, y: p.y - ny * hw });
+        outer.push({ x: p.x + nx * hw, y: p.y + ny * hw });
+      }
+
+      const clippingZones = [
+        { x: centerline[45].x + 6.0, y: centerline[45].y, type: "OUTSIDE SWEEPER", pts: 2500 },
+        { x: centerline[110].x - 5.0, y: centerline[110].y, type: "INNER HAIRPIN", pts: 1500 },
+        { x: centerline[175].x + 6.0, y: centerline[175].y, type: "OUTSIDE SWEEPER", pts: 2500 },
+      ];
+
+      return {
+        name: "Stadium Arena",
+        theme: "stadium",
+        centerline,
+        inner,
+        outer,
+        obstacles: [],
+        clippingZones,
+        spawn: { x: centerline[0].x, y: centerline[0].y, yaw: 0.0, speed: 16.0 }
+      };
+    }
+
+    let currentTrackName = "touge";
+    let track = createTougeTrack();
+
+    // -------------------------------------------------------------
+    // Vehicle Dynamics State
+    // -------------------------------------------------------------
+    const car = {
+      x: 0, y: 0, yaw: 0,
+      vx: 14, vy: 0, yawRate: 0, steer: 0,
+      width: 1.85, length: 4.45, lf: 1.15, lr: 1.35,
+      brakeHeat: 0.0, // 0.0 to 1.0 (rotor glow)
+      lastThrottle: 0.0,
+      ax: 0, ay: 0
+    };
+
+    // Stunt Scoring State
+    const scoreState = {
+      total: 0,
+      activeCombo: 0,
+      multiplier: 1.0,
+      isDrifting: false,
+      graceRemaining: 0,
+      manjiChains: 0,
+      lastSide: 0,
+      sideDuration: 0,
+      inBackward: false
+    };
+
+    // Visual FX Particles
+    const smokeParticles = [];
+    const flameParticles = [];
+    const sparkParticles = [];
+    const sakuraPetals = [];
+
+    // Camera
+    let camX = 0, camY = 0, zoom = 14.5;
+    let cameraTilt = 0;
+    let cameraMode = "chase";
+    let driveMode = "AI";
+
+    function resetSim() {
+      car.x = track.spawn.x;
+      car.y = track.spawn.y;
+      car.yaw = track.spawn.yaw;
+      car.vx = track.spawn.speed;
+      car.vy = 0;
+      car.yawRate = 0;
+      car.steer = 0;
+      car.brakeHeat = 0.0;
+      car.ax = 0;
+      car.ay = 0;
+
+      scoreState.total = 0;
+      scoreState.activeCombo = 0;
+      scoreState.multiplier = 1.0;
+      scoreState.isDrifting = false;
+      scoreState.graceRemaining = 0;
+      scoreState.manjiChains = 0;
+      scoreState.lastSide = 0;
+      scoreState.sideDuration = 0;
+
+      smokeParticles.length = 0;
+      flameParticles.length = 0;
+      sparkParticles.length = 0;
+      skidCtx.clearRect(0, 0, width, height);
+
+      camX = car.x;
+      camY = car.y;
+      cameraTilt = 0;
+
+      // Spawn initial ambient sakura petals for Touge
+      sakuraPetals.length = 0;
+      for (let i = 0; i < 45; i++) {
+        sakuraPetals.push({
+          x: car.x + (Math.random() - 0.5) * 80,
+          y: car.y + (Math.random() - 0.5) * 80,
+          vx: (Math.random() - 0.5) * 2 - 1.5,
+          vy: Math.random() * 1.5 + 0.5,
+          size: Math.random() * 3 + 2,
+          rot: Math.random() * Math.PI * 2,
+          rotSpeed: (Math.random() - 0.5) * 2
+        });
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Keyboard Controls
+    // -------------------------------------------------------------
+    const keys = {};
+    window.addEventListener("keydown", (e) => {
+      keys[e.key.toLowerCase()] = true;
+      if (e.key === " " || e.code === "Space") e.preventDefault();
+      if (e.key.toLowerCase() === "m") {
+        setMode(driveMode === "AI" ? "HUMAN" : "AI");
+      }
+    });
+    window.addEventListener("keyup", (e) => {
+      keys[e.key.toLowerCase()] = false;
+    });
+
+    // -------------------------------------------------------------
+    // Physics & AI Controller
+    // -------------------------------------------------------------
+    let simTime = 0;
+
+    function stepPhysics(dt) {
+      simTime += dt;
+      let steerCmd = 0;
+      let throttleCmd = 0;
+      let handbrakeCmd = 0;
+
+      if (driveMode === "HUMAN") {
+        if (keys["arrowleft"] || keys["a"]) steerCmd += 1.0;
+        if (keys["arrowright"] || keys["d"]) steerCmd -= 1.0;
+        if (keys["arrowup"] || keys["w"]) throttleCmd += 1.0;
+        if (keys["arrowdown"] || keys["s"]) throttleCmd -= 1.0;
+        if (keys[" "] || keys["space"]) handbrakeCmd = 1.0;
+      } else {
+        // High-Skill Autonomous Drift Policy
+        let nearestIdx = 0, minDistSq = Infinity;
+        for (let i = 0; i < track.centerline.length; i++) {
+          const pt = track.centerline[i];
+          const dsq = (pt.x - car.x) ** 2 + (pt.y - car.y) ** 2;
+          if (dsq < minDistSq) {
+            minDistSq = dsq;
+            nearestIdx = i;
+          }
+        }
+
+        const targetIdx = (nearestIdx + 11) % track.centerline.length;
+        const targetWp = track.centerline[targetIdx];
+        const dx = targetWp.x - car.x;
+        const dy = targetWp.y - car.y;
+        const targetAngle = Math.atan2(dy, dx);
+        let angleErr = (targetAngle - car.yaw + Math.PI) % (2 * Math.PI) - Math.PI;
+
+        const speed = Math.hypot(car.vx, car.vy);
+        const slipAngle = Math.atan2(car.vy, Math.max(Math.abs(car.vx), 0.5));
+        const curvature = Math.abs(angleErr);
+
+        if (curvature > 0.16 && speed > 7.5 && Math.abs(slipAngle) < 0.22) {
+          // Hard Flick + E-Brake Initiation!
+          steerCmd = Math.sign(angleErr) * 1.0;
+          handbrakeCmd = 0.95;
+          throttleCmd = 0.85;
+        } else if (Math.abs(slipAngle) > 0.14) {
+          // Counter-Steer Balance & Power Oversteer
+          const counterSteer = -Math.sign(slipAngle) * (Math.abs(slipAngle) * 1.65);
+          steerCmd = Math.max(-1.0, Math.min(1.0, counterSteer + angleErr * 0.4));
+          throttleCmd = 1.0; // Pinned throttle
+          handbrakeCmd = 0.0;
+        } else {
+          steerCmd = Math.max(-1.0, Math.min(1.0, angleErr * 2.2));
+          throttleCmd = speed < 28.0 ? 1.0 : 0.25;
+          handbrakeCmd = 0.0;
+        }
+      }
+
+      // Steering Rack Dynamics
+      const maxSteer = 0.785; // 45 deg lock
+      car.steer += (steerCmd * maxSteer - car.steer) * Math.min(1.0, dt * 15.0);
+
+      // Nonlinear Pacejka Tire Forces
+      const vx = car.vx;
+      const vy = car.vy;
+      const w = car.yawRate;
+
+      const alpha_f = Math.atan2(vy + car.lf * w, Math.max(Math.abs(vx), 0.5)) - car.steer;
+      const alpha_r = Math.atan2(vy - car.lr * w, Math.max(Math.abs(vx), 0.5));
+
+      function pacejka(alpha, muScale = 1.0) {
+        const B = 9.8, C = 1.45, D = 6600.0 * muScale;
+        return -D * Math.sin(C * Math.atan(B * alpha));
+      }
+
+      let rearGrip = 1.0;
+      if (handbrakeCmd > 0.0) {
+        rearGrip = 0.10; // Complete rear wheel kinetic lockup
+        car.brakeHeat = Math.min(1.0, car.brakeHeat + dt * 1.5);
+      } else if (throttleCmd > 0.7 && Math.abs(car.vy) > 1.2) {
+        rearGrip = 0.35; // Power oversteer burnout
+      }
+
+      if (throttleCmd < 0) {
+        car.brakeHeat = Math.min(1.0, car.brakeHeat + dt * 0.8);
+      } else {
+        car.brakeHeat = Math.max(0.0, car.brakeHeat - dt * 0.25); // Cool down
+      }
+
+      const fy_f = pacejka(alpha_f, 1.0);
+      const fy_r = pacejka(alpha_r, rearGrip);
+
+      let driveForce = throttleCmd >= 0 ? throttleCmd * 6000.0 : throttleCmd * 7800.0;
+      if (handbrakeCmd > 0) driveForce -= handbrakeCmd * 4600.0;
+
+      const mass = 1250.0;
+      const iz = 2100.0;
+
+      const dvx = (driveForce / mass) + vy * w - 0.35 * vx * Math.abs(vx) / mass;
+      const dvy = ((fy_f * Math.cos(car.steer) + fy_r) / mass) - vx * w;
+      const dw = ((car.lf * fy_f * Math.cos(car.steer) - car.lr * fy_r) - 250.0 * w) / iz;
+
+      car.ax = dvx;
+      car.ay = dvy;
+      car.vx += dvx * dt;
+      car.vy += dvy * dt;
+      car.yawRate += dw * dt;
+      car.yaw = (car.yaw + car.yawRate * dt + Math.PI) % (2 * Math.PI) - Math.PI;
+
+      car.x += (car.vx * Math.cos(car.yaw) - car.vy * Math.sin(car.yaw)) * dt;
+      car.y += (car.vx * Math.sin(car.yaw) + car.vy * Math.cos(car.yaw)) * dt;
+
+      // Exhaust Backfire Spit Check (throttle snap-lift or rev bouncing)
+      if (car.lastThrottle > 0.7 && throttleCmd < 0.2 && Math.hypot(car.vx, car.vy) > 8.0) {
+        spawnExhaustBackfire();
+        triggerTurboBlowoff();
+      }
+      car.lastThrottle = throttleCmd;
+
+      // -------------------------------------------------------------
+      // Stunt Scoring & Japanese Callout Recognition
+      // -------------------------------------------------------------
+      const slipDeg = Math.abs(Math.atan2(car.vy, Math.max(Math.abs(car.vx), 0.5)) * 180 / Math.PI);
+      const speedKmh = Math.hypot(car.vx, car.vy) * 3.6;
+      const isSlidingNow = slipDeg > 14.0 && speedKmh > 12.0;
+
+      if (isSlidingNow) {
+        const side = car.vy < 0 ? -1 : 1;
+        if (!scoreState.isDrifting) {
+          scoreState.isDrifting = true;
+          scoreState.lastSide = side;
+          scoreState.sideDuration = 0;
+          if (Math.abs(car.steer) > 0.32) {
+            triggerStunt("慣性ドリフト", "SCANDINAVIAN FLICK", 1500, 0.5);
+          }
+        } else {
+          if (side !== scoreState.lastSide && scoreState.sideDuration > 0.35) {
+            scoreState.manjiChains++;
+            triggerStunt("卍・連鎖", `MANJI CHAIN x${scoreState.manjiChains}`, 1000 * Math.min(scoreState.manjiChains, 5), 0.4);
+            scoreState.lastSide = side;
+            scoreState.sideDuration = 0;
+            spawnExhaustBackfire();
+          } else if (side === scoreState.lastSide) {
+            scoreState.sideDuration += dt;
+          }
+        }
+
+        // Backward Entry Check (> 75 deg slide at speed)
+        if (slipDeg > 75.0 && speedKmh > 26.0) {
+          if (!scoreState.inBackward) {
+            scoreState.inBackward = true;
+            triggerStunt("超角度", "BACKWARD ENTRY!", 3500, 1.2);
+          }
+        } else if (slipDeg < 55.0) {
+          scoreState.inBackward = false;
+        }
+
+        scoreState.multiplier = Math.min(10.0, scoreState.multiplier + 0.4 * dt);
+        scoreState.graceRemaining = 1.2;
+
+        const stepPts = (speedKmh / 28.0) * (slipDeg / 30.0) * 190.0 * dt * scoreState.multiplier;
+        scoreState.activeCombo += stepPts;
+
+        spawnTireSmoke(slipDeg);
+      } else {
+        if (scoreState.isDrifting) {
+          scoreState.graceRemaining -= dt;
+          if (scoreState.graceRemaining <= 0) {
+            scoreState.total += scoreState.activeCombo;
+            scoreState.activeCombo = 0;
+            scoreState.multiplier = 1.0;
+            scoreState.isDrifting = false;
+            scoreState.manjiChains = 0;
+          }
+        }
+      }
+
+      // Audio Modulation
+      if (audioCtx && audioEnabled) {
+        const rpmFreq = 50 + (speedKmh / 120.0) * 220 + (throttleCmd > 0 ? 40 : 0);
+        engineOsc.frequency.setTargetAtTime(rpmFreq, audioCtx.currentTime, 0.05);
+
+        const screechVolume = isSlidingNow ? Math.min(0.25, (slipDeg / 60.0) * (speedKmh / 80.0) * 0.22) : 0.0;
+        tireNoiseGain.gain.setTargetAtTime(screechVolume, audioCtx.currentTime, 0.04);
+      }
+
+      // Update Particles
+      updateParticles(dt);
+
+      // Bounds Wrap
+      if (Math.hypot(car.x, car.y) > 105) resetSim();
+    }
+
+    function triggerStunt(jpName, enName, points, multBonus) {
+      scoreState.activeCombo += points * scoreState.multiplier;
+      scoreState.multiplier = Math.min(10.0, scoreState.multiplier + multBonus);
+
+      const stream = document.getElementById("stunt-stream");
+      const card = document.createElement("div");
+      card.className = "stunt-card";
+      card.innerHTML = `
+        <div class="stunt-card-jp">${jpName}</div>
+        <div class="stunt-card-en">${enName}</div>
+        <div class="stunt-card-pts">+${points.toLocaleString()} PTS (x${multBonus >= 0 ? '+' : ''}${multBonus.toFixed(1)})</div>
+      `;
+      stream.appendChild(card);
+      setTimeout(() => card.remove(), 2500);
+    }
+
+    // -------------------------------------------------------------
+    // Visual FX (Smoke, Exhaust Flames, Sparks, Petals)
+    // -------------------------------------------------------------
+    function spawnTireSmoke(slipDeg) {
+      const cosY = Math.cos(car.yaw);
+      const sinY = Math.sin(car.yaw);
+      const hw = car.width * 0.5;
+      const rx1 = car.x + (-car.lr * cosY - hw * -sinY);
+      const ry1 = car.y + (-car.lr * sinY + hw * cosY);
+      const rx2 = car.x + (-car.lr * cosY + hw * -sinY);
+      const ry2 = car.y + (-car.lr * sinY - hw * cosY);
+
+      const count = Math.min(5, Math.floor(slipDeg / 15));
+      for (let i = 0; i < count; i++) {
+        const pPos = Math.random() > 0.5 ? { x: rx1, y: ry1 } : { x: rx2, y: ry2 };
+        smokeParticles.push({
+          x: pPos.x,
+          y: pPos.y,
+          vx: -car.vx * 0.25 + (Math.random() - 0.5) * 1.8,
+          vy: -car.vy * 0.25 + (Math.random() - 0.5) * 1.8,
+          radius: 2.2 + Math.random() * 1.5,
+          alpha: 0.75,
+          maxLife: 0.9 + Math.random() * 0.4,
+          age: 0
+        });
+      }
+    }
+
+    function spawnExhaustBackfire() {
+      const cosY = Math.cos(car.yaw);
+      const sinY = Math.sin(car.yaw);
+      const ex1 = car.x + ((-car.lr - 0.9) * cosY - 0.45 * -sinY);
+      const ey1 = car.y + ((-car.lr - 0.9) * sinY + 0.45 * cosY);
+      const ex2 = car.x + ((-car.lr - 0.9) * cosY + 0.45 * -sinY);
+      const ey2 = car.y + ((-car.lr - 0.9) * sinY - 0.45 * cosY);
+
+      for (const pos of [{x: ex1, y: ey1}, {x: ex2, y: ey2}]) {
+        for (let i = 0; i < 14; i++) {
+          flameParticles.push({
+            x: pos.x,
+            y: pos.y,
+            vx: -cosY * (Math.random() * 8 + 4) + (Math.random() - 0.5) * 3,
+            vy: -sinY * (Math.random() * 8 + 4) + (Math.random() - 0.5) * 3,
+            radius: Math.random() * 3.5 + 2,
+            color: Math.random() > 0.35 ? "#ff5400" : "#00f0ff",
+            age: 0,
+            maxLife: 0.22 + Math.random() * 0.15
+          });
+        }
+      }
+    }
+
+    function updateParticles(dt) {
+      // Smoke
+      for (let i = smokeParticles.length - 1; i >= 0; i--) {
+        const p = smokeParticles[i];
+        p.age += dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.radius += 11.0 * dt;
+        p.alpha = Math.max(0, 0.75 * (1.0 - p.age / p.maxLife));
+        if (p.age >= p.maxLife) smokeParticles.splice(i, 1);
+      }
+
+      // Flames
+      for (let i = flameParticles.length - 1; i >= 0; i--) {
+        const f = flameParticles[i];
+        f.age += dt;
+        f.x += f.vx * dt;
+        f.y += f.vy * dt;
+        f.radius = Math.max(0.2, f.radius - 10.0 * dt);
+        if (f.age >= f.maxLife) flameParticles.splice(i, 1);
+      }
+
+      // Sakura Petals
+      for (const s of sakuraPetals) {
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        s.rot += s.rotSpeed * dt;
+        if (Math.hypot(s.x - car.x, s.y - car.y) > 75) {
+          s.x = car.x + (Math.random() - 0.5) * 70;
+          s.y = car.y + (Math.random() - 0.5) * 70;
+        }
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Rendering Pipeline
+    // -------------------------------------------------------------
+    function toScreen(wx, wy) {
+      const dx = wx - camX;
+      const dy = wy - camY;
+      const cosT = Math.cos(cameraTilt);
+      const sinT = Math.sin(cameraTilt);
+      const rx = dx * cosT - dy * sinT;
+      const ry = dx * sinT + dy * cosT;
+      return {
+        x: width * 0.5 + rx * zoom,
+        y: height * 0.5 - ry * zoom
+      };
+    }
+
+    function renderTrackBackground() {
+      trackCtx.fillStyle = "#07090e";
+      trackCtx.fillRect(0, 0, width, height);
+    }
+
+    function render() {
+      // Dynamic Camera
+      if (cameraMode === "chase") {
+        camX += (car.x - camX) * 0.12;
+        camY += (car.y - camY) * 0.12;
+        zoom = 14.5;
+        // Subtle drift bank tilt (3 deg max)
+        const targetTilt = -car.vy * 0.003;
+        cameraTilt += (targetTilt - cameraTilt) * 0.1;
+      } else {
+        camX += (0 - camX) * 0.08;
+        camY += (0 - camY) * 0.08;
+        zoom = 7.5;
+        cameraTilt += (0 - cameraTilt) * 0.1;
+      }
+
+      // Clear Main Frame
+      ctx.fillStyle = "#07090e";
+      ctx.fillRect(0, 0, width, height);
+
+      // 1. Persistent Skidmarks
+      drawSkidmarks();
+
+      // 2. Track Surface, Kerbs, Barriers
+      renderTrack();
+
+      // 3. Sakura Petals (Touge theme)
+      if (track.theme === "touge") renderSakura();
+
+      // 4. Smoke Particles
+      renderSmoke();
+
+      // 5. Flames & Sparks
+      renderFlames();
+
+      // 6. Drift Car
+      renderCar();
+
+      // 7. Manga Speedlines (Extreme Angle > 38 deg)
+      renderSpeedlines();
+
+      // 8. HUD & Analog Gauges
+      updateHUD();
+      drawAnalogGauges();
+
+      requestAnimationFrame(render);
+    }
+
+    let lastSkidCorners = null;
+
+    function drawSkidmarks() {
+      const slipDeg = Math.abs(Math.atan2(car.vy, Math.max(Math.abs(car.vx), 0.5)) * 180 / Math.PI);
+      const cosY = Math.cos(car.yaw);
+      const sinY = Math.sin(car.yaw);
+      const hw = car.width * 0.5;
+
+      const rr = { x: car.x + (-car.lr * cosY + hw * -sinY), y: car.y + (-car.lr * sinY - hw * cosY) };
+      const rl = { x: car.x + (-car.lr * cosY - hw * -sinY), y: car.y + (-car.lr * sinY + hw * cosY) };
+
+      if (slipDeg > 14.0 && Math.hypot(car.vx, car.vy) > 3.0 && lastSkidCorners) {
+        ctx.strokeStyle = `rgba(15, 17, 24, ${Math.min(0.65, slipDeg / 70)})`;
+        ctx.lineWidth = 5.0;
+        ctx.beginPath();
+        const p1 = toScreen(lastSkidCorners.rr.x, lastSkidCorners.rr.y);
+        const p2 = toScreen(rr.x, rr.y);
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        const p3 = toScreen(lastSkidCorners.rl.x, lastSkidCorners.rl.y);
+        const p4 = toScreen(rl.x, rl.y);
+        ctx.moveTo(p3.x, p3.y);
+        ctx.lineTo(p4.x, p4.y);
+        ctx.stroke();
+      }
+      lastSkidCorners = { rr, rl };
+    }
+
+    function renderTrack() {
+      // Outer & Inner Asphalt Surface
+      if (track.outer.length > 2) {
+        ctx.beginPath();
+        const s0 = toScreen(track.outer[0].x, track.outer[0].y);
+        ctx.moveTo(s0.x, s0.y);
+        for (let i = 1; i < track.outer.length; i++) {
+          const pt = toScreen(track.outer[i].x, track.outer[i].y);
+          ctx.lineTo(pt.x, pt.y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = track.theme === "cyber" ? "#10141e" : "#131720";
+        ctx.fill();
+
+        if (track.inner.length > 2) {
+          ctx.beginPath();
+          const i0 = toScreen(track.inner[0].x, track.inner[0].y);
+          ctx.moveTo(i0.x, i0.y);
+          for (let i = 1; i < track.inner.length; i++) {
+            const pt = toScreen(track.inner[i].x, track.inner[i].y);
+            ctx.lineTo(pt.x, pt.y);
+          }
+          ctx.closePath();
+          ctx.fillStyle = "#07090e";
+          ctx.fill();
+        }
+
+        // Kerbs & Glowing Barriers
+        ctx.strokeStyle = track.theme === "cyber" ? "rgba(0, 240, 255, 0.6)" : "rgba(255, 190, 11, 0.6)";
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
+      }
+
+      // Centerline Racing Path
+      if (track.centerline.length > 2) {
+        ctx.beginPath();
+        ctx.setLineDash([10, 14]);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.16)";
+        ctx.lineWidth = 2.0;
+        const c0 = toScreen(track.centerline[0].x, track.centerline[0].y);
+        ctx.moveTo(c0.x, c0.y);
+        for (let i = 1; i < track.centerline.length; i++) {
+          const pt = toScreen(track.centerline[i].x, track.centerline[i].y);
+          ctx.lineTo(pt.x, pt.y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Obstacles / Shipping Containers
+      for (const obs of track.obstacles) {
+        ctx.beginPath();
+        const p0 = toScreen(obs[0].x, obs[0].y);
+        ctx.moveTo(p0.x, p0.y);
+        for (let i = 1; i < obs.length; i++) {
+          const pt = toScreen(obs[i].x, obs[i].y);
+          ctx.lineTo(pt.x, pt.y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = "rgba(255, 0, 85, 0.4)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255, 0, 85, 0.9)";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+      }
+
+      // Clipping Point Zones (Apex Circles)
+      for (const zone of track.clippingZones) {
+        const s = toScreen(zone.x, zone.y);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 22, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(0, 240, 255, 0.5)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffbe0b";
+        ctx.fill();
+      }
+    }
+
+    function renderSakura() {
+      for (const s of sakuraPetals) {
+        const p = toScreen(s.x, s.y);
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(s.rot);
+        ctx.fillStyle = "rgba(255, 180, 205, 0.45)";
+        ctx.beginPath();
+        ctx.ellipse(0, 0, s.size, s.size * 0.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function renderSmoke() {
+      for (const p of smokeParticles) {
+        const s = toScreen(p.x, p.y);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, p.radius * (zoom / 10), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(215, 225, 240, ${p.alpha})`;
+        ctx.fill();
+      }
+    }
+
+    function renderFlames() {
+      for (const f of flameParticles) {
+        const s = toScreen(f.x, f.y);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, f.radius * (zoom / 10), 0, Math.PI * 2);
+        ctx.fillStyle = f.color;
+        ctx.shadowColor = f.color;
+        ctx.shadowBlur = 12;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    function renderCar() {
+      const s = toScreen(car.x, car.y);
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(-car.yaw + cameraTilt);
+
+      // Headlight Volumetric Projector Beams
+      const beamGrad = ctx.createRadialGradient(car.length * 0.5 * zoom, 0, 2, car.length * 3.0 * zoom, 0, car.length * 2.2 * zoom);
+      beamGrad.addColorStop(0, "rgba(255, 255, 220, 0.45)");
+      beamGrad.addColorStop(0.3, "rgba(255, 255, 240, 0.15)");
+      beamGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
+      ctx.fillStyle = beamGrad;
+      ctx.beginPath();
+      ctx.moveTo(car.length * 0.5 * zoom, -car.width * 0.45 * zoom);
+      ctx.lineTo(car.length * 3.0 * zoom, -car.width * 1.6 * zoom);
+      ctx.lineTo(car.length * 3.0 * zoom, car.width * 1.6 * zoom);
+      ctx.lineTo(car.length * 0.5 * zoom, car.width * 0.45 * zoom);
+      ctx.closePath();
+      ctx.fill();
+
+      // Wheels & Cherry-Red Glowing Brake Rotors
+      const wL = 0.9 * zoom, wW = 0.38 * zoom;
+      function drawWheelWithRotor(x, y, steerAngle) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(-steerAngle);
+
+        // Tire rubber
+        ctx.fillStyle = "#11141a";
+        ctx.fillRect(-wL/2, -wW/2, wL, wW);
+        ctx.strokeStyle = "#333b47";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-wL/2, -wW/2, wL, wW);
+
+        // Glowing brake rotor heat
+        if (car.brakeHeat > 0.05) {
+          ctx.fillStyle = `rgba(255, 60, 0, ${car.brakeHeat * 0.9})`;
+          ctx.shadowColor = "#ff3300";
+          ctx.shadowBlur = 10 * car.brakeHeat;
+          ctx.fillRect(-wL * 0.3, -wW * 0.35, wL * 0.6, wW * 0.7);
+          ctx.shadowBlur = 0;
+        }
+        ctx.restore();
+      }
+
+      const hW = (car.width * 0.5) * zoom;
+      const fL = car.lf * zoom;
+      const rL = -car.lr * zoom;
+
+      // Front steered wheels (with countersteer angle)
+      drawWheelWithRotor(fL, -hW, car.steer);
+      drawWheelWithRotor(fL, hW, car.steer);
+      // Rear wheels
+      drawWheelWithRotor(rL, -hW, 0);
+      drawWheelWithRotor(rL, hW, 0);
+
+      // Chassis Body (JDM GT-R / Silvia Aero styling)
+      const cL = car.length * zoom;
+      const cW = car.width * zoom;
+
+      const bodyColor = driveMode === "AI" ? "#00f0ff" : "#ff0055";
+      ctx.fillStyle = bodyColor;
+      ctx.shadowColor = bodyColor;
+      ctx.shadowBlur = 18;
+
+      ctx.beginPath();
+      ctx.roundRect(-cL/2, -cW/2, cL, cW, 7);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Carbon Fiber Hood & Roof
+      ctx.fillStyle = "#090c12";
+      ctx.beginPath();
+      ctx.roundRect(-cL * 0.22, -cW * 0.36, cL * 0.52, cW * 0.72, 5);
+      ctx.fill();
+
+      // Rear GT Wing / Spoiler
+      ctx.fillStyle = "#000";
+      ctx.fillRect(-cL * 0.52, -cW * 0.55, 3.5, cW * 1.1);
+      ctx.strokeStyle = "#fff";
+      ctx.strokeRect(-cL * 0.52, -cW * 0.55, 3.5, cW * 1.1);
+
+      // Headlights (Twin projector LEDs)
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(cL/2 - 2, -cW/2 + 2, 4, 6);
+      ctx.fillRect(cL/2 - 2, cW/2 - 8, 4, 6);
+
+      // Taillights (Neon Red JDM Ring)
+      ctx.fillStyle = "#ff0055";
+      ctx.shadowColor = "#ff0055";
+      ctx.shadowBlur = 8;
+      ctx.fillRect(-cL/2 - 2, -cW/2 + 2, 4, 6);
+      ctx.fillRect(-cL/2 - 2, cW/2 - 8, 4, 6);
+      ctx.shadowBlur = 0;
+
+      ctx.restore();
+    }
+
+    function renderSpeedlines() {
+      const slipDeg = Math.abs(Math.atan2(car.vy, Math.max(Math.abs(car.vx), 0.5)) * 180 / Math.PI);
+      const canvasEl = document.getElementById("speedlines-canvas");
+
+      if (slipDeg > 35.0) {
+        canvasEl.style.opacity = Math.min(1.0, (slipDeg - 35.0) / 25.0);
+        slCtx.clearRect(0, 0, width, height);
+
+        const cx = width * 0.5;
+        const cy = height * 0.5;
+        const count = 35;
+        slCtx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+        slCtx.lineWidth = 1.5;
+
+        for (let i = 0; i < count; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const innerR = 140 + Math.random() * 80;
+          const outerR = Math.hypot(width, height) * 0.6;
+          slCtx.beginPath();
+          slCtx.moveTo(cx + Math.cos(angle) * innerR, cy + Math.sin(angle) * innerR);
+          slCtx.lineTo(cx + Math.cos(angle) * outerR, cy + Math.sin(angle) * outerR);
+          slCtx.stroke();
+        }
+      } else {
+        canvasEl.style.opacity = 0;
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Analog Defi-Style Gauges (Speedo, Slip Angle, G-Meter)
+    // -------------------------------------------------------------
+    function drawAnalogGauges() {
+      const speedKmh = Math.hypot(car.vx, car.vy) * 3.6;
+      const slipDeg = Math.abs(Math.atan2(car.vy, Math.max(Math.abs(car.vx), 0.5)) * 180 / Math.PI);
+      const totalG = Math.hypot(car.ax, car.ay) / 9.81;
+
+      // 1. Speedometer Dial
+      const spCanvas = document.getElementById("speedo-gauge");
+      const spCtx = spCanvas.getContext("2d");
+      spCtx.clearRect(0, 0, 110, 110);
+      drawDial(spCtx, 55, 55, 46, speedKmh / 140.0, "#00f0ff", speedKmh > 100);
+
+      // 2. Slip Angle Dial
+      const angCanvas = document.getElementById("angle-gauge");
+      const angCtx = angCanvas.getContext("2d");
+      angCtx.clearRect(0, 0, 110, 110);
+      const angleColor = slipDeg > 75 ? "#ff0055" : slipDeg > 35 ? "#ffbe0b" : "#00f59b";
+      drawDial(angCtx, 55, 55, 46, slipDeg / 90.0, angleColor, slipDeg > 70);
+
+      // 3. G-Force Meter Dial
+      const gCanvas = document.getElementById("gforce-gauge");
+      const gCtx = gCanvas.getContext("2d");
+      gCtx.clearRect(0, 0, 110, 110);
+      drawGForceCircle(gCtx, 55, 55, 42, car.ax / (9.81 * 1.5), car.ay / (9.81 * 1.5));
+    }
+
+    function drawDial(ctx, cx, cy, radius, fraction, accentColor, isAlert) {
+      const startAngle = Math.PI * 0.75;
+      const totalSweep = Math.PI * 1.5;
+      const currentAngle = startAngle + Math.min(1.0, Math.max(0.0, fraction)) * totalSweep;
+
+      // Background Arc
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, startAngle, startAngle + totalSweep);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+      ctx.lineWidth = 5;
+      ctx.stroke();
+
+      // Active Arc
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, startAngle, currentAngle);
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = 5;
+      ctx.shadowColor = accentColor;
+      ctx.shadowBlur = isAlert ? 15 : 6;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Needle
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(currentAngle);
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(radius - 6, 0);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawGForceCircle(ctx, cx, cy, radius, gx, gy) {
+      // Circle boundary
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Crosshair
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+      ctx.beginPath();
+      ctx.moveTo(cx - radius, cy); ctx.lineTo(cx + radius, cy);
+      ctx.moveTo(cx, cy - radius); ctx.lineTo(cx, cy + radius);
+      ctx.stroke();
+
+      // G-Ball
+      const bx = cx + Math.max(-radius + 4, Math.min(radius - 4, gy * radius));
+      const by = cy - Math.max(-radius + 4, Math.min(radius - 4, gx * radius));
+      ctx.beginPath();
+      ctx.arc(bx, by, 5, 0, Math.PI * 2);
+      ctx.fillStyle = "#00f0ff";
+      ctx.shadowColor = "#00f0ff";
+      ctx.shadowBlur = 10;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    function updateHUD() {
+      const speedKmh = Math.hypot(car.vx, car.vy) * 3.6;
+      const slipDeg = Math.abs(Math.atan2(car.vy, Math.max(Math.abs(car.vx), 0.5)) * 180 / Math.PI);
+      const totalG = Math.hypot(car.ax, car.ay) / 9.81;
+
+      document.getElementById("hud-score").innerText = Math.floor(scoreState.total + scoreState.activeCombo).toLocaleString();
+
+      const multEl = document.getElementById("hud-multiplier");
+      multEl.innerText = `x${scoreState.multiplier.toFixed(1)}`;
+      multEl.classList.toggle("on-fire", scoreState.multiplier >= 3.5);
+
+      document.getElementById("hud-active-pts").innerText = `+${Math.floor(scoreState.activeCombo).toLocaleString()}`;
+      document.getElementById("hud-speed").innerText = Math.floor(speedKmh);
+      document.getElementById("hud-angle").innerText = `${Math.floor(slipDeg)}°`;
+      document.getElementById("hud-gforce").innerText = totalG.toFixed(1);
+
+      // Chassis Status
+      const statusEl = document.getElementById("hud-status");
+      const subEl = document.getElementById("hud-substatus");
+      if (slipDeg > 75) {
+        statusEl.innerText = "🔥 BACKWARD ENTRY";
+        statusEl.className = "status-badge sliding";
+        subEl.innerText = "Extreme Drift Angle";
+      } else if (slipDeg > 35) {
+        statusEl.innerText = "⚡ POWER OVERSTEER";
+        statusEl.className = "status-badge sliding";
+        subEl.innerText = "Full Countersteer Lock";
+      } else if (slipDeg > 14) {
+        statusEl.innerText = ">> ANGLE DRIFT <<";
+        statusEl.className = "status-badge sliding";
+        subEl.innerText = "Slip Angle Sustained";
+      } else {
+        statusEl.innerText = "CRUISING";
+        statusEl.className = "status-badge";
+        subEl.innerText = "Grip Adhesion 100%";
+      }
+
+      // Grace Meter
+      const gracePct = Math.max(0, Math.min(100, (scoreState.graceRemaining / 1.2) * 100));
+      document.getElementById("hud-grace-bar").style.width = `${gracePct}%`;
+    }
+
+    // -------------------------------------------------------------
+    // UI Selectors
+    // -------------------------------------------------------------
+    function switchTrack(name) {
+      currentTrackName = name;
+      document.querySelectorAll("[id^='btn-track-']").forEach(b => b.classList.remove("active"));
+      document.getElementById(`btn-track-${name}`).classList.add("active");
+
+      if (name === "gymkhana") track = createGymkhanaTrack();
+      else if (name === "stadium") track = createStadiumTrack();
+      else track = createTougeTrack();
+
+      resetSim();
+    }
+
+    function setMode(mode) {
+      driveMode = mode;
+      document.getElementById("btn-mode-ai").classList.toggle("active", mode === "AI");
+      document.getElementById("btn-mode-human").classList.toggle("active", mode === "HUMAN");
+      const hint = document.getElementById("help-hint");
+      if (mode === "HUMAN") {
+        hint.innerHTML = "<b>🎮 JDM Manual Active:</b> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or Arrows + <kbd>SPACE</kbd> for <b>E-Brake</b>!";
+      } else {
+        hint.innerHTML = "<b>🤖 AI Pilot Active:</b> Watching autonomous drift & stunt chaining!";
+      }
+    }
+
+    function setCam(cam) {
+      cameraMode = cam;
+      document.getElementById("btn-cam-chase").classList.toggle("active", cam === "chase");
+      document.getElementById("btn-cam-top").classList.toggle("active", cam === "top");
+    }
+
+    // Init & Start Run
+    resize();
+    resetSim();
+    setInterval(() => stepPhysics(0.016), 16);
+    render();
+  </script>
+</body>
+</html>

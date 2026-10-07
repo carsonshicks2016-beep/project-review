@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RIDGE DRIVE '98 - PS1 Pseudo-3D Retro Racer</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./src/ps1_driver/style.css">
+</head>
+<body>
+
+  <div id="arcade-cabinet">
+    <!-- Header bar -->
+    <header id="header-bar">
+      <div class="brand-badge">
+        <span class="brand-logo"></span>
+        <span>RIDGE DRIVE '98 // PS1 ARCADE</span>
+      </div>
+      <div class="header-actions">
+        <a href="./boids.html" class="nav-link">🧬 APEXFLOCK</a>
+        <a href="./index.html" class="nav-link">🛸 DRONE RACING</a>
+      </div>
+    </header>
+
+    <!-- 2D Faux 3D Viewport -->
+    <div id="viewport-container">
+      <canvas id="game-canvas"></canvas>
+      <div id="crt-overlay"></div>
+
+      <!-- Retro In-Game HUD -->
+      <div id="hud-overlay">
+        <!-- Top row -->
+        <div class="hud-top-row">
+          <div class="hud-pill">
+            <span class="hud-label">TIME REMAINING</span>
+            <span id="ui-time" class="hud-value time-val">45:00</span>
+          </div>
+          <div class="hud-pill" style="align-items: flex-end;">
+            <span class="hud-label">SCORE</span>
+            <span id="ui-score" class="hud-value score-val">0</span>
+          </div>
+        </div>
+
+        <!-- Center Checkpoint & Drift Alerts -->
+        <div id="checkpoint-alert" class="checkpoint-alert">
+          ★ CHECKPOINT! ★<br><span style="font-size: 14px; color: #fff;">TIME EXTENDED +20s</span>
+        </div>
+
+        <div id="drift-banner" class="drift-banner">
+          <div class="drift-text">DRIFT COMBO!</div>
+          <div id="drift-pts" class="drift-pts">+1,200 x1.5</div>
+        </div>
+
+        <!-- Bottom row: Gauges & Minimap -->
+        <div class="hud-bottom-row">
+          <div class="gauge-cluster">
+            <!-- Analog Tachometer -->
+            <div class="tachometer">
+              <svg class="tacho-svg" viewBox="0 0 140 70">
+                <!-- Outer Arc (Gray) -->
+                <path d="M 15 70 A 55 55 0 0 1 125 70" fill="none" stroke="#373b4d" stroke-width="8" stroke-linecap="round"/>
+                <!-- Redline Arc (Red) -->
+                <path d="M 103 26 A 55 55 0 0 1 125 70" fill="none" stroke="#ea0029" stroke-width="8" stroke-linecap="round"/>
+                <!-- Needle -->
+                <line id="tacho-needle" x1="70" y1="70" x2="70" y2="20" stroke="#fffa38" stroke-width="3" stroke-linecap="round" transform="rotate(-120 70 70)"/>
+                <!-- Needle Center Cap -->
+                <circle cx="70" cy="70" r="8" fill="#14161f" stroke="#fffa38" stroke-width="2"/>
+              </svg>
+              <div class="tacho-info">
+                <span id="ui-gear" class="gear-badge">GEAR 1</span>
+              </div>
+            </div>
+
+            <!-- Digital Speedometer -->
+            <div class="speedometer-box">
+              <div id="ui-speed" class="speed-digital">000</div>
+              <div class="speed-unit">KM / H</div>
+            </div>
+          </div>
+
+          <!-- Live Oncoming Curve Radar / Minimap -->
+          <div class="minimap-box">
+            <canvas id="minimap-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Touch/Mobile Controls -->
+      <div id="touch-controls">
+        <div class="touch-btn-group">
+          <div id="touch-left" class="touch-circle">◀</div>
+          <div id="touch-right" class="touch-circle">▶</div>
+        </div>
+        <div class="touch-btn-group">
+          <div id="touch-drift" class="touch-circle" style="font-size:12px; font-weight:bold;">DRIFT</div>
+          <div id="touch-brake" class="touch-circle">▼</div>
+          <div id="touch-gas" class="touch-circle">▲</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Control Deck -->
+    <footer id="controls-bar">
+      <div class="key-hints">
+        <span class="key-tag"><span class="key-cap">W / ↑</span> Gas</span>
+        <span class="key-tag"><span class="key-cap">S / ↓</span> Brake</span>
+        <span class="key-tag"><span class="key-cap">A/D / ←/→</span> Steer</span>
+        <span class="key-tag"><span class="key-cap">SPACE</span> Drift</span>
+        <span class="key-tag"><span class="key-cap">C</span> Cam</span>
+        <span class="key-tag"><span class="key-cap">V</span> Dither</span>
+        <span class="key-tag"><span class="key-cap">T</span> Track</span>
+        <span class="key-tag"><span class="key-cap">M</span> Audio</span>
+        <span class="key-tag"><span class="key-cap">R</span> Reset</span>
+      </div>
+      <div class="deck-buttons">
+        <button id="btn-theme" class="arcade-btn">Track: Akina Touge</button>
+        <button id="btn-cam" class="arcade-btn">Cam: CHASE</button>
+        <button id="btn-dither" class="arcade-btn active">Dither: ON</button>
+        <button id="btn-crt" class="arcade-btn active">CRT: ON</button>
+        <button id="btn-audio" class="arcade-btn active">Audio: ON</button>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="./src/ps1_driver/main.js"></script>
+</body>
+</html>

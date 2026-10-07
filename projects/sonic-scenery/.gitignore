@@ -1,0 +1,42 @@
+node_modules/
+dist/
+out/
+.vite/
+*.log
+.DS_Store
+
+# secrets
+.env
+.env.*
+!.env.example
+
+# swift
+helper/.build/
+helper/Package.resolved
+
+# Private migration exclusions
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite*
+*.pt
+*.pth
+*.onnx
+*.npz
+*.pkl
+*.sfc
+*.smc
+*.iso
+*.ciso
+node_modules/
+.venv*/
+__pycache__/
+data/
+sessions/
+uploads/
+runs/
+checkpoints/
+Library/
+Builds/
+config.local.json

@@ -1,0 +1,27 @@
+# Supra Drift — runtime dependencies.
+# Install with:  pip3 install -r requirements.txt   (this Mac uses python3/pip3)
+
+# --- core simulator + GA (always required) ---
+numpy>=1.24
+pygame>=2.5           # 2D viewers (drive / watch / live GA / live PPO)
+scipy>=1.10           # fast KD-tree nearest lookup for long real tracks
+
+# --- PPO race + drift (required for --ppo / --drift / --watch-ppo / --watch-drift) ---
+torch>=2.1            # actor-critic PPO; CPU is fine (DEVICE=cpu in ppo.py)
+
+# --- Command Center dashboard (required for command-center/server.py, port 8770) ---
+flask>=3.0            # all-Python web dashboard backend
+flask-sock>=0.7       # standalone 3D viewer websocket bridge
+
+# --- optional ---
+sounddevice>=0.4      # real-time engine audio synthesis; degrades gracefully to
+                      # silence if absent or there's no audio device (use --no-audio)
+matplotlib>=3.8       # diagnostic telemetry plots (raw export still works without it)
+Pillow>=10            # real-track GeoTIFF asset builder / thumbnail-safe image IO
+requests>=2.31        # source fetches for real-track rebuild tools
+
+# Not currently used (kept as a forward-looking note):
+# moderngl>=5.8       # a ModernGL 3D viewer was scoped but never built (--3d is a stub)
+
+# --- 3D melee duel (BLADE) ---
+mujoco>=3.9           # 3D humanoid sword/shield physics + rendering

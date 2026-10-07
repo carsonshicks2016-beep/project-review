@@ -1,0 +1,11 @@
+{
+  "name": "rally-evolution-lab",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 5173 --directory dist",
+    "train": "node train.mjs",
+    "test": "node tests/verify.mjs && node tests/pace-notes.mjs && node tests/long-courses.mjs"
+  }
+}

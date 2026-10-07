@@ -1,0 +1,9 @@
+// Headless training: node train.mjs --seed 2077 --elevation 18 --generations 100 --output driver.json
+import fs from 'node:fs';
+import {makeTrack,Trainer} from './dist/engine.mjs';
+const args=process.argv.slice(2),options={seed:2077,elevation:18,generations:100,length:3,algorithm:'genetic',surface:'dry',output:'driver.json'};
+for(let i=0;i<args.length;i+=2){const key=args[i].replace(/^--/,'');if(!(key in options)||args[i+1]===undefined)throw Error('Options: --seed N --elevation N --generations N --length KM --algorithm genetic|hill|random --surface dry|wet --output path.json');options[key]=(key==='output'||key==='algorithm'||key==='surface')?args[i+1]:Number(args[i+1]);}
+if(!Number.isInteger(options.seed)||options.seed<1||options.seed>999999||!Number.isFinite(options.elevation)||options.elevation<0||options.elevation>36||!Number.isInteger(options.generations)||options.generations<1||options.generations>100000)throw Error('Use seed 1–999999, elevation 0–36, and generations 1–100000.');
+const track=makeTrack(options.seed,options.elevation,options.length,options.surface),trainer=new Trainer(track,99,null,{algorithm:options.algorithm});let last=1;
+while(trainer.generation<=options.generations){trainer.step();if(trainer.generation!==last){const r=trainer.lastResult;console.log(`Generation ${r.generation}: ${r.finishers}/48 finishers; best lap ${trainer.bestLap?.toFixed(2)??'none'} s; completion ${r.completion.toFixed(1)}%`);last=trainer.generation;}}
+const result={format:'rally-neural-policy-v1',algorithm:options.algorithm,track:{seed:track.seed,elevation:track.elevation,lengthKm:track.lengthKm,surface:track.surface},weights:trainer.champion.weights,bestLapSeconds:trainer.bestLap,generation:trainer.champion.generation,history:trainer.history};fs.writeFileSync(options.output,JSON.stringify(result,null,2));console.log(`Saved to ${options.output}`);

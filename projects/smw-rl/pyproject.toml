@@ -1,0 +1,27 @@
+[project]
+name = "smwrl"
+version = "0.1.0"
+description = "PPO agents that learn to speedrun Super Mario World"
+requires-python = ">=3.10,<3.15"
+
+dependencies = [
+    # 1.0.1 is the floor: the 0.9.x arm64 macOS wheels contain x86_64 binaries
+    # and fail to import. Note that reinstalling this package restores the
+    # broken big-endian snes9x core -- re-run `python -m smwrl.setup_core`.
+    "stable-retro==1.0.1",
+    "stable-baselines3>=2.9.0",
+    "torch>=2.6",
+    "opencv-python-headless>=4.9",
+    "pygame>=2.6",
+    "tensorboard>=2.16",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9,<10",
+    "psutil>=7,<8",
+]
+
+[tool.setuptools.packages.find]
+include = ["smwrl*"]

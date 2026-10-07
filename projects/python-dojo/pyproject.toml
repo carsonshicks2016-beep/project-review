@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "python-dojo"
+version = "0.1.0"
+description = "A local autonomous Python learning platform with deterministic exercises and safe grading."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "Flask>=3.0",
+  "rich>=13.7",
+  "prompt_toolkit>=3.0",
+  "Pygments>=2.17",
+  "ollama>=0.6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.2"]
+
+[project.scripts]
+python-dojo = "python_dojo.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["python_dojo*"]
+
+[tool.setuptools.package-data]
+python_dojo = ["static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

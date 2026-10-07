@@ -1,0 +1,40 @@
+Traceback (most recent call last):
+  File "/Users/REVIEW_USER/Desktop/Python/Supra Ai 2/run.py", line 801, in <module>
+    main()
+    ~~~~^^
+  File "/Users/REVIEW_USER/Desktop/Python/Supra Ai 2/run.py", line 182, in main
+    _watch_ring_race(args)
+    ~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/REVIEW_USER/Desktop/Python/Supra Ai 2/run.py", line 457, in _watch_ring_race
+    watch_ring_race(checkpoint=ckpt, car=args.car, seed=args.seed,
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                    audio_on=not args.no_audio,
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                    max_frames=args.smoke_frames or None)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/REVIEW_USER/Desktop/Python/Supra Ai 2/supra/ring_race.py", line 762, in watch_ring_race
+    run_app(car=car or meta.get("car", RING_CAR), seed=seed, audio_on=audio_on,
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            controller=agent.act, track=trk,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            title=f"Ring Race Watch - {os.path.basename(checkpoint)}",
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            agent=agent, sensor_spec=sensor_spec,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            max_frames=max_frames)
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/REVIEW_USER/Desktop/Python/Supra Ai 2/supra/app.py", line 579, in run
+    obs = sensors.observe(veh, trk)
+  File "/Users/REVIEW_USER/Desktop/Python/Supra Ai 2/supra/sensors.py", line 128, in observe
+    look = trk.lookahead_curvature(fr["arc"], s.lookahead_distances)
+  File "/Users/REVIEW_USER/Desktop/Python/Supra Ai 2/supra/track.py", line 272, in lookahead_curvature
+    return self.curvature[self._lookahead_idx(arc, distances)]
+                          ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/Users/REVIEW_USER/Desktop/Python/Supra Ai 2/supra/track.py", line 268, in _lookahead_idx
+    return np.searchsorted(self.arc, targets) % len(self.arc)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages/numpy/_core/fromnumeric.py", line 1501, in searchsorted
+    return _wrapfunc(a, 'searchsorted', v, side=side, sorter=sorter)
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages/numpy/_core/fromnumeric.py", line 54, in _wrapfunc
+    return bound(*args, **kwds)
+KeyboardInterrupt

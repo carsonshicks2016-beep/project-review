@@ -1,0 +1,41 @@
+.venv/
+runs/
+checkpoints/
+__pycache__/
+*.pyc
+*.mp4
+
+# Never commit ROMs. Supply your own legally-obtained dump.
+integration/*/rom.sfc
+integration/*/rom.smc
+
+# vendor/snes9x_libretro.dylib is committed on purpose: it is the little-endian
+# rebuild that makes the emulator work at all on Apple Silicon. See
+# smwrl/setup_core.py. Regenerate with tools/build_snes9x.sh.
+
+# Private migration exclusions
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite*
+*.pt
+*.pth
+*.onnx
+*.npz
+*.pkl
+*.sfc
+*.smc
+*.iso
+*.ciso
+node_modules/
+.venv*/
+__pycache__/
+data/
+sessions/
+uploads/
+runs/
+checkpoints/
+Library/
+Builds/
+config.local.json

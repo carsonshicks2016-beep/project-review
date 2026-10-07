@@ -1,0 +1,21 @@
+# Faithful Porsche 919 Evo record-program dependencies.
+#
+# Development convenience requirements only. Certifying authority/oracle runs
+# must use the hash-locked requirements-faithful-lock.txt in the pinned Linux
+# container. Install this file only into a dedicated Python 3.11/3.12
+# environment. The simulator's
+# ordinary requirements remain in requirements.txt; this file adds the double-
+# precision authority, vectorised twin, whole-lap optimizer, asset validator,
+# and evidence tooling used by faithful-v2.
+-r requirements.txt
+
+jax[cpu]>=0.5
+casadi>=3.7
+cryptography>=42
+trimesh>=4.4
+
+# Optional licensed-model adapters.  Install only the package supplied under
+# the corresponding private research licence; no raw licensed data belongs in
+# this repository.
+# tame-tire / simix / mf6 adapter: vendor supplied
+# laser-survey decoder: survey vendor supplied

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smw-bowser-ai"
+version = "0.1.0"
+description = "Hybrid BizHawk/Python PPO and GA harness for a Super Mario World Bowser-clear agent."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+rl = [
+  "gymnasium>=0.29",
+  "numpy>=1.26",
+  "torch>=2.3",
+  "stable-baselines3>=2.3",
+]
+yaml = ["PyYAML>=6.0"]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[project.scripts]
+smw-ai = "smw_bowser_ai.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+

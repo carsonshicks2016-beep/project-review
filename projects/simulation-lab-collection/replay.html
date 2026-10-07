@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Best Run — Replay</title>
+  <link rel="stylesheet" href="./src/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body class="replay-body">
+  <div id="replay-app">
+    <div id="replay-viewport"></div>
+
+    <div id="replay-loading">
+      <div class="replay-loading-inner">
+        <div class="replay-loading-title">Loading environment</div>
+        <div class="replay-loading-bar"><div id="replay-loading-fill"></div></div>
+        <div id="replay-loading-pct">0%</div>
+        <button id="btn-skip-env" class="btn outline">Skip — gates only</button>
+      </div>
+    </div>
+
+    <div id="replay-empty" hidden>
+      <div class="replay-loading-inner">
+        <div class="replay-loading-title">No runs recorded yet</div>
+        <p style="color:#8a93a8;font-size:13px;">Leave the simulator training for a while, then reopen this window.</p>
+      </div>
+    </div>
+
+    <div id="replay-meta" class="replay-panel">
+      <select id="run-picker" class="replay-select"></select>
+      <div class="replay-stats">
+        <span><b id="meta-gates">–</b><i>gates</i></span>
+        <span><b id="meta-speed">–</b><i>km/h top</i></span>
+        <span><b id="meta-fitness">–</b><i>fitness</i></span>
+        <span><b id="meta-gen">–</b><i>generation</i></span>
+      </div>
+      <div id="meta-date" class="replay-date"></div>
+    </div>
+
+    <div id="replay-commentary" class="hud-commentary"></div>
+
+    <div id="replay-transport" class="replay-panel">
+      <button id="btn-play" class="btn">❚❚</button>
+      <input type="range" id="scrub" min="0" max="1000" value="0" step="1">
+      <span id="time-label" class="replay-time">0.0s / 0.0s</span>
+      <div class="replay-sep"></div>
+      <button id="btn-speed" class="btn outline">1×</button>
+      <button id="btn-rcam" class="btn outline">FPV</button>
+      <button id="btn-rstab" class="btn outline active">Stabilized</button>
+      <button id="btn-rcomment" class="btn outline active" title="Drone commentary from the run's telemetry">Talk</button>
+      <button id="btn-rspeak" class="btn outline" title="Read the commentary aloud">Voice: OFF</button>
+    </div>
+  </div>
+
+  <script type="module" src="./src/replay.js"></script>
+</body>
+</html>

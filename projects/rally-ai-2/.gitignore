@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+
+# Training artifacts — these are outputs, not source. Checkpoints and metrics
+# live under runs/ and are reproducible from a seed plus a config.
+runs/
+*.pt
+*.ckpt
+
+# Replays are generated. Demo replays that ship are committed explicitly with
+# `git add -f packages/shared/replays/<name>.json`.
+replays/
+
+# OS
+.DS_Store
+
+# Private migration exclusions
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite*
+*.pt
+*.pth
+*.onnx
+*.npz
+*.pkl
+*.sfc
+*.smc
+*.iso
+*.ciso
+node_modules/
+.venv*/
+__pycache__/
+data/
+sessions/
+uploads/
+runs/
+checkpoints/
+Library/
+Builds/
+config.local.json
