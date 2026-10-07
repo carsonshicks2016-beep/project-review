@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rallyai.local/schemas/replay.schema.json",
+  "title": "RallyAI Replay",
+  "description": "One run, start to termination. Self-contained by default: a saved replay embeds its stage so it is the only artifact needed to reproduce the run visually. A live stream is the same format with the stage sent once and frames appended — a replay that has not finished being written.",
+  "type": "object",
+  "required": ["schema_version", "dt", "source", "meta", "frames"],
+  "additionalProperties": false,
+
+  "oneOf": [
+    { "required": ["stage"], "title": "Self-contained: stage embedded" },
+    { "required": ["stage_ref"], "title": "Referenced: stage fetched by id, hash-verified" }
+  ],
+
+  "properties": {
+    "schema_version": { "const": 1 },
+
+    "content_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "SHA-256 over the canonical serialisation with this field removed. Stamped on write by contracts.write_json; lets a replay prove it has not been edited since it was recorded."
+    },
+
+    "stage": {
+      "$ref": "stage.schema.json",
+      "description": "The stage inline. Preferred for saved replays."
+    },
+    "stage_ref": {
+      "type": "object",
+      "description": "Pointer to a stage the reader already has. content_hash is mandatory: playing frames against a stage that has since changed is exactly the silent desync this field exists to prevent.",
+      "required": ["id", "content_hash"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "content_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    },
+
+    "dt": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Fixed timestep between frames, seconds. Physics is fixed-step; this is not a hint."
+    },
+
+    "source": {
+      "enum": ["agent", "human", "eval", "replay_test"],
+      "description": "Who was driving."
+    },
+
+    "meta": {
+      "type": "object",
+      "required": ["termination", "time_s", "car", "physics_version"],
+      "additionalProperties": true,
+      "properties": {
+        "termination": {
+          "enum": ["finish", "crash", "off_course", "stuck", "spun", "timeout", "aborted"],
+          "description": "Why the run ended. 'stuck' and 'spun' exist so a dead episode ends instead of burning the step budget."
+        },
+        "time_s": { "type": "number", "minimum": 0, "description": "Stage time at termination." },
+        "car": { "type": "string", "description": "CarSpec preset name, e.g. evo_rally." },
+        "physics_version": { "type": "string", "description": "Vendored dynamics revision, so a replay can be matched to the model that produced it." },
+        "seed": { "type": "integer" },
+        "checkpoint": { "type": "string", "description": "Policy checkpoint path, when source is agent or eval." },
+        "policy_hash": { "type": "string", "description": "Hash of the weights that drove this run." },
+        "clean": { "type": "boolean", "description": "Finished with no obstacle contact and no time off-course." },
+        "obstacle_contacts": { "type": "integer", "minimum": 0 },
+        "off_course_s": { "type": "number", "minimum": 0 }
+      }
+    },
+
+    "frames": {
+      "type": "array",
+      "description": "One entry per fixed step. Keys are short because they repeat thousands of times; every one is documented here.",
+      "items": {
+        "type": "object",
+        "required": ["t", "x", "y", "z", "yaw", "pitch", "roll", "v", "s"],
+        "additionalProperties": false,
+        "properties": {
+          "t":     { "type": "number", "description": "Stage time, seconds." },
+          "x":     { "type": "number" },
+          "y":     { "type": "number" },
+          "z":     { "type": "number", "description": "Height. Above the road surface when airborne." },
+          "yaw":   { "type": "number", "description": "Radians about +z." },
+          "pitch": { "type": "number" },
+          "roll":  { "type": "number" },
+
+          "v":     { "type": "number", "description": "Speed, m/s." },
+          "vx":    { "type": "number", "description": "Body-frame longitudinal velocity." },
+          "vy":    { "type": "number", "description": "Body-frame lateral velocity." },
+          "vz":    { "type": "number", "description": "Vertical velocity — drives the jump/landing read." },
+          "yr":    { "type": "number", "description": "Yaw rate, rad/s." },
+          "sa":    { "type": "number", "description": "Chassis slip angle, radians. The opposite-lock tell." },
+
+          "gear":  { "type": "integer" },
+          "rpm":   { "type": "number" },
+          "boost": { "type": "number", "description": "Normalised turbo boost 0..1." },
+
+          "in": {
+            "type": "object",
+            "description": "Commanded inputs, post rate-limit, as the physics saw them.",
+            "required": ["s", "t", "b", "h"],
+            "additionalProperties": false,
+            "properties": {
+              "s": { "type": "number", "minimum": -1, "maximum": 1, "description": "Steer." },
+              "t": { "type": "number", "minimum": 0, "maximum": 1, "description": "Throttle." },
+              "b": { "type": "number", "minimum": 0, "maximum": 1, "description": "Brake." },
+              "h": { "type": "number", "minimum": 0, "maximum": 1, "description": "Handbrake." }
+            }
+          },
+
+          "w": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "description": "Per-wheel state, order FL, FR, RL, RR.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sa":   { "type": "number", "description": "Slip angle, radians." },
+                "sr":   { "type": "number", "description": "Slip ratio." },
+                "fz":   { "type": "number", "description": "Vertical load, newtons." },
+                "grip": { "type": "number", "description": "Fraction of the combined-slip friction budget in use, 0..1+." },
+                "comp": { "type": "number", "description": "Suspension compression, metres." },
+                "om":   { "type": "number", "description": "Wheel angular velocity, rad/s." },
+                "con":  { "type": "boolean", "description": "In contact with the ground." }
+              }
+            }
+          },
+
+          "air":  { "type": "boolean", "description": "Airborne. Friction is gated off while true." },
+          "hgt":  { "type": "number", "description": "Height above the road surface, metres." },
+          "surf": { "enum": ["gravel", "tarmac", "snow", "mud"] },
+          "mu":   { "type": "number", "description": "Effective friction under the car this frame." },
+
+          "s":    { "type": "number", "description": "Arc length along the centerline, metres." },
+          "prog": { "type": "number", "minimum": 0, "maximum": 1, "description": "Fraction of the stage completed." },
+          "lat":  { "type": "number", "description": "Signed lateral offset from the centerline, positive right." },
+
+          "fx": {
+            "type": "object",
+            "description": "Continuous effect intensities, 0..1. Discrete one-shots live in the top-level events array instead.",
+            "additionalProperties": false,
+            "properties": {
+              "dust":  { "type": "number" },
+              "snow":  { "type": "number" },
+              "scrub": { "type": "number" },
+              "spray": { "type": "number" }
+            }
+          },
+
+          "note": { "type": "string", "description": "Pace call active this frame, if any." }
+        }
+      }
+    },
+
+    "events": {
+      "type": "array",
+      "description": "Sparse one-shots. Kept out of frames because they fire rarely and bloat every frame if inlined.",
+      "items": {
+        "type": "object",
+        "required": ["t", "kind"],
+        "additionalProperties": true,
+        "properties": {
+          "t": { "type": "number" },
+          "kind": { "enum": ["shift_up", "shift_down", "takeoff", "landing", "impact", "surface_change", "pace_call", "split"] },
+          "severity": { "type": "number", "description": "Impact speed, landing harshness, etc." }
+        }
+      }
+    }
+  }
+}

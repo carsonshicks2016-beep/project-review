@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rallyai.local/schemas/metrics.schema.json",
+  "title": "RallyAI Metrics Line",
+  "description": "ONE LINE of a metrics JSONL file. The file on disk is the truth; the WebSocket to the browser is a convenience that replays these same lines. Append-only — a training run must survive a browser refresh, a crashed tab, and a killed server, because none of them own the data.",
+  "type": "object",
+  "required": ["schema_version", "kind", "wall_t", "run_id"],
+  "additionalProperties": false,
+
+  "properties": {
+    "schema_version": { "const": 1 },
+
+    "kind": {
+      "enum": ["run_start", "update", "eval", "checkpoint", "curriculum", "worker", "run_end", "decision"],
+      "description": "Line type. Readers must ignore kinds they do not recognise rather than failing — that keeps an old viewer working against a newer trainer."
+    },
+
+    "run_id":  { "type": "string", "description": "Stable id for this training run; the JSONL filename should match." },
+    "wall_t":  { "type": "number", "description": "Unix timestamp, seconds." },
+    "timesteps": { "type": "integer", "minimum": 0, "description": "Total environment steps consumed so far." },
+
+    "reward": {
+      "type": "object",
+      "description": "Episode return statistics over the window since the last line.",
+      "additionalProperties": false,
+      "properties": {
+        "mean": { "type": "number" },
+        "std":  { "type": "number" },
+        "min":  { "type": "number" },
+        "max":  { "type": "number" },
+        "n":    { "type": "integer", "description": "Episodes in the window." }
+      }
+    },
+
+    "terms": {
+      "type": "object",
+      "description": "Mean per-episode contribution of each reward term. This is the instrument for the integrate-over-an-episode check: after any reward edit, these must be re-read to confirm the intended balance. Keys match the reward config field names.",
+      "additionalProperties": { "type": "number" }
+    },
+
+    "completion": {
+      "type": "object",
+      "description": "Outcome breakdown over the window. Counts, not rates, so windows can be re-aggregated later.",
+      "additionalProperties": false,
+      "properties": {
+        "rate":       { "type": "number", "minimum": 0, "maximum": 1, "description": "Finished clean / total episodes. The number the curriculum gates on." },
+        "finish":     { "type": "integer", "minimum": 0 },
+        "crash":      { "type": "integer", "minimum": 0 },
+        "off_course": { "type": "integer", "minimum": 0 },
+        "stuck":      { "type": "integer", "minimum": 0 },
+        "spun":       { "type": "integer", "minimum": 0 },
+        "timeout":    { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "tier": { "type": "integer", "minimum": 0, "description": "Curriculum tier currently being trained." },
+
+    "ppo": {
+      "type": "object",
+      "description": "Optimiser diagnostics. approx_kl is load-bearing: the trust-region guard reads it to refuse an update that would destroy a competent policy.",
+      "additionalProperties": false,
+      "properties": {
+        "policy_loss":  { "type": "number" },
+        "value_loss":   { "type": "number" },
+        "entropy":      { "type": "number" },
+        "approx_kl":    { "type": "number" },
+        "clip_frac":    { "type": "number" },
+        "explained_var":{ "type": "number" },
+        "lr":           { "type": "number" },
+        "grad_norm":    { "type": "number" },
+        "rejected":     { "type": "boolean", "description": "True when the KL guard rolled this update back." },
+        "early_stopped":{ "type": "boolean", "description": "True when kl_early_stop cut the epoch loop short rather than discarding the update." },
+        "n_minibatches":{ "type": "integer", "description": "Minibatch steps actually applied. Persistently short of epochs * ceil(n/minibatch) means the learning rate is too high for the batch." },
+        "log_std":      {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "Per-dim exploration scale, live after any rollback. A dim sitting on its cap is exploration that never converges — foundation_01 finished with throttle, brake and handbrake pinned there."
+        }
+      }
+    },
+
+    "throughput": {
+      "type": "object",
+      "description": "Tracked metric, not a nicety — a regression in steps/s is a regression.",
+      "additionalProperties": false,
+      "properties": {
+        "steps_per_s":   { "type": "number" },
+        "n_workers":     { "type": "integer" },
+        "rollout_s":     { "type": "number", "description": "Seconds spent collecting." },
+        "update_s":      { "type": "number", "description": "Seconds spent optimising." }
+      }
+    },
+
+    "eval": {
+      "type": "object",
+      "description": "Held-out evaluation. seeds must never overlap the training seed pool; this reports generalisation, not memorisation.",
+      "additionalProperties": false,
+      "properties": {
+        "seeds":            { "type": "array", "items": { "type": "integer" } },
+        "completion_rate":  { "type": "number", "minimum": 0, "maximum": 1 },
+        "mean_time_s":      { "type": "number" },
+        "time_vs_optimal":  { "type": "number", "description": "Mean stage time / generator's theoretical minimum for that seed." },
+        "clean_rate":       { "type": "number", "minimum": 0, "maximum": 1 },
+        "json_path":        { "type": "string", "description": "Full evaluation record stored beside the checkpoint, so any claim can be re-derived." }
+      }
+    },
+
+    "checkpoint": {
+      "type": "object",
+      "description": "Hall of fame, not a single file.",
+      "additionalProperties": false,
+      "properties": {
+        "path":        { "type": "string" },
+        "slot":        { "enum": ["latest", "best", "cleanest", "fastest", "furthest"] },
+        "policy_hash": { "type": "string" },
+        "has_normaliser": { "type": "boolean", "description": "A policy restored without its observation normaliser is a different policy. This must be true." }
+      }
+    },
+
+    "worker": {
+      "type": "object",
+      "description": "Worker lifecycle. A dead worker gets revived rather than taking the run down; that revival is recorded here.",
+      "additionalProperties": false,
+      "properties": {
+        "index":  { "type": "integer" },
+        "event":  { "enum": ["died", "revived", "stalled"] },
+        "detail": { "type": "string" }
+      }
+    },
+
+    "decision": {
+      "type": "object",
+      "description": "Supervisor intervention decisions.",
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "enum": ["rollback", "plateau_reseed", "probe_ok", "probe_warning"] },
+        "timesteps": { "type": "integer" },
+        "wall_t": { "type": "number" },
+        "detail": { "type": "string" },
+        "probe_completion": { "type": "number" },
+        "probe_best": { "type": "number" }
+      }
+    },
+
+    "msg": { "type": "string", "description": "Free-text note for run_start / run_end." }
+  }
+}

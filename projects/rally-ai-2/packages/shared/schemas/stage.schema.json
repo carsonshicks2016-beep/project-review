@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rallyai.local/schemas/stage.schema.json",
+  "title": "RallyAI Stage",
+  "description": "A rally stage: drivable corridor with elevation, camber, surfaces, pace notes and obstacles. Coordinates are right-handed z-up (x east, y north, z up); see schemas/README.md. Arc length s runs 0..length_m from start to finish and never wraps.",
+  "type": "object",
+  "required": ["schema_version", "id", "generator", "length_m", "centerline", "surfaces", "start", "finish"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+
+    "id": {
+      "type": "string",
+      "description": "Stable identifier. Generated stages use gen_<seed>_t<tier>.",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-facing stage name, shown in WATCH."
+    },
+
+    "generator": {
+      "type": "object",
+      "description": "Provenance. A stage is reproducible from these fields alone: same version + same seed + same tier must yield a byte-identical file on any machine.",
+      "required": ["version", "seed", "tier"],
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Generator algorithm version. Bump whenever output changes for a fixed seed."
+        },
+        "seed": { "type": "integer", "minimum": 0 },
+        "tier": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Curriculum difficulty tier. The single scalar that moves length, width, mu, corner severity, elevation aggression and obstacle proximity together."
+        },
+        "authored": {
+          "type": "boolean",
+          "default": false,
+          "description": "True for hand-authored fixtures and demos, which are exempt from seed reproducibility."
+        }
+      }
+    },
+
+    "content_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "SHA-256 over the canonical serialisation of this file with content_hash removed. Lets a replay prove which stage it was recorded against."
+    },
+
+    "length_m": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Total centerline arc length. Must equal the accumulated distance through centerline points."
+    },
+
+    "centerline": {
+      "type": "array",
+      "minItems": 2,
+      "description": "Ordered corridor samples from start to finish. One object per line so a moved point is a one-line diff.",
+      "items": {
+        "type": "object",
+        "required": ["s", "x", "y", "z", "width", "camber"],
+        "additionalProperties": false,
+        "properties": {
+          "s": { "type": "number", "minimum": 0, "description": "Arc length from the start line, metres." },
+          "x": { "type": "number" },
+          "y": { "type": "number" },
+          "z": { "type": "number", "description": "Road surface height at the centerline." },
+          "width": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "FULL drivable width in metres, centred on the centerline. Half-width is width/2 — v1 mixed the two conventions between files, so this one says which it is."
+          },
+          "camber": {
+            "type": "number",
+            "description": "Bank angle in radians. Positive banks INTO a left-hand turn (raises the right edge). Negative is off-camber."
+          }
+        }
+      }
+    },
+
+    "surfaces": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Contiguous surface segments covering 0..length_m with no gaps and no overlaps.",
+      "items": {
+        "type": "object",
+        "required": ["s_start", "s_end", "type", "mu"],
+        "additionalProperties": false,
+        "properties": {
+          "s_start": { "type": "number", "minimum": 0 },
+          "s_end": { "type": "number", "exclusiveMinimum": 0 },
+          "type": { "enum": ["gravel", "tarmac", "snow", "mud"] },
+          "mu": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 2.0,
+            "description": "Peak friction coefficient. Feel targets: gravel 0.65-0.78, tarmac 0.90-1.05, snow 0.28-0.45."
+          }
+        }
+      }
+    },
+
+    "pace_notes": {
+      "type": "array",
+      "description": "Co-driver calls derived from the geometry. The ONLY look-ahead the agent gets beyond its own senses.",
+      "items": {
+        "type": "object",
+        "required": ["s", "dir", "severity"],
+        "additionalProperties": false,
+        "properties": {
+          "s": { "type": "number", "minimum": 0, "description": "Arc length of the feature being called." },
+          "dir": { "enum": ["left", "right", "straight", "crest", "jump", "caution", "finish"] },
+          "severity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6,
+            "description": "Rally convention: 1 = hairpin (slowest), 6 = flat out."
+          },
+          "modifiers": {
+            "type": "array",
+            "items": { "enum": ["tightens", "opens", "long", "short", "over_crest", "into", "dont_cut", "narrows", "bumpy"] }
+          },
+          "text": { "type": "string", "description": "Rendered call, e.g. 'left 4 tightens into right 2'." }
+        }
+      }
+    },
+
+    "obstacles": {
+      "type": "array",
+      "description": "Anything solid. s and lateral are REDUNDANT with x/y and are stored anyway so the corridor-intrusion invariant is auditable by reading the file.",
+      "items": {
+        "type": "object",
+        "required": ["kind", "x", "y", "radius"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "enum": ["tree", "rock", "bank", "post", "hay_bale"] },
+          "x": { "type": "number" },
+          "y": { "type": "number" },
+          "z": { "type": "number", "description": "Base height. Defaults to the road surface beneath it." },
+          "radius": { "type": "number", "exclusiveMinimum": 0, "description": "Collision radius in metres." },
+          "height": { "type": "number", "exclusiveMinimum": 0, "description": "Visual height; also whether the car can land on it." },
+          "s": { "type": "number", "description": "Arc length of the nearest centerline point." },
+          "lateral": {
+            "type": "number",
+            "description": "Signed offset from the centerline at s, positive to the right of travel. |lateral| - radius > width/2 means the obstacle is clear of the drivable corridor."
+          }
+        }
+      }
+    },
+
+    "start": {
+      "type": "object",
+      "required": ["s", "heading"],
+      "additionalProperties": false,
+      "properties": {
+        "s": { "type": "number", "minimum": 0 },
+        "heading": { "type": "number", "description": "Radians about +z. Should match the centerline tangent at s." }
+      }
+    },
+
+    "finish": {
+      "type": "object",
+      "required": ["s"],
+      "additionalProperties": false,
+      "properties": {
+        "s": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+
+    "meta": {
+      "type": "object",
+      "description": "Non-load-bearing annotations. Nothing in sim/ may read this.",
+      "additionalProperties": true
+    }
+  }
+}

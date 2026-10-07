@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rallyai.local/schemas/human-baseline-times.schema.json",
+  "title": "RallyAI Human Baseline Times",
+  "description": "Best and median keyboard stage times on held-out seeds. Empty until real drives are recorded. Not a claim while seeds[] is empty.",
+  "type": "object",
+  "required": ["schema_version", "control_hz", "physics_version", "car", "held_out", "attempts_per_seed", "seeds"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "control_hz": {
+      "type": "number",
+      "const": 30,
+      "description": "Must match agent CONTROL_DT (1/30). A different rate invalidates the comparison."
+    },
+    "physics_version": {
+      "type": "string",
+      "description": "Vendored dynamics revision stamped on the human replays."
+    },
+    "car": {
+      "type": "string",
+      "description": "CarSpec preset name, e.g. evo_rally."
+    },
+    "held_out": {
+      "type": "object",
+      "required": ["modulus", "remainder"],
+      "additionalProperties": false,
+      "properties": {
+        "modulus": { "type": "integer", "minimum": 2 },
+        "remainder": { "type": "integer", "minimum": 0 },
+        "note": { "type": "string" }
+      }
+    },
+    "attempts_per_seed": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Target finished attempts before summarising best/median."
+    },
+    "notes": { "type": "string" },
+    "seeds": {
+      "type": "array",
+      "description": "One row per (seed, tier). Omit or leave empty until real drives exist.",
+      "items": {
+        "type": "object",
+        "required": ["seed", "tier", "best_time_s", "median_time_s", "attempts"],
+        "additionalProperties": false,
+        "properties": {
+          "seed": { "type": "integer" },
+          "tier": { "type": "integer", "minimum": 0, "maximum": 5 },
+          "best_time_s": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Minimum finished stage time among attempts."
+          },
+          "median_time_s": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Median finished stage time among attempts."
+          },
+          "attempts": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["attempt", "time_s", "replay", "clean"],
+              "additionalProperties": false,
+              "properties": {
+                "attempt": { "type": "integer", "minimum": 1 },
+                "time_s": { "type": "number", "exclusiveMinimum": 0 },
+                "replay": {
+                  "type": "string",
+                  "description": "Repo-relative path to the human replay JSON."
+                },
+                "clean": {
+                  "type": "boolean",
+                  "description": "Finished with no obstacle contact and no time off-course."
+                },
+                "termination": {
+                  "type": "string",
+                  "const": "finish",
+                  "description": "Only finished runs belong in the baseline table."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
