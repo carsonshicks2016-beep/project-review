@@ -1,0 +1,43 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+
+# Generated CFD data and restart files belong in a separate artifact store.
+research/**/output/
+research/**/restart/
+research/**/runs/
+research/**/build/
+
+# Local CFD evidence can contain gigabytes of solver fields and logs. Keep the
+# compact Stage A index available for cloud review, but retain run directories
+# and user-supplied binary reference data on the local machine.
+research/hawkmoth_hover/results/**
+!research/hawkmoth_hover/results/stage_a_summary.json
+research/hawkmoth_hover/reference_data/user_supplied_dpiv/*.mat
+
+# Private migration exclusions
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite*
+*.pt
+*.pth
+*.onnx
+*.npz
+*.pkl
+*.sfc
+*.smc
+*.iso
+*.ciso
+node_modules/
+.venv*/
+__pycache__/
+data/
+sessions/
+uploads/
+runs/
+checkpoints/
+Library/
+Builds/
+config.local.json

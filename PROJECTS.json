@@ -1,0 +1,482 @@
+[
+  {
+    "name": "FlyGarden",
+    "category": "Significant (publish)",
+    "path": "projects/FlyGarden-private",
+    "assessment": "Substantial connectome/body integration, persistent state, experiments, tests and explicit provenance. Publish as an engineered hybrid research workspace; useful full-brain choice and behavioral learning remain unresolved. GitHub remote configured; reproduction requires omitted upstream inputs.",
+    "public_source_files": 324,
+    "export_notes": "projects/FlyGarden-private/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "RallyAI3",
+    "category": "Significant (publish)",
+    "path": "projects/RallyAI3",
+    "assessment": "Unity vehicle simulation, PPO infrastructure, course generation, frozen checkpoints and evaluation dashboard. Publish the lab; do not imply a successful full-course driving policy. GitHub remote configured.",
+    "public_source_files": 158,
+    "export_notes": "projects/RallyAI3/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "PyDrive / Supra AI",
+    "category": "Significant (publish)",
+    "path": "projects/PyDrive",
+    "assessment": "Substantial custom driving dynamics, PPO, viewers, audio and tests. Select a canonical working tree before migrating: PyDrive v2, Supra Cambrian and Supra Evo share its GitHub remote and are competing descendants.",
+    "public_source_files": 365,
+    "export_notes": "projects/PyDrive/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Melee Lab (v1)",
+    "category": "Significant (publish)",
+    "path": "projects/melee-lab",
+    "assessment": "Real emulator integration, PPO infrastructure, evaluation tooling and native brain visualizer. Publish with independent setup instructions; exclude game images and machine-local settings. melee bot v1 appears to be a preserved copy, not a separate portfolio project.",
+    "public_source_files": 73,
+    "export_notes": "projects/melee-lab/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Puff Bot Lab (v2)",
+    "category": "Significant (publish)",
+    "path": "projects/puffbot-lab",
+    "assessment": "Distinct Jigglypuff successor with independent workers, training dashboard and evaluation tests. Publish with measured results and known evaluation limitations; exclude bundled game material and archives.",
+    "public_source_files": 38,
+    "export_notes": "projects/puffbot-lab/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Flapping Flight RL",
+    "category": "Significant (publish)",
+    "path": "projects/flapping-flight-rl",
+    "assessment": "Meaningful aerodynamic prototype and CFD verification investigation with retained failures and research provenance. Publish as work in progress. Stage A remains FAILED / UNVALIDATED; no validated hawkmoth hover or physically grounded PPO result. GitHub remote configured.",
+    "public_source_files": 74,
+    "export_notes": "projects/flapping-flight-rl/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Sonic Atlas",
+    "category": "Significant (publish)",
+    "path": "projects/sonic-atlas",
+    "assessment": "Coherent set of seven interactive acoustic experiments, physics modules, tests and clear model boundaries. Strong accessible demonstration.",
+    "public_source_files": 20,
+    "export_notes": "projects/sonic-atlas/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Organless",
+    "category": "Significant (publish)",
+    "path": "projects/organless",
+    "assessment": "Compact but substantive learned shared cell-allocation policy, deterministic training, injury comparisons and held-out evaluation. Publish as abstract artificial life, with injury benchmark limits.",
+    "public_source_files": 8,
+    "export_notes": "projects/organless/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Civilia",
+    "category": "Significant (publish)",
+    "path": "projects/civilia",
+    "assessment": "Deterministic social simulation with needs, memory, relationships, construction, decision traces and persistence. Current foundation is substantial despite the larger unfinished roadmap. Older New project 2 copy is a predecessor.",
+    "public_source_files": 96,
+    "export_notes": "projects/civilia/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Python Dojo",
+    "category": "Significant (publish)",
+    "path": "projects/python-dojo",
+    "assessment": "Packaged learning engine with exercises, grading, adaptive progress, browser/terminal interfaces and tests. Better standalone candidate than the earlier terminal-only tutor.",
+    "public_source_files": 27,
+    "export_notes": "projects/python-dojo/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Bellwether",
+    "category": "Significant (publish)",
+    "path": "projects/bellwether",
+    "assessment": "SEC ingestion, extraction, backtesting and alert infrastructure with tests. Publish as filing analysis tooling; tiny extraction evaluation does not establish trading advantage. Remove credentials, personal email configuration and local databases. GitHub remote configured.",
+    "public_source_files": 69,
+    "export_notes": "projects/bellwether/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "WHOOP Personal Recovery Lab",
+    "category": "Significant (publish)",
+    "path": "projects/whoop-recovery-lab",
+    "assessment": "Coherent local OAuth/SQLite dashboard, interpretive and raw-data views, tests and environment example. Publish code and synthetic examples; exclude personal records, tokens and .env.",
+    "public_source_files": 16,
+    "export_notes": "projects/whoop-recovery-lab/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Asclepius",
+    "category": "Significant (publish)",
+    "path": "projects/asclepius",
+    "assessment": "Packaged WHOOP MCP server and statistical analysis layer with setup and privacy documentation. Distinct enough from Recovery Lab to keep separately, or share common ingestion later. Exclude personal auth/data.",
+    "public_source_files": 23,
+    "export_notes": "projects/asclepius/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "BioFactory",
+    "category": "Significant (publish)",
+    "path": "projects/biofactory",
+    "assessment": "Substantial ant logistics implementation, pheromone fields, resource demands and tests. Publish as an exploratory simulator without implying validated collective intelligence.",
+    "public_source_files": 80,
+    "export_notes": "projects/biofactory/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "CRUMPLE",
+    "category": "Significant (publish)",
+    "path": "projects/crumple",
+    "assessment": "Distinct custom spring-beam vehicle deformation simulator with documented plasticity and driving controls. Strong small demonstration; add repeatable run and collision checks during preparation.",
+    "public_source_files": 9,
+    "export_notes": "projects/crumple/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Floating Sandbox",
+    "category": "Significant (publish)",
+    "path": "projects/floating-sandbox",
+    "assessment": "Particle water, breakable ship structures, flooding, blueprint import and CPU/WebGPU paths. Worth publishing as a physics toy; verify the documented scenarios first. Prefer this organized tree over the patch-heavy Water Sim predecessor.",
+    "public_source_files": 41,
+    "export_notes": "projects/floating-sandbox/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Rally Evolution Lab",
+    "category": "Significant (publish)",
+    "path": "projects/rally-evolution-lab",
+    "assessment": "Standalone browser neuroevolution racing experiment with multiple course lengths, comparison tooling and tests. Accessible demo distinct from the Unity lab.",
+    "public_source_files": 27,
+    "export_notes": "projects/rally-evolution-lab/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "PULSE-16",
+    "category": "Significant (publish)",
+    "path": "projects/pulse-16",
+    "assessment": "Procedural instruments, sequencer, piano/arpeggiator, DSP and exports in a coherent desktop music tool. Publish after a short audio/export smoke check.",
+    "public_source_files": 16,
+    "export_notes": "projects/pulse-16/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "SMW-RL",
+    "category": "Significant (publish)",
+    "path": "projects/smw-rl",
+    "assessment": "Substantial per-level PPO and emulator harness with documented partial success and curriculum limits. Publish as incomplete RL research, not a complete speedrunner. Exclude ROMs and review emulator redistribution.",
+    "public_source_files": 46,
+    "export_notes": "projects/smw-rl/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "RallyAI2",
+    "category": "On the right track",
+    "path": "projects/rally-ai-2",
+    "assessment": "Substantial Python simulation and replay/control-room architecture with tests. Establish whether this remains an independent project or historical predecessor to RallyAI3; reconcile roadmap and measured outcomes before presenting it.",
+    "public_source_files": 164,
+    "export_notes": "projects/rally-ai-2/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Personal Cambrian",
+    "category": "On the right track",
+    "path": "projects/personal-cambrian",
+    "assessment": "Real generative encoding, morphogenesis and MuJoCo compilation with extensive tests. Full co-evolution and open-ended novelty loop remain unfinished; reconcile the scaffold wording with later stage records.",
+    "public_source_files": 196,
+    "export_notes": "projects/personal-cambrian/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "SoonerGrid",
+    "category": "On the right track",
+    "path": "projects/soonergrid",
+    "assessment": "Traffic simulator, conservation checks and experiment provenance are substantial. Remains exploratory/uncalibrated; a fresh reproducible benchmark and dashboard evidence would strengthen publication.",
+    "public_source_files": 81,
+    "export_notes": "projects/soonergrid/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Parkour Lab",
+    "category": "On the right track",
+    "path": "projects/parkour-lab",
+    "assessment": "Useful staged MuJoCo learning pipeline and checkpoint/evaluation handling. README and later stage artifacts disagree; resolve current stage and demonstrate fixed-seed terrain performance.",
+    "public_source_files": 35,
+    "export_notes": "projects/parkour-lab/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Off-Road Rover RL",
+    "category": "On the right track",
+    "path": "projects/offroad-rover-rl",
+    "assessment": "Custom vehicle/terrain/LIDAR, evolution and dashboard exist. Portable dependencies and evaluation evidence need work; launcher currently borrows another project's Python environment and research-grade wording is too strong.",
+    "public_source_files": 18,
+    "export_notes": "projects/offroad-rover-rl/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Cat & Mouse / Cryptographic Heist",
+    "category": "On the right track",
+    "path": "projects/cryptographic-heist",
+    "assessment": "Strong pursuit, radio/spoofing, replay and multi-agent environment backbone. Scripted baselines are implemented; learned pursuit/deception and reliable reproduction need demonstration.",
+    "public_source_files": 124,
+    "export_notes": "projects/cryptographic-heist/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Hybrid Lab",
+    "category": "On the right track",
+    "path": "projects/hybrid-lab",
+    "assessment": "Separate viewer/training module and tests. Recheck lifecycle reliability and clarify relationship to the larger PyDrive family before giving it an independent repo.",
+    "public_source_files": 40,
+    "export_notes": "projects/hybrid-lab/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Sonic Scenery",
+    "category": "On the right track",
+    "path": "projects/sonic-scenery",
+    "assessment": "Audio helper, Spotify integration and procedural-world modules exist. README explicitly calls it a scaffold with unwired build; prove end-to-end live audio/world integration.",
+    "public_source_files": 54,
+    "export_notes": "projects/sonic-scenery/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Vault Scribe",
+    "category": "On the right track",
+    "path": "projects/vault-scribe",
+    "assessment": "Substantial note classification, linking and duplicate handling. Make paths configurable and prove behavior against a synthetic vault; exclude the real personal vault.",
+    "public_source_files": 21,
+    "export_notes": "projects/vault-scribe/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Stride Lab",
+    "category": "On the right track",
+    "path": "projects/stride-lab",
+    "assessment": "Runnable simplified athletic policy-search experiment with tests. Strengthen repeatability and describe the reduced mechanics accurately; not validated human biomechanics.",
+    "public_source_files": 23,
+    "export_notes": "projects/stride-lab/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "AegisMM",
+    "category": "On the right track",
+    "path": "projects/aegis-mm",
+    "assessment": "Order book, stochastic quoting, residual PPO, risk modules and tests. Reproducible cost-aware synthetic/paper benchmarks needed; institutional-grade/profitability language is unsupported by this review.",
+    "public_source_files": 32,
+    "export_notes": "projects/aegis-mm/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Trading AI HFT",
+    "category": "On the right track",
+    "path": "projects/trading-ai-hft",
+    "assessment": "Meaningful trading research modules and tests. Establish an offline default, remove secrets, and demonstrate held-out evaluation including costs before publication.",
+    "public_source_files": 36,
+    "export_notes": "projects/trading-ai-hft/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Tandem Drift RL",
+    "category": "On the right track",
+    "path": "projects/tandem-drift-rl",
+    "assessment": "Two-car environment, scoring, physics tests and training code. Needs dependency/setup documentation and measured learned-policy evaluation.",
+    "public_source_files": 13,
+    "export_notes": "projects/tandem-drift-rl/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Drone GA / ApexFlock / ML Drift Master",
+    "category": "On the right track",
+    "path": "projects/simulation-lab-collection",
+    "assessment": "Several substantial simulations mixed into one workspace: drone racing, flocking and drift. Split coherent projects and match each README to its actual implementation.",
+    "public_source_files": 111,
+    "export_notes": "projects/simulation-lab-collection/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Evolution Sandbox Collection",
+    "category": "On the right track",
+    "path": "projects/evolution-sandbox-collection",
+    "assessment": "Darwin's Doodles, Siege Mech Evolution and Biosphere Co-Evolution have implemented simulation/evolution code. Add reproducible checks and verify learning claims; likely publish as a collection.",
+    "public_source_files": 22,
+    "export_notes": "projects/evolution-sandbox-collection/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Physics Lab Studio",
+    "category": "On the right track",
+    "path": "projects/physics-lab-studio",
+    "assessment": "Large suite of standalone educational simulations. Audit equations, interactions and source attribution; organize common assets and replace the anonymous Downloads folder with a coherent package.",
+    "public_source_files": 56,
+    "export_notes": "projects/physics-lab-studio/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Ochem Class Companion",
+    "category": "On the right track",
+    "path": "projects/ochem-class-companion",
+    "assessment": "Recording/timeline/notes/export workflow exists with candid limits. Live AI output remains unvalidated; verify transcription/explanation and exclude lectures, images and sessions.",
+    "public_source_files": 7,
+    "export_notes": "projects/ochem-class-companion/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Ink Current Reactor",
+    "category": "On the right track",
+    "path": "projects/ink-current-reactor",
+    "assessment": "Coherent local audio-reactive aquarium application. Needs a repeatable build/playback demo and clearer provenance before publication.",
+    "public_source_files": 23,
+    "export_notes": "projects/ink-current-reactor/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Mission Control",
+    "category": "On the right track",
+    "path": "projects/mission-control",
+    "assessment": "Useful launcher/catalog tool with a coherent server and UI. Generalize machine-specific paths and ship a sample catalog so it is useful beyond this Mac.",
+    "public_source_files": 10,
+    "export_notes": "projects/mission-control/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "LectureCanvas",
+    "category": "On the right track",
+    "path": "projects/lecturecanvas",
+    "assessment": "Audio/transcription and word visualization code exists. Verify the real recording-to-transcript flow and use sample inputs with clear redistribution rights.",
+    "public_source_files": 40,
+    "export_notes": "projects/lecturecanvas/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Neural Racer Evolution",
+    "category": "On the right track",
+    "path": "projects/neural-racer-evolution",
+    "assessment": "Meaningful evolutionary racing and spectator implementation. Needs setup docs, deterministic benchmark and a representative recorded run.",
+    "public_source_files": 18,
+    "export_notes": "projects/neural-racer-evolution/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Braindance Dream Machine",
+    "category": "On the right track",
+    "path": "projects/braindance-dream-machine",
+    "assessment": "RAVE-based music tooling and studio UI exist. Verify model loading/training/generation, distinguish pretrained-model use from original learning, and exclude copyrighted training audio.",
+    "public_source_files": 13,
+    "export_notes": "projects/braindance-dream-machine/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Aegis sword-and-shield RL",
+    "category": "Needs development",
+    "path": "projects/aegis-dueling-rl",
+    "assessment": "Unity ragdoll/self-play foundation and plan exist, but much less implemented substance than the envisioned dueling system. Needs a working duel/control baseline and measured evaluation.",
+    "public_source_files": 41,
+    "export_notes": "projects/aegis-dueling-rl/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Orbital Docking RL",
+    "category": "Needs development",
+    "path": "projects/orbital-docking-rl",
+    "assessment": "Small environment/training prototype. Needs mechanics checks, an evaluation harness and evidence of rendezvous/docking behavior.",
+    "public_source_files": 9,
+    "export_notes": "projects/orbital-docking-rl/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "SMW Bowser hybrid harness",
+    "category": "Needs development",
+    "path": "projects/smw-bowser-ai",
+    "assessment": "DirectorFSM/Lua adapter/tests form a useful harness, but an end-to-end real-emulator Bowser result is not established in this review. Duplicate exists in New project 2.",
+    "public_source_files": 33,
+    "export_notes": "projects/smw-bowser-ai/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "HealthBridge",
+    "category": "Needs development",
+    "path": "projects/healthbridge",
+    "assessment": "Substantial parsers and health-report UI, but personal ancestry/wearable files are mixed with code and medical scoring requires validation. First sanitize, package and test with synthetic fixtures; do not publish the raw folder.",
+    "public_source_files": 28,
+    "export_notes": "projects/healthbridge/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Car AI Copilot",
+    "category": "Needs development",
+    "path": "projects/car-ai-copilot",
+    "assessment": "Demo-data vehicle-assistant interface. Needs real ingestion/retrieval or a clearly scoped standalone demonstration of one feature.",
+    "public_source_files": 5,
+    "export_notes": "projects/car-ai-copilot/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "LR4 Valet Copilot",
+    "category": "Needs development",
+    "path": "projects/lr4-valet-copilot",
+    "assessment": "Car-specific prototype interface using mock assumptions. Needs actual telemetry/hardware integration and verified behavior.",
+    "public_source_files": 6,
+    "export_notes": "projects/lr4-valet-copilot/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Mothership WHOOP",
+    "category": "Needs development",
+    "path": "projects/mothership-whoop",
+    "assessment": "Earlier dashboard implementation with template-level setup docs. Establish a distinct function beyond the stronger WHOOP tools or consolidate it.",
+    "public_source_files": 35,
+    "export_notes": "projects/mothership-whoop/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Alpaca 10-Agent Trader",
+    "category": "Needs development",
+    "path": "projects/alpaca-ensemble-trader",
+    "assessment": "Small ensemble/dashboard experiment with hard-coded credentials detected in source. Remove and rotate exposed credentials, then establish safe paper-mode reproduction and sound evaluation.",
+    "public_source_files": 5,
+    "export_notes": "projects/alpaca-ensemble-trader/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Room Planner",
+    "category": "Needs development",
+    "path": "projects/room-planner",
+    "assessment": "Folder name hides a room-planner package. Clarify product scope, document controls and verify geometry/save behavior before considering it a significant standalone repo.",
+    "public_source_files": 19,
+    "export_notes": "projects/room-planner/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Synapse",
+    "category": "Needs development",
+    "path": "projects/synapse",
+    "assessment": "Single-file personal vault ingestion tool. Extract reusable configuration and isolate private notes/API access; Vault Scribe is currently the stronger publication candidate.",
+    "public_source_files": 4,
+    "export_notes": "projects/synapse/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Synthwave Demolition 3D",
+    "category": "Needs development",
+    "path": "projects/synthwave-demolition",
+    "assessment": "Small Panda3D/Bullet sandbox. Needs a coherent run guide, asset attribution and a demonstrated complete gameplay loop.",
+    "public_source_files": 3,
+    "export_notes": "projects/synthwave-demolition/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Early driving/visualizer prototypes",
+    "category": "Needs development",
+    "path": "projects/driving-prototypes",
+    "assessment": "Spotify Car/Night Cruise, drift-rl, evolving-cars, early Supra forks and terminal Python Dojo are smaller predecessors. Keep as examples or archive unless they offer a distinct capability.",
+    "public_source_files": 72,
+    "export_notes": "projects/driving-prototypes/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Reaction Room",
+    "category": "Supplemental substantial project",
+    "path": "projects/reaction-room",
+    "assessment": "Course-aligned chemistry study tool. Private source snapshot; course-specific content is not cleared for public distribution.",
+    "public_source_files": 10,
+    "export_notes": "projects/reaction-room/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "PyDrive variant: pydrive-v2",
+    "category": "Preserved variant",
+    "path": "projects/pydrive-pydrive-v2",
+    "assessment": "Separate source snapshot preserving this local variant. No canonical or superior performance claim.",
+    "public_source_files": 178,
+    "export_notes": "projects/pydrive-pydrive-v2/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "PyDrive variant: supra-cambrian",
+    "category": "Preserved variant",
+    "path": "projects/pydrive-supra-cambrian",
+    "assessment": "Separate source snapshot preserving this local variant. No canonical or superior performance claim.",
+    "public_source_files": 272,
+    "export_notes": "projects/pydrive-supra-cambrian/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "PyDrive variant: supra-evo",
+    "category": "Preserved variant",
+    "path": "projects/pydrive-supra-evo",
+    "assessment": "Separate source snapshot preserving this local variant. No canonical or superior performance claim.",
+    "public_source_files": 268,
+    "export_notes": "projects/pydrive-supra-evo/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "PyDrive variant: supra-five-speed",
+    "category": "Preserved variant",
+    "path": "projects/pydrive-supra-five-speed",
+    "assessment": "Separate source snapshot preserving this local variant. No canonical or superior performance claim.",
+    "public_source_files": 157,
+    "export_notes": "projects/pydrive-supra-five-speed/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "PyDrive variant: supra-audio-v4",
+    "category": "Preserved variant",
+    "path": "projects/pydrive-supra-audio-v4",
+    "assessment": "Separate source snapshot preserving this local variant. No canonical or superior performance claim.",
+    "public_source_files": 156,
+    "export_notes": "projects/pydrive-supra-audio-v4/PUBLIC_EXPORT.md"
+  },
+  {
+    "name": "Melee Next experimental successor",
+    "category": "Preserved experimental implementation",
+    "path": "projects/melee-next-experimental",
+    "assessment": "Unfinished independent successor pipeline, preserved without claims of training or dashboard readiness.",
+    "public_source_files": 24,
+    "export_notes": "projects/melee-next-experimental/PUBLIC_EXPORT.md"
+  }
+]

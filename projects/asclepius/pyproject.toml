@@ -1,0 +1,28 @@
+[project]
+name = "asclepius"
+version = "0.1.0"
+description = "MCP server and correlation engine for personal WHOOP data"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "mcp>=1.2.0",
+    "httpx>=0.27",
+    "pandas>=2.2",
+    "numpy>=1.26",
+    "scipy>=1.13",
+    "statsmodels>=0.14",
+]
+
+[project.scripts]
+asclepius = "asclepius.server:main"
+asclepius-auth = "asclepius.auth:main"
+
+[build-system]
+requires = ["uv_build>=0.11.21,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "anyio>=4.14.2",
+    "pytest>=9.1.1",
+]

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Flapping Flight RL - 3D Insect Telemetry Viewer</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #0b0f19; font-family: monospace; color: #eee; }
+    #canvas-container { width: 100vw; height: 100vh; display: block; }
+    #hud {
+      position: absolute; top: 16px; left: 16px;
+      background: rgba(11, 15, 25, 0.85); border: 1px solid #1f293d;
+      padding: 14px 18px; border-radius: 8px; font-size: 13px; line-height: 1.6;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5); pointer-events: none;
+    }
+    #hud h1 { margin: 0 0 8px 0; font-size: 15px; color: #4ade80; text-transform: uppercase; letter-spacing: 1px; }
+    .stat-row { display: flex; justify-content: space-between; gap: 20px; }
+    .stat-val { font-weight: bold; color: #38bdf8; }
+    .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-top: 4px; }
+    .badge-lev { background: #3b82f6; color: white; }
+    .badge-clap { background: #f59e0b; color: black; font-weight: bold; }
+    #controls {
+      position: absolute; bottom: 16px; left: 16px;
+      background: rgba(11, 15, 25, 0.85); border: 1px solid #1f293d;
+      padding: 10px 14px; border-radius: 6px; font-size: 12px; color: #94a3b8;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+  <div id="hud">
+    <h1>Flapping Flight RL 🪲</h1>
+    <div class="stat-row"><span>Specimen:</span> <span class="stat-val">Manduca sexta (Hawkmoth)</span></div>
+    <div class="stat-row"><span>Control Loop:</span> <span class="stat-val">250 Hz (10 sub-steps/action)</span></div>
+    <div class="stat-row"><span>Altitude:</span> <span id="val-alt" class="stat-val">0.500 m</span></div>
+    <div class="stat-row"><span>Vertical Velocity:</span> <span id="val-vz" class="stat-val">0.00 m/s</span></div>
+    <div class="stat-row"><span>Flapping Frequency:</span> <span id="val-freq" class="stat-val">27.0 Hz</span></div>
+    <div class="stat-row"><span>Lift / Weight:</span> <span id="val-lift" class="stat-val">1.15x</span></div>
+    <div style="margin-top: 8px;">
+      <span class="badge badge-lev">LEV Attached</span>
+      <span id="badge-clap" class="badge badge-clap" style="display: none;">CLAP & FLING BOOST</span>
+    </div>
+  </div>
+
+  <div id="controls">
+    Drag to rotate camera | Scroll to zoom | Right-click to pan
+  </div>
+
+  <div id="canvas-container"></div>
+
+  <script>
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0b0f19);
+    scene.fog = new THREE.FogExp2(0x0b0f19, 0.15);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 50);
+    camera.position.set(0.2, -0.35, 0.65);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0, 0, 0.5);
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(2, -2, 4);
+    scene.add(dirLight);
+
+    // Ground Grid
+    const grid = new THREE.GridHelper(4, 40, 0x1e293b, 0x0f172a);
+    grid.rotation.x = Math.PI / 2;
+    scene.add(grid);
+
+    // Target hover marker
+    const targetGeom = new THREE.RingGeometry(0.04, 0.045, 32);
+    const targetMat = new THREE.MeshBasicMaterial({ color: 0x4ade80, side: THREE.DoubleSide });
+    const targetRing = new THREE.Mesh(targetGeom, targetMat);
+    targetRing.position.set(0, 0, 0.5);
+    scene.add(targetRing);
+
+    // --- Insect Model Construction ---
+    const insectGroup = new THREE.Group();
+    scene.add(insectGroup);
+
+    // Thorax (central body)
+    const thoraxGeom = new THREE.SphereGeometry(0.012, 16, 16);
+    thoraxGeom.scale(1.2, 0.8, 0.8);
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4 });
+    const thorax = new THREE.Mesh(thoraxGeom, bodyMat);
+    insectGroup.add(thorax);
+
+    // Abdomen
+    const abdomenGeom = new THREE.ConeGeometry(0.009, 0.035, 16);
+    abdomenGeom.rotateX(Math.PI / 2);
+    abdomenGeom.translate(0, -0.025, -0.003);
+    const abdomenMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.6 });
+    const abdomen = new THREE.Mesh(abdomenGeom, abdomenMat);
+    insectGroup.add(abdomen);
+
+    // Head
+    const headGeom = new THREE.SphereGeometry(0.007, 12, 12);
+    headGeom.translate(0, 0.016, 0.002);
+    const headMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
+    const head = new THREE.Mesh(headGeom, headMat);
+    insectGroup.add(head);
+
+    // --- Wings (Articulated at Hinges) ---
+    function createWingMesh(isLeft) {
+      const wingGroup = new THREE.Group();
+      
+      // Wing Blade Shape (translucent chitin membrane with LEV edge)
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 0);
+      shape.bezierCurveTo(0.01, 0.015, 0.04, 0.02, 0.05, 0.005);
+      shape.bezierCurveTo(0.045, -0.01, 0.02, -0.015, 0, 0);
+
+      const wingGeom = new THREE.ShapeGeometry(shape);
+      const wingMat = new THREE.MeshPhysicalMaterial({
+        color: 0x93c5fd,
+        transparent: true,
+        opacity: 0.65,
+        roughness: 0.1,
+        transmission: 0.7,
+        side: THREE.DoubleSide
+      });
+      const wingMesh = new THREE.Mesh(wingGeom, wingMat);
+      
+      // Leading-Edge Vortex (LEV) glow line
+      const levGeom = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, 0.001),
+        new THREE.Vector3(0.02, 0.017, 0.001),
+        new THREE.Vector3(0.05, 0.005, 0.001)
+      ]);
+      const levMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 });
+      const levLine = new THREE.Line(levGeom, levMat);
+
+      wingGroup.add(wingMesh);
+      wingGroup.add(levLine);
+      return wingGroup;
+    }
+
+    const wingHingeL = new THREE.Group();
+    wingHingeL.position.set(-0.008, 0.005, 0.004);
+    const wingL = createWingMesh(true);
+    wingHingeL.add(wingL);
+    insectGroup.add(wingHingeL);
+
+    const wingHingeR = new THREE.Group();
+    wingHingeR.position.set(0.008, 0.005, 0.004);
+    const wingR = createWingMesh(false);
+    wingR.scale.set(-1, 1, 1);
+    wingHingeR.add(wingR);
+    insectGroup.add(wingHingeR);
+
+    // Live Telemetry Elements
+    const elAlt = document.getElementById('val-alt');
+    const elVz = document.getElementById('val-vz');
+    const elLift = document.getElementById('val-lift');
+    const elClap = document.getElementById('badge-clap');
+
+    let simTime = 0;
+    const f = 27.0; // 27 Hz flapping
+    const omega = 2 * Math.PI * f;
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      simTime += 0.004; // 250 Hz step time
+      const phase = omega * simTime;
+
+      // Kinematic flapping stroke
+      const phi = THREE.MathUtils.degToRad(62.5) * Math.cos(phase);
+      const theta = THREE.MathUtils.degToRad(8.0) * Math.sin(2 * phase);
+      const psi = THREE.MathUtils.degToRad(45.0) * Math.tanh(3.0 * Math.sin(phase));
+
+      // Left wing rotation
+      wingHingeL.rotation.y = phi;
+      wingHingeL.rotation.x = theta;
+      wingL.rotation.z = psi;
+
+      // Right wing rotation
+      wingHingeR.rotation.y = -phi;
+      wingHingeR.rotation.x = theta;
+      wingR.rotation.z = -psi;
+
+      // Clap-and-fling indicator
+      const atDorsal = Math.cos(phase) > 0.85;
+      elClap.style.display = atDorsal ? 'inline-block' : 'none';
+
+      // Subtle body hover motion
+      const hoverZ = 0.50 + 0.012 * Math.sin(simTime * 4.0) + 0.003 * Math.sin(2 * phase);
+      insectGroup.position.set(0, 0, hoverZ);
+      insectGroup.rotation.x = THREE.MathUtils.degToRad(20.0) + 0.03 * Math.sin(phase);
+
+      elAlt.innerText = hoverZ.toFixed(3) + ' m';
+      elVz.innerText = (0.048 * Math.cos(simTime * 4.0)).toFixed(2) + ' m/s';
+      elLift.innerText = (atDorsal ? 1.45 : 1.15).toFixed(2) + 'x';
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    animate();
+  </script>
+</body>
+</html>

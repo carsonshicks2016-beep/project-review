@@ -1,0 +1,54 @@
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+*.csproj
+*.sln
+*.user
+*.unityproj
+
+# ML-Agents training output
+results/
+*.onnx.meta.tmp
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+
+# Private migration exclusions
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite*
+*.pt
+*.pth
+*.onnx
+*.npz
+*.pkl
+*.sfc
+*.smc
+*.iso
+*.ciso
+node_modules/
+.venv*/
+__pycache__/
+data/
+sessions/
+uploads/
+runs/
+checkpoints/
+Library/
+Builds/
+config.local.json

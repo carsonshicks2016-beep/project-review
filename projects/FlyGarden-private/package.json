@@ -1,0 +1,12 @@
+{
+  "name": "fly-garden-viewer",
+  "private": true,
+  "version": "0.1.0",
+  "dependencies": {
+    "three": "0.180.0"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/browser/*.test.mjs"
+  }
+}

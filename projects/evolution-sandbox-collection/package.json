@@ -1,0 +1,12 @@
+{
+  "name": "ga-ppo-learning-minigames",
+  "version": "1.0.0",
+  "description": "Educational suite of interactive minigames for Genetic Algorithms and PPO Reinforcement Learning",
+  "scripts": {
+    "dev:1": "npx serve 1-darwins-doodles -p 3000",
+    "dev:2": "npx serve 2-siege-mech-evolution -p 3001",
+    "dev:3": "npx serve 3-gridlock-ai -p 3002",
+    "dev:4": "npx serve 4-biosphere-co-evolution -p 3003",
+    "dev:5": "npx serve 5-neon-acrobat -p 3004"
+  }
+}

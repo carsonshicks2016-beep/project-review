@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cryptographic-heist-engine"
+version = "0.1.0"
+description = "Cinematic multi-agent vehicle pursuit and adversarial radio simulation."
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=1.24",
+  "pygame>=2.5",
+  "torch>=2.0",
+  "gymnasium>=0.29",
+  "pettingzoo>=1.24",
+  "flask>=3.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+crypt-heist-viewer = "scripts.run_viewer:main"
+crypt-heist-record = "scripts.record_replay:main"
+crypt-heist-render-replay = "scripts.render_replay:main"
+crypt-heist-play-replay = "scripts.play_replay:main"
+crypt-heist-verify-env = "scripts.verify_env:main"
+crypt-heist-verify-operational-readiness = "scripts.verify_operational_readiness:main"
+crypt-heist-eval = "scripts.eval:main"
+crypt-heist-eval-acceptance-scenarios = "scripts.eval_acceptance_scenarios:main"
+crypt-heist-train = "scripts.train:main"
+crypt-heist-train-imitation = "scripts.train_imitation:main"
+crypt-heist-train-evader-ppo = "scripts.train_evader_ppo:main"
+crypt-heist-train-pursuer-ppo = "scripts.train_pursuer_ppo:main"
+crypt-heist-train-pursuer-team-ppo = "scripts.train_pursuer_team_ppo:main"
+crypt-heist-train-scanner-decoder = "scripts.train_scanner_decoder:main"
+crypt-heist-train-radio-policy = "scripts.train_radio_policy:main"
+crypt-heist-train-jammer-policy = "scripts.train_jammer_policy:main"
+crypt-heist-run-information-cycle = "scripts.run_information_cycle:main"
+crypt-heist-watch-policy = "scripts.watch_policy:main"
+crypt-heist-watch-policy-viewer = "scripts.watch_policy_viewer:main"
+crypt-heist-watch-pursuer-policy = "scripts.watch_pursuer_policy:main"
+crypt-heist-watch-pursuer-policy-viewer = "scripts.watch_pursuer_policy_viewer:main"
+crypt-heist-watch-pursuer-team-policy = "scripts.watch_pursuer_team_policy:main"
+crypt-heist-watch-pursuer-team-policy-viewer = "scripts.watch_pursuer_team_policy_viewer:main"
+crypt-heist-watch-scanner-decoder = "scripts.watch_scanner_decoder:main"
+crypt-heist-watch-scanner-decoder-viewer = "scripts.watch_scanner_decoder_viewer:main"
+crypt-heist-watch-radio-policy = "scripts.watch_radio_policy:main"
+crypt-heist-watch-radio-policy-viewer = "scripts.watch_radio_policy_viewer:main"
+crypt-heist-watch-jammer-policy = "scripts.watch_jammer_policy:main"
+crypt-heist-watch-jammer-policy-viewer = "scripts.watch_jammer_policy_viewer:main"
+crypt-heist-watch-adversarial-stack = "scripts.watch_adversarial_stack:main"
+crypt-heist-watch-adversarial-stack-viewer = "scripts.watch_adversarial_stack_viewer:main"
+crypt-heist-eval-authentication-curriculum = "scripts.eval_authentication_curriculum:main"
+crypt-heist-eval-checkpoint-league = "scripts.eval_checkpoint_league:main"
+crypt-heist-build-v2-report = "scripts.build_v2_report:main"
+crypt-heist-dashboard = "scripts.dashboard:main"
+python-gym = "scripts.python_tutor:main"
+
+[tool.setuptools.packages.find]
+include = ["crypt_heist*", "scripts*", "command_center*", "python_tutor*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

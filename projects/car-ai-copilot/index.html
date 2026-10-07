@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Car AI Copilot</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <p class="eyebrow">Local Vehicle Intelligence</p>
+          <h1>Car AI Copilot</h1>
+        </div>
+        <nav class="mode-tabs" aria-label="Copilot modes">
+          <button class="mode-tab active" data-mode="copilot" title="Ask manuals, notes, logs, and sensors">Copilot</button>
+          <button class="mode-tab" data-mode="health" title="Inspect the glowing 3D vehicle risk map">Health Map</button>
+          <button class="mode-tab" data-mode="coach" title="Review driving patterns and coaching feedback">Driving Coach</button>
+          <button class="mode-tab" data-mode="sound" title="Analyze engine, brake, and road sounds">Sound Diagnosis</button>
+          <button class="mode-tab" data-mode="simulator" title="Train the mini self-driving simulator">Self-Driving Lab</button>
+        </nav>
+      </header>
+
+      <section class="system-strip" aria-label="Vehicle status summary">
+        <div>
+          <span class="strip-label">Vehicle</span>
+          <strong>2016 Subaru Outback 2.5i</strong>
+        </div>
+        <div>
+          <span class="strip-label">Mileage</span>
+          <strong>118,432 mi</strong>
+        </div>
+        <div>
+          <span class="strip-label">Overall Risk</span>
+          <strong class="risk-text warning">64 / 100</strong>
+        </div>
+        <div>
+          <span class="strip-label">Last Sync</span>
+          <strong>Today 8:42 AM</strong>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <aside class="side-rail left-rail">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Sources</p>
+                <h2>Local Memory</h2>
+              </div>
+              <span class="status-dot live" title="Demo stream active"></span>
+            </div>
+            <div id="sourceList" class="source-list"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Highest Risk</p>
+                <h2>Watchlist</h2>
+              </div>
+            </div>
+            <div id="riskStack" class="risk-stack"></div>
+          </section>
+        </aside>
+
+        <section id="modeRoot" class="mode-root" aria-live="polite"></section>
+
+        <aside class="side-rail right-rail">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Priority</p>
+                <h2>Warnings</h2>
+              </div>
+            </div>
+            <div id="warningList" class="warning-list"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Recent</p>
+                <h2>Timeline</h2>
+              </div>
+            </div>
+            <div id="timelineList" class="timeline-list"></div>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>
