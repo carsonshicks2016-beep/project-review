@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* ---- Vitrine ----
+     Bone is structure. Colour is only ever data: cyan is parasympathetic,
+     magenta is sympathetic, violet is sleep. Nothing decorative uses them. */
+  --color-vit-bg: #060609;
+  --color-vit-bone: #e9e4d8;
+  --color-vit-rule: #2e2d33;
+  --color-vit-dim: #7c7a85;
+  --color-vit-cy: #8fffe0;
+  --color-vit-mg: #ff4fd8;
+  --color-vit-vi: #5b3fff;
+
+  --font-vit-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-vit-serif: var(--font-instrument-serif), Georgia, serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ---------------------------------------------------------------------------
+   Vitrine motion.
+
+   One rule: a physiological value has to drive it. Breath comes from the
+   night's respiratory rate, pulse from resting heart rate, drift is the only
+   ambient motion and runs slowly enough that you never catch it moving. The
+   periods are mutually incommensurable, so the composite never visibly loops.
+   --------------------------------------------------------------------------- */
+
+@keyframes vit-breathe {
+  0%, 100% { transform: scale(1); }
+  45%      { transform: scale(1.035); }
+}
+
+@keyframes vit-drift {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes vit-pulse {
+  0%   { opacity: 1;    transform: scale(1); }
+  16%  { opacity: 0.42; transform: scale(0.88); }
+  100% { opacity: 1;    transform: scale(1); }
+}
+
+@layer utilities {
+  .vit-breathe {
+    animation: vit-breathe var(--vit-breath, 4s) ease-in-out infinite;
+    will-change: transform;
+  }
+  .vit-drift {
+    animation: vit-drift 240s linear infinite;
+    will-change: transform;
+  }
+  .vit-pulse {
+    animation: vit-pulse var(--vit-pulse, 1.25s) ease-out infinite;
+    will-change: opacity, transform;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vit-breathe,
+  .vit-drift,
+  .vit-pulse {
+    animation: none;
+  }
+}

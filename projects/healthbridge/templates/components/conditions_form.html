@@ -1,0 +1,64 @@
+<!-- Pre-Test Conditions Form Component -->
+<div class="conditions-form">
+    <h4 style="margin-bottom: 16px; color: #374151;">Pre-Test Conditions</h4>
+    <p class="form-intro">Help us interpret your results accurately by providing context about your blood draw.</p>
+
+    <div class="form-grid">
+        <div class="form-group">
+            <label for="fasting_hours">Fasting Duration (hours)</label>
+            <input type="number" id="fasting_hours" name="fasting_hours" min="0" max="24" step="0.5" value="12" required>
+            <span class="hint">Standard is 8-12 hours</span>
+        </div>
+
+        <div class="form-group">
+            <label for="sleep_hours">Sleep Prior Night (hours)</label>
+            <input type="number" id="sleep_hours" name="sleep_hours" min="0" max="24" step="0.5" value="7" required>
+        </div>
+
+        <div class="form-group">
+            <label for="exercise_timing">Exercise Before Draw</label>
+            <select id="exercise_timing" name="exercise_timing">
+                <option value="none">No recent exercise</option>
+                <option value="24h">Within last 24 hours</option>
+                <option value="same_day">Same day (2-8 hours prior)</option>
+                <option value="recent">Within 2 hours</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="health_status">Current Health Status</label>
+            <select id="health_status" name="health_status">
+                <option value="healthy">Healthy - no illness</option>
+                <option value="mild">Mild cold/illness</option>
+                <option value="acute">Acute illness</option>
+                <option value="recovering">Recovering from illness</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="checkbox-group">
+        <label class="checkbox-label">
+            <input type="checkbox" name="caffeine"> Consumed caffeine within 8 hours
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox" name="alcohol"> Consumed alcohol within 24 hours
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox" name="injury"> Recent injury or inflammation
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox" name="travel"> Recent travel/jet lag
+        </label>
+    </div>
+
+    <div class="form-group" style="margin-top: 20px;">
+        <label for="medications">Medications Taken (one per line)</label>
+        <textarea id="medications" name="medications" rows="3" placeholder="e.g., Metformin 500mg - taken this morning
+Fish oil supplement - taken yesterday"></textarea>
+    </div>
+
+    <div class="form-alert">
+        <strong>⚠️ Important:</strong> Certain conditions can significantly affect biomarker results.
+        Be as accurate as possible for the most reliable interpretation.
+    </div>
+</div>

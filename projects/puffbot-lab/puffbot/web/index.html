@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Puff Bot Lab</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <div class="brand"><span class="puff"></span><div><h1>Puff Bot Lab</h1><small>Melee Bot v2 &middot; Jigglypuff specialist</small></div></div>
+  <nav class="tabs" id="tabs">
+    <a href="#live" data-tab="live">Live</a>
+    <a href="#showcase" data-tab="showcase">Showcase</a>
+    <a href="#play" data-tab="play">Play</a>
+    <a href="#report" data-tab="report">Report</a>
+    <a href="#phillip" data-tab="phillip">Phillip</a>
+    <a href="#progress" data-tab="progress">Progress</a>
+  </nav>
+  <div class="controls">
+    <select id="run-select" aria-label="Run"></select>
+    <span id="state" class="badge">&ndash;</span>
+    <button id="stop-btn" class="danger" hidden>Stop</button>
+    <button id="resume-btn" hidden>Resume</button>
+    <button id="new-btn" class="primary">New run</button>
+  </div>
+</header>
+
+<main>
+  <section id="alert" class="alert" hidden></section>
+  <section id="viewer-bar" class="alert lvl-viewer" hidden></section>
+
+<div class="tab" id="tab-live">
+  <section class="kpis" id="kpis"></section>
+
+  <section class="grid two">
+    <div class="card">
+      <div class="card-head"><h2>Emulators</h2><span id="fleet-note" class="muted"></span></div>
+      <div id="workers" class="workers"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>CPU ladder</h2><span id="ladder-note" class="muted"></span></div>
+      <div id="ladder" class="ladder"></div>
+      <div id="by-opponent" class="chips"></div>
+    </div>
+  </section>
+
+  <section class="grid two">
+    <div class="card"><div class="card-head"><h2>Win rate vs CPU</h2><span class="muted">rolling 60 games &middot; level played</span></div><div id="chart-win" class="chart"></div></div>
+    <div class="card"><div class="card-head"><h2>How games are won and lost</h2><span class="muted">rolling 60 games</span></div><div id="chart-play" class="chart"></div></div>
+  </section>
+
+  <section class="grid two">
+    <div class="card"><div class="card-head"><h2>Stalling watch</h2><span class="muted" title="A policy that learns to hide offstage to put off losing stocks spends more of each game offstage, and games get longer">time offstage &amp; game length &middot; rolling 100 games</span></div><div id="chart-stall" class="chart"></div></div>
+    <div class="card"><div class="card-head"><h2>Learner</h2><span id="learner-note" class="muted"></span></div><div id="chart-learn" class="chart"></div></div>
+  </section>
+
+  <section class="grid two">
+    <div class="card">
+      <div class="card-head"><h2>What Puff chooses</h2><span class="muted">share of decisions, last 200 games</span></div>
+      <div id="brain" class="brain"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Recent games</h2></div>
+      <div class="table-wrap"><table id="games"><thead><tr><th>Opponent</th><th>Level</th><th>Result</th><th title="Stocks remaining at the end: Puff – opponent">Stocks left</th><th title="Percent dealt / percent taken">Damage dealt/taken</th><th title="Stocks lost without being hit">Self-destructs</th><th title="Rests that connected / Rests used">Rest landed</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <section class="grid two">
+    <div class="card">
+      <div class="card-head"><h2>Checkpoints</h2><span class="muted">evaluate, watch, or crown a champion</span></div>
+      <div class="table-wrap"><table id="checkpoints"><thead><tr><th>Checkpoint</th><th>Frames</th><th></th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Evaluations</h2><span class="muted">fixed opponents, 95% intervals</span></div>
+      <div id="evals"></div>
+      <h3>Champions</h3>
+      <div id="champions" class="muted">None yet.</div>
+    </div>
+  </section>
+
+  <section class="grid two">
+    <div class="card"><div class="card-head"><h2>Training speed</h2><span class="muted">game frames trained per second</span></div><div id="chart-speed" class="chart"></div></div>
+    <div class="card">
+      <div class="card-head"><h2>Events</h2></div>
+      <ul id="events" class="events"></ul>
+    </div>
+  </section>
+</div>
+
+<div class="tab" id="tab-showcase" hidden>
+  <section class="card">
+    <div class="card-head"><h2>Hall of fame</h2><span class="muted">every tested checkpoint, most impressive first</span></div>
+    <div id="showcase-list" class="showcase"></div>
+  </section>
+  <p class="muted footnote"><b>How the score works (0–100):</b> up to 60 points from the 60-game scorecard against level-9 CPUs
+    (50 for the win rate, 10 for winning by a lot of stocks) and up to 40 from Phillip (25 for stocks taken per game, 15 for wins),
+    because a stock taken off a learned opponent means far more than a CPU win. A checkpoint appears here once it has a scorecard or a
+    Phillip test: the automatic scorecard runs every 3 hours of training, and <i>Evaluate</i> on the Live tab tests any checkpoint.</p>
+</div>
+
+<div class="tab" id="tab-play" hidden>
+  <section class="grid two">
+    <div class="card">
+      <div class="card-head"><h2>Me vs AI</h2><span class="muted">you on port 1, the bot as Puff on Final Destination</span></div>
+      <div id="pad-status" class="pad-status"></div>
+      <form id="play-form" class="play-form">
+        <label>Opponent model <select name="checkpoint"></select><small>Ranked by Showcase score; “untested” ones have no scorecard yet.</small></label>
+        <label>Your character <select name="character"></select><small>The bot is always Puff: it was only ever trained as Puff.</small></label>
+        <label>Button layout <select name="layout">
+          <option value="switch">Switch Pro positions: A right · B bottom · X top · Y left</option>
+          <option value="xbox">Xbox letters: A bottom · B right · X left · Y top</option></select></label>
+        <label>Bot reaction time <select name="delay">
+          <option value="0">Instant (how it trained; superhuman)</option>
+          <option value="10">Fast human: 10 frames (0.17 s)</option>
+          <option value="15" selected>Human: 15 frames (0.25 s)</option>
+          <option value="21">Phillip's: 21 frames (0.35 s)</option></select>
+          <small>The bot sees the game this many frames late. It never trained with a delay, so it plays a bit worse with one.</small></label>
+        <button type="submit" class="primary big">🎮 Start match</button>
+      </form>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Controls</h2><span class="muted" id="controls-note"></span></div>
+      <table id="controls-map"><thead><tr><th>GameCube</th><th>Your controller</th></tr></thead><tbody></tbody></table>
+      <ul class="tips">
+        <li>Keep your hands off the controller for the few seconds while the harness picks characters.</li>
+        <li>Rematches start by themselves. Press <b>Start</b> to pause; press <b>■ End match</b> (top of this page) to close the game.</li>
+        <li>Triggers are analog, like a GameCube's: a light press is light shield, a full press clicks.</li>
+        <li>Your controller works even while this page has focus.</li>
+      </ul>
+    </div>
+  </section>
+  <section class="card"><div class="card-head"><h2>This session</h2><span class="muted" id="session-note"></span></div><div id="session" class="chips"></div></section>
+</div>
+
+<div class="tab" id="tab-report" hidden>
+  <section class="card">
+    <div class="card-head"><h2>While you were away</h2>
+      <div class="seg" id="report-window"><button data-hours="8">8 h</button><button data-hours="12" class="on">12 h</button><button data-hours="24">24 h</button><button data-hours="0">Whole run</button></div>
+    </div>
+    <ul id="report-headline" class="headline"></ul>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Hour by hour</h2><span class="muted" id="report-note"></span></div>
+    <div class="table-wrap tall"><table id="report-hours"><thead><tr>
+      <th>Hour</th><th title="finished games">Games</th><th title="win rate vs level-9 CPUs">vs CPU 9</th><th title="win rate vs every CPU played, with the average level">All CPUs</th>
+      <th title="wins / games vs Phillip">vs Phillip</th><th title="Phillip's stocks Puff took per game (4 = a win)">Stocks off Phillip</th>
+      <th title="knockdowns teched">Tech</th><th title="share of game time offstage; the stalling watch warns at 50%">Offstage</th>
+      <th title="average game length">Game min</th><th title="damage dealt / taken vs CPUs">Damage ratio</th><th title="self-destructs per game">SDs</th><th title="policy versions playing">Versions</th>
+    </tr></thead><tbody></tbody></table></div>
+  </section>
+  <section class="grid two">
+    <div class="card"><div class="card-head"><h2>Highlights</h2><span class="muted">ladder, scorecards, alarms</span></div><ul id="report-events" class="events"></ul></div>
+    <div class="card"><div class="card-head"><h2>Phillip wins</h2><span class="muted" id="report-wins-note"></span></div><div id="report-wins" class="chips"></div></div>
+  </section>
+</div>
+
+<div class="tab" id="tab-phillip" hidden>
+  <section class="kpis" id="ph-kpis"></section>
+  <section class="grid two">
+    <div class="card"><div class="card-head"><h2>Progress against Phillip</h2><span class="muted">rolling 50 Phillip games</span></div><div id="chart-phillip" class="chart"></div></div>
+    <div class="card"><div class="card-head"><h2>By character</h2><span class="muted">this run</span></div>
+      <div class="table-wrap"><table id="ph-chars"><thead><tr><th>Phillip as</th><th>Games</th><th>Wins</th><th title="Phillip's stocks Puff took per game">Stocks taken</th><th title="Puff's stocks lost per game">Stocks lost</th><th title="damage dealt / taken">Damage ratio</th><th>Last win</th></tr></thead><tbody></tbody></table></div></div>
+  </section>
+  <section class="card"><div class="card-head"><h2>Every win</h2><span class="muted">newest first</span></div><div id="ph-wins" class="chips"></div></section>
+  <p class="muted footnote">Phillip is Slippi-AI's <i>medium-v2</i>: learned from human replays, then tuned by self-play, with a 21-frame reaction delay. A win here means far more than a win against the game's CPUs.</p>
+</div>
+
+<div class="tab" id="tab-progress" hidden>
+  <section class="card">
+    <div class="card-head"><h2>Scorecards</h2><span class="muted" id="sc-note"></span></div>
+    <div id="chart-scorecards" class="chart"></div>
+    <div class="table-wrap"><table id="sc-table"><thead><tr><th>When</th><th>Run</th><th>Checkpoint</th><th>Record</th><th title="95% interval">Likely range</th><th title="stocks taken / lost per game">Stocks</th><th>By character</th></tr></thead><tbody></tbody></table></div>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Move mix over time</h2><span class="muted" id="moves-note"></span></div>
+    <div id="chart-moves" class="chart tall"></div>
+    <h3>Biggest changes, first block &rarr; latest block</h3>
+    <div id="moves-movers" class="chips"></div>
+  </section>
+</div>
+</main>
+
+<dialog id="new-dialog">
+  <form method="dialog" id="new-form">
+    <h2>New training run</h2>
+    <label>Name <input name="name" value="puff" maxlength="40"></label>
+    <label>Emulators <input name="workers" type="number" min="1" max="16" value="6"><small>6-8 is this Mac's sweet spot (~1,100-1,200 fps).</small></label>
+    <label>Visible emulators <input name="visible" type="number" min="0" max="16" value="0"><small>Rendered in a window you can watch. The rest run without video.</small></label>
+    <label>Visible emulator speed <select name="visible_speed"><option value="0">Unlimited (fast-forward)</option><option value="1">Real time</option></select><small>Only visible emulators are affected; the rest always run flat out.</small></label>
+    <label>Phillip opponents <input name="phillip_workers" type="number" min="0" max="16" value="0"><small>Emulators that always play Slippi-AI's Phillip (learned from human replays, 10 characters). About one CPU core each; those emulators run near half speed.</small></label>
+    <label>Self-play share <input name="selfplay" type="number" min="0" max="1" step="0.05" value="0.2"></label>
+    <label>Starting CPU level <input name="level" type="number" min="1" max="9" value="3"></label>
+    <label>Start from weights <select name="init"><option value="">Fresh network</option></select></label>
+    <menu><button value="cancel">Cancel</button><button value="ok" class="primary">Start training</button></menu>
+  </form>
+</dialog>
+
+<dialog id="eval-dialog">
+  <form method="dialog" id="eval-form">
+    <h2>Evaluate <span id="eval-name"></span></h2>
+    <label>Opponent <select name="kind"><option value="cpu">Game CPU</option><option value="phillip">Phillip (Slippi-AI)</option></select><small>Phillip plays FOX, FALCO, MARTH, CPTFALCON, PEACH, JIGGLYPUFF, SAMUS, PIKACHU, YOSHI, LUIGI.</small></label>
+    <label>CPU level <input name="level" type="number" min="1" max="9" value="9"></label>
+    <label>Games per opponent <input name="games" type="number" min="1" max="100" value="10"></label>
+    <label>Opponents <input name="opponents" value="FOX,FALCO,MARTH,CPTFALCON,PEACH,JIGGLYPUFF"></label>
+    <label>Emulators <input name="workers" type="number" min="1" max="16" value="4"><small>Runs beside training on separate ports; fewer emulators if training is using the machine.</small></label>
+    <menu><button value="cancel">Cancel</button><button value="ok" class="primary">Run evaluation</button></menu>
+  </form>
+</dialog>
+
+<dialog id="watch-dialog">
+  <form method="dialog" id="watch-form">
+    <h2>Watch <span id="watch-name"></span></h2>
+    <label>Opponent <select name="kind"><option value="cpu">Game CPU</option><option value="phillip">🤖 Phillip (Slippi-AI)</option></select></label>
+    <label>Character <select name="opponent"></select></label>
+    <label id="watch-level">CPU level <input name="level" type="number" min="1" max="9" value="9"></label>
+    <label>Games <select name="games"><option value="1">1</option><option value="3" selected>3</option><option value="5">5</option><option value="0">Until I press Stop viewer</option></select></label>
+    <label>Speed <select name="speed"><option value="1">Real time</option><option value="0.5">Slow motion (half speed)</option><option value="2">Double speed</option></select><small>Opens a Dolphin window. Only one viewer at a time: starting another closes this one.</small></label>
+    <menu><button value="cancel">Cancel</button><button value="ok" class="primary">▶ Watch</button></menu>
+  </form>
+</dialog>
+
+<div id="toast" role="status"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flapping Flight Ops — Insect Unsteady Aerodynamics Command Center</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">🪲</div>
+      <div>
+        <div class="eyebrow">Bio-Aeronautic RL Lab</div>
+        <h1>Insect Flight <b>Command Center</b></h1>
+      </div>
+    </div>
+    <div class="sysmeta">
+      <span id="chip-hz" class="chip active">250 Hz Loop</span>
+      <span id="chip-lev" class="chip active">LEV Attached</span>
+      <span id="chip-clap" class="chip alert" style="display:none;">Clap & Fling Boost</span>
+      <span id="chip-sim" class="chip">2500 Hz Substep</span>
+      <span class="chip">Port 8775</span>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <nav class="nav-rail">
+    <button class="tab-btn active" data-tab="telemetry">Flight Telemetry & 3D</button>
+    <button class="tab-btn" data-tab="aero">Aerodynamics Lab</button>
+    <button class="tab-btn" data-tab="kinematics">Kinematics & Stroke</button>
+    <button class="tab-btn" data-tab="training">PPO Policy Deck</button>
+    <button class="tab-btn" data-tab="invariants">Physics Invariants</button>
+  </nav>
+
+  <!-- MAIN VIEWPORT CONTENT -->
+  <main class="content-area">
+    
+    <!-- TAB 1: FLIGHT TELEMETRY & 3D VIEW -->
+    <section class="tab-panel active" id="panel-telemetry">
+      <div class="hero-banner">
+        <div class="hero-titles">
+          <div class="eyebrow">Specimen: Manduca sexta (Hawkmoth)</div>
+          <h2>Autonomous 6-DOF Hover Telemetry</h2>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat-block">
+            <span>Altitude</span>
+            <b id="hero-alt">0.500 m</b>
+          </div>
+          <div class="hero-stat-block">
+            <span>Lift-to-Weight</span>
+            <b id="hero-lift">1.16x</b>
+          </div>
+          <div class="hero-stat-block">
+            <span>Stroke Frequency</span>
+            <b id="hero-freq">27.0 Hz</b>
+          </div>
+          <div class="hero-stat-block">
+            <span>Net Vertical Lift</span>
+            <b id="hero-net-lift">18.2 mN</b>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-cols-3">
+        <!-- 3D Viewport -->
+        <div class="card" style="padding: 10px;">
+          <div class="card-head">
+            <span class="card-title">Live 3D Articulated Kinematics & Vortex Suction</span>
+            <span class="chip">Three.js WebGL</span>
+          </div>
+          <div id="three-viewport"></div>
+          <div style="font-size:11px; color:#64748b; margin-top:4px;">
+            Left-click: Orbit | Right-click: Pan | Scroll: Zoom | Green Ring: Hover Target (0.50m)
+          </div>
+        </div>
+
+        <!-- Right Side: Flight Dynamics & Quick Controls -->
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">Force Equilibrium Monitor</span>
+              <span id="badge-weight-balance" class="chip active">Equilibrium Maintained</span>
+            </div>
+            <div class="stat-row">
+              <span>Required Weight Support</span>
+              <span class="val">15.69 mN</span>
+            </div>
+            <div class="stat-row">
+              <span>Current Cycle Lift</span>
+              <span class="val" id="val-cur-lift">18.20 mN</span>
+            </div>
+            <div class="progress-container" style="margin: 6px 0;">
+              <div id="bar-lift" class="progress-fill" style="width: 75%;"></div>
+            </div>
+            <div class="stat-row">
+              <span>Body Frontal Velocity</span>
+              <span class="val" id="val-vx">0.00 m/s</span>
+            </div>
+            <div class="stat-row">
+              <span>Vertical Climb Rate (Vz)</span>
+              <span class="val" id="val-vz">0.00 m/s</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">Manual Kinematics Override (250 Hz)</span>
+              <button id="btn-toggle-manual" class="btn-action" style="padding:2px 8px; font-size:11px;">Enable Manual</button>
+            </div>
+            <div class="slider-group">
+              <div class="slider-header"><span>Left Wing Pitch Offset (&plusmn;25&deg;)</span><b id="lbl-pitch-l">0.0&deg;</b></div>
+              <input type="range" id="rng-pitch-l" min="-1" max="1" step="0.05" value="0">
+            </div>
+            <div class="slider-group">
+              <div class="slider-header"><span>Right Wing Pitch Offset (&plusmn;25&deg;)</span><b id="lbl-pitch-r">0.0&deg;</b></div>
+              <input type="range" id="rng-pitch-r" min="-1" max="1" step="0.05" value="0">
+            </div>
+            <div class="slider-group">
+              <div class="slider-header"><span>Differential Sweep Bias (&plusmn;15&deg;)</span><b id="lbl-stroke-bias">0.0&deg;</b></div>
+              <input type="range" id="rng-stroke-bias" min="-1" max="1" step="0.05" value="0">
+            </div>
+            <button id="btn-reset-flight" class="btn-action" style="margin-top:4px;">🔄 Reset Pose to Hover Baseline</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-time Oscilloscope Graphs -->
+      <div class="grid-cols-2">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Real-Time Aerodynamic Lift vs Weight Threshold</span>
+            <span class="chip">Oscilloscope (10s window)</span>
+          </div>
+          <canvas id="chart-lift" class="telemetry-chart"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">6-DOF Attitude (Pitch / Roll / Yaw Angle)</span>
+            <span class="chip">Quaternion Kinematics</span>
+          </div>
+          <canvas id="chart-attitude" class="telemetry-chart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: AERODYNAMICS LAB -->
+    <section class="tab-panel" id="panel-aero">
+      <div class="grid-cols-4">
+        <div class="card stat-box">
+          <span class="stat-label">Translational Lift (LEV)</span>
+          <span class="stat-val-large cyan" id="stat-trans-lift">15.4 mN</span>
+          <span style="font-size:11px;color:#64748b;">Suction vortex circulation</span>
+        </div>
+        <div class="card stat-box">
+          <span class="stat-label">Rotational Force (Kramer)</span>
+          <span class="stat-val-large purple" id="stat-rot-force">2.8 mN</span>
+          <span style="font-size:11px;color:#64748b;">Chord pitch rate &alpha;&bull;</span>
+        </div>
+        <div class="card stat-box">
+          <span class="stat-label">Added-Mass Fluid Inertia</span>
+          <span class="stat-val-large" id="stat-added-mass">1.2 mN</span>
+          <span style="font-size:11px;color:#64748b;">Virtual fluid cylinder mass</span>
+        </div>
+        <div class="card stat-box">
+          <span class="stat-label">Clap-and-Fling Bonus</span>
+          <span class="stat-val-large amber" id="stat-clap-bonus">+35%</span>
+          <span style="font-size:11px;color:#64748b;">Weis-Fogh bound vortex</span>
+        </div>
+      </div>
+
+      <div class="grid-cols-2">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Blade-Element Force Decomposition Across Stroke</span>
+            <span class="chip">Dickinson-Sane Breakdown</span>
+          </div>
+          <canvas id="chart-breakdown" class="telemetry-chart" style="height:240px;"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Empirical Polar Curves: C_L(&alpha;) and C_D(&alpha;)</span>
+            <span class="chip">Dynamic Stall Regimes</span>
+          </div>
+          <canvas id="chart-polars" class="telemetry-chart" style="height:240px;"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: KINEMATICS & STROKE -->
+    <section class="tab-panel" id="panel-kinematics">
+      <div class="grid-cols-2">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Wing Phase Space: Sweep &phi; vs Dynamic Pitch &psi;</span>
+            <span class="chip">Limit Cycle</span>
+          </div>
+          <canvas id="chart-phase" class="telemetry-chart" style="height:260px;"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Wingtip Separation & Clap-and-Fling Proximity</span>
+            <span class="chip">Inter-Wing Metric</span>
+          </div>
+          <div class="stat-row">
+            <span>Dorsal Clearance Threshold:</span>
+            <span class="val">35.0 mm</span>
+          </div>
+          <div class="stat-row">
+            <span>Wing Span (per wing):</span>
+            <span class="val">50.0 mm</span>
+          </div>
+          <div class="stat-row">
+            <span>Stroke Amplitude (&Phi;):</span>
+            <span class="val">125.0&deg;</span>
+          </div>
+          <div class="stat-row">
+            <span>Stroke Mean Dorsal Bias:</span>
+            <span class="val">+20.0&deg;</span>
+          </div>
+          <canvas id="chart-separation" class="telemetry-chart" style="height:120px; margin-top:8px;"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: TRAINING DECK -->
+    <section class="tab-panel" id="panel-training">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">PPO Reinforcement Learning Training Deck</span>
+          <span id="train-status-chip" class="chip">Idle</span>
+        </div>
+        <div class="grid-cols-4" style="margin-top:8px;">
+          <div><span>Target Altitude</span><b>0.500 m</b></div>
+          <div><span>Policy Type</span><b>Actor-Critic (128x128 Tanh)</b></div>
+          <div><span>Control Frequency</span><b>250 Hz Continuous</b></div>
+          <div><span>Loss Formulation</span><b>Clipped Surrogate (PPO-Clip)</b></div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:14px;">
+          <button id="btn-start-train" class="btn-action primary">▶️ Launch PPO Hover Training (25 Iterations)</button>
+          <button id="btn-stop-train" class="btn-action danger">⏹ Stop Training</button>
+          <button id="btn-eval-run" class="btn-action">📊 Run 500-Step Deterministic Evaluation</button>
+        </div>
+      </div>
+
+      <div class="grid-cols-2">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Hover Policy Loss & Entropy</span>
+          </div>
+          <canvas id="chart-train-loss" class="telemetry-chart" style="height:200px;"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Cumulative Episode Reward Progression</span>
+          </div>
+          <canvas id="chart-train-reward" class="telemetry-chart" style="height:200px;"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: PHYSICS INVARIANTS -->
+    <section class="tab-panel" id="panel-invariants">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Hawkmoth (Manduca sexta) Biological & Aerodynamic Constants</span>
+          <span class="chip">SI System Units</span>
+        </div>
+        <div class="stat-row"><span>Specimen Biological Mass (m)</span><span class="val">1.60 &times; 10&minus;3 kg (1.60 grams)</span></div>
+        <div class="stat-row"><span>Required Gravitational Weight (m &bull; g)</span><span class="val">15.69 mN</span></div>
+        <div class="stat-row"><span>Wing Span Length (R)</span><span class="val">0.050 m (50 mm per wing)</span></div>
+        <div class="stat-row"><span>Mean Wing Chord (c_bar)</span><span class="val">0.018 m (18 mm)</span></div>
+        <div class="stat-row"><span>Flapping Frequency (f)</span><span class="val">27.0 Hz</span></div>
+        <div class="stat-row"><span>Peak LEV Lift Coefficient (C_L,max)</span><span class="val">1.95</span></div>
+        <div class="stat-row"><span>Profile Zero-Lift Drag (C_D,0)</span><span class="val">0.15</span></div>
+        <div class="stat-row"><span>Rotational Lift Coefficient (C_rot)</span><span class="val">1.65 (Kramer circulation)</span></div>
+        <div class="stat-row"><span>Air Density (&rho;)</span><span class="val">1.205 kg/m&sup3; (Sea Level, 20&deg;C)</span></div>
+        <div class="stat-row"><span>Control Policy Frequency</span><span class="val">250.0 Hz (4.0 ms interval)</span></div>
+        <div class="stat-row"><span>Internal Integrator Rate</span><span class="val">2500.0 Hz (0.4 ms sub-steps)</span></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Melee Lab · Training</title><link rel="stylesheet" href="/assets/panel.css?v=6">
+</head>
+<body>
+<div id="panel">
+  <!-- Pane 1: Lineage -->
+  <section class="pane lineage">
+    <h2>Lineage <span id="lineage-count"></span></h2>
+    <ol id="chain"></ol>
+  </section>
+
+  <!-- Pane 2: Trend Chart & Live Stage Radar -->
+  <section class="pane trend">
+    <div class="trend-top-row">
+      <h2>Stock trend <small>per match</small> <span id="trend-note"></span></h2>
+      <!-- Live Combat Ticker -->
+      <div id="combat-ticker" class="combat-ticker">
+        <span id="tick-win" class="ticker-pill win-pill">🏆 3 Wins vs Marth!</span>
+        <span id="tick-stocks" class="ticker-pill">💥 155+ Stocks Taken</span>
+        <span id="tick-return" class="ticker-pill">⚡ Peak +27.2</span>
+      </div>
+    </div>
+
+    <div class="trend-body">
+      <!-- Left: Stock Differential Historical Chart -->
+      <div class="trend-chart-box">
+        <svg id="chart" preserveAspectRatio="none"></svg>
+        <div class="legend">
+          <span><i class="k-diff"></i>diff</span>
+          <span><i class="k-rate"></i>win rate</span>
+          <span><i class="k-zero"></i>even</span>
+        </div>
+      </div>
+
+      <!-- Right: Live 2D Stage Radar & Momentum Gauge -->
+      <div class="stage-radar-box">
+        <div class="radar-header">
+          <span class="radar-title"><i class="radar-dot"></i>Stage Radar <small>FD</small></span>
+          <span id="radar-advantage" class="adv-badge">EVEN</span>
+        </div>
+
+        <!-- 2D Final Destination Mini-Map SVG -->
+        <div class="radar-svg-wrap">
+          <svg id="stage-radar" viewBox="0 0 210 92" preserveAspectRatio="xMidYMid meet">
+            <!-- Blastzone Boundary Box -->
+            <rect x="8" y="6" width="194" height="80" rx="3" fill="#060910" stroke="#162034" stroke-width="0.8" stroke-dasharray="2 2"/>
+
+            <!-- Stage Platform Floor (Final Destination: X=-85.56 to +85.56) -->
+            <line x1="62" y1="56" x2="148" y2="56" stroke="#485c7d" stroke-width="2.2" stroke-linecap="round"/>
+            <!-- Stage Underbelly Wedge -->
+            <polygon points="62,56 148,56 136,75 74,75" fill="#0f1625" stroke="#1a253b" stroke-width="0.8"/>
+            <!-- Ledge Markers -->
+            <circle cx="62" cy="56" r="1.8" fill="#4fc3f7"/>
+            <circle cx="148" cy="56" r="1.8" fill="#4fc3f7"/>
+
+            <!-- Offstage Recovery Guide Lines -->
+            <line id="radar-guide-p1" x1="0" y1="0" x2="0" y2="0" stroke="#4fc3f7" stroke-width="0.8" stroke-dasharray="1.5 1.5" opacity="0"/>
+            <line id="radar-guide-p2" x1="0" y1="0" x2="0" y2="0" stroke="#ff8585" stroke-width="0.8" stroke-dasharray="1.5 1.5" opacity="0"/>
+
+            <!-- Player 1: Fox (Cyan Blip) -->
+            <g id="radar-p1" transform="translate(105, 56)">
+              <circle r="6" fill="rgba(79, 195, 247, 0.22)" class="blip-halo"/>
+              <circle r="3.2" fill="#4fc3f7" stroke="#ffffff" stroke-width="0.8"/>
+              <text id="radar-p1-txt" y="-5" font-size="6" font-weight="bold" fill="#7ee2ff" text-anchor="middle">FOX 0%</text>
+            </g>
+
+            <!-- Player 2: CPU (Orange/Red Blip) -->
+            <g id="radar-p2" transform="translate(105, 56)">
+              <circle r="6" fill="rgba(255, 107, 107, 0.22)" class="blip-halo"/>
+              <circle r="3.2" fill="#ff6b6b" stroke="#ffffff" stroke-width="0.8"/>
+              <text id="radar-p2-txt" y="-5" font-size="6" font-weight="bold" fill="#ffa1a1" text-anchor="middle">CPU 0%</text>
+            </g>
+          </svg>
+        </div>
+
+        <!-- Momentum Tug-of-War Gauge -->
+        <div class="advantage-wrap">
+          <div class="advantage-labels">
+            <span>◄ FOX</span>
+            <span id="adv-val-txt">EVEN</span>
+            <span>CPU ►</span>
+          </div>
+          <div class="bar adv-bar">
+            <div class="adv-midline"></div>
+            <div id="adv-fill" class="adv-fill"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pane 3: Curriculum & Level-Up (Feature 6) -->
+  <section class="pane curriculum">
+    <h2>Curriculum <span id="cpu-level-badge" class="badge-cpu">CPU 1</span></h2>
+    <div class="ladder" id="ladder"></div>
+
+    <!-- Level-Up Progress Gauge -->
+    <div class="levelup-card">
+      <div class="levelup-header">
+        <span class="levelup-title"><i class="lvl-star">★</i><span id="levelup-title-text">Level 1 → 2</span></span>
+        <strong id="levelup-status">0/10 wins</strong>
+      </div>
+      <div class="bar xp-bar">
+        <div id="levelup-fill" class="xp-fill"></div>
+        <div class="xp-marker" title="Promotion target (50% WR)"></div>
+      </div>
+      <div class="levelup-meta">
+        <span id="levelup-record">0/20 played</span>
+        <span id="levelup-countdown">Need 10 wins</span>
+      </div>
+    </div>
+
+    <div class="window-label"><span>Window Record</span><strong id="window-record">—</strong></div>
+    <div id="window-squares" class="squares"></div>
+
+    <div class="handoff">
+      <div class="window-label"><span id="anchor-name">Imitation anchor</span><strong id="anchor-value">—</strong></div>
+      <div class="bar"><div id="anchor-bar"></div></div>
+      <small id="anchor-note">imitation → reinforcement</small>
+    </div>
+  </section>
+
+  <!-- Pane 4: Neural Cortex 128h (Feature 7) -->
+  <section class="pane neural">
+    <h2>Neural Cortex <span id="cortex-arch" class="badge-cortex">LSTM 128h</span></h2>
+
+    <!-- 128-Unit Brain Matrix Heatmap -->
+    <div class="cortex-box">
+      <div class="window-label">
+        <span class="cortex-title"><i class="cortex-dot"></i>128-Unit Memory Matrix</span>
+        <strong id="matrix-entropy" class="matrix-tag">LSTM 128h</strong>
+      </div>
+      <div id="brain-matrix" class="matrix-grid"></div>
+      <div class="matrix-layers">
+        <span class="m-layer m-reflex">Reflex (0-31)</span>
+        <span class="m-layer m-tactical">Tactical (32-79)</span>
+        <span class="m-layer m-macro">Macro (80-127)</span>
+      </div>
+    </div>
+
+    <!-- Memory Horizon & Waveform -->
+    <div class="memory-box">
+      <div class="window-label">
+        <span class="mem-title"><i class="mem-dot"></i>Horizon</span>
+        <strong id="mem-val">—</strong>
+      </div>
+      <div class="mem-bar-wrap">
+        <div class="bar mem-bar">
+          <div id="mem-fill" class="mem-fill"></div>
+          <div id="mem-scan" class="mem-scan"></div>
+        </div>
+        <div class="mem-ticks">
+          <span>0s reflex</span><span>1s read</span><span>3s tech</span><span>10s+ habit</span>
+        </div>
+      </div>
+      <div class="mem-wave-box">
+        <svg id="mem-wave" preserveAspectRatio="none" viewBox="0 0 200 24"></svg>
+        <div class="mem-status-row">
+          <span id="mem-regime" class="mem-pill deep">DEEP CONTEXT</span>
+          <span id="mem-detail">context</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pane 5: Virtual Controller & Slots (Feature 1) -->
+  <section class="pane control-slots">
+    <h2>Virtual Controller <span id="ctrl-action">neutral</span></h2>
+
+    <!-- GameCube Controller Overlay -->
+    <div class="gc-wrapper">
+      <svg id="gc-pad" viewBox="0 0 230 92" preserveAspectRatio="xMidYMid meet">
+        <!-- Chassis Silhouette -->
+        <rect x="5" y="4" width="220" height="84" rx="14" fill="#090d16" stroke="#182033" stroke-width="1.2"/>
+        
+        <!-- Shoulder Triggers / Shield Meters -->
+        <g id="gc-triggers">
+          <!-- L Trigger (Shield) -->
+          <rect x="20" y="10" width="36" height="5" rx="2" fill="#131b2c"/>
+          <rect id="gc-trig-l-fill" x="20" y="10" width="0" height="5" rx="2" fill="#4fc3f7"/>
+          <text x="20" y="21" font-size="6.5" fill="#7c8aa5" font-weight="600">L SHIELD</text>
+          
+          <!-- R Trigger -->
+          <rect x="174" y="10" width="36" height="5" rx="2" fill="#131b2c"/>
+          <rect id="gc-trig-r-fill" x="174" y="10" width="0" height="5" rx="2" fill="#4fc3f7"/>
+          <text x="204" y="21" font-size="6.5" fill="#7c8aa5" font-weight="600" text-anchor="end">R</text>
+        </g>
+
+        <!-- Main Analog Stick -->
+        <g id="gc-stick-group">
+          <!-- Gate -->
+          <circle cx="48" cy="52" r="21" fill="#101624" stroke="#222d42" stroke-width="1.2"/>
+          <circle cx="48" cy="52" r="13" fill="none" stroke="#182236" stroke-dasharray="2 2" stroke-width="1"/>
+          <!-- Stick Knob -->
+          <circle id="gc-stick-knob" cx="48" cy="52" r="11" fill="#3a475f" stroke="#5d7299" stroke-width="1.2"/>
+          <circle id="gc-stick-pip" cx="48" cy="52" r="3" fill="#88a1c9"/>
+        </g>
+
+        <!-- D-Pad -->
+        <g id="gc-dpad" transform="translate(82, 54)">
+          <path d="M-3,-9 H3 V-3 H9 V3 H3 V9 H-3 V3 H-9 V-3 H-3 Z" fill="#141c2c" stroke="#253248" stroke-width="0.8"/>
+        </g>
+
+        <!-- Start Button -->
+        <circle id="gc-start" cx="115" cy="46" r="3.5" fill="#2d1d24" stroke="#522635" stroke-width="0.8"/>
+
+        <!-- C-Stick -->
+        <g id="gc-cstick-group">
+          <circle cx="140" cy="62" r="14" fill="#141408" stroke="#2e2a10" stroke-width="1"/>
+          <circle id="gc-cstick-knob" cx="140" cy="62" r="8.5" fill="#ca8a04" stroke="#facc15" stroke-width="1"/>
+          <text id="gc-cstick-txt" x="140" y="64.5" font-size="7" font-weight="bold" fill="#422006" text-anchor="middle">C</text>
+        </g>
+
+        <!-- Face Buttons: A, B, X, Y, Z -->
+        <g id="gc-buttons">
+          <!-- Z Button -->
+          <rect id="gc-btn-z" x="182" y="24" width="22" height="7" rx="3.5" fill="#23193d" stroke="#4c387f" stroke-width="1"/>
+          <text x="193" y="29.5" font-size="6" font-weight="bold" fill="#a78bfa" text-anchor="middle">Z</text>
+
+          <!-- B Button -->
+          <circle id="gc-btn-b" cx="152" cy="45" r="7" fill="#381616" stroke="#682424" stroke-width="1"/>
+          <text x="152" y="47.5" font-size="7" font-weight="bold" fill="#ff8585" text-anchor="middle">B</text>
+
+          <!-- A Button (Center) -->
+          <circle id="gc-btn-a" cx="175" cy="50" r="12" fill="#102e1c" stroke="#1f5835" stroke-width="1.2"/>
+          <text x="175" y="53.5" font-size="10" font-weight="bold" fill="#3ddc97" text-anchor="middle">A</text>
+
+          <!-- Y Button (Top) -->
+          <path id="gc-btn-y" d="M168,32 C172,30 178,30 182,32 C184,33 182,37 180,36 C176,34 174,34 170,36 C168,37 166,33 168,32 Z" fill="#212a3d" stroke="#374563" stroke-width="1"/>
+          <text x="175" y="34.5" font-size="5.5" font-weight="bold" fill="#a6b4cc" text-anchor="middle">Y</text>
+
+          <!-- X Button (Right) -->
+          <path id="gc-btn-x" d="M192,44 C194,48 194,54 192,58 C191,60 187,58 188,56 C190,52 190,50 188,46 C187,44 191,42 192,44 Z" fill="#212a3d" stroke="#374563" stroke-width="1"/>
+          <text x="191" y="52.5" font-size="5.5" font-weight="bold" fill="#a6b4cc" text-anchor="middle">X</text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Slots Header & Grid -->
+    <div class="slots-subheading">
+      <span>Emulators</span><strong id="slot-summary"></strong>
+    </div>
+    <div id="slot-grid"></div>
+  </section>
+</div>
+
+<footer>
+  <span id="identity">connecting…</span>
+  <span id="arch" class="recurrent">🧠 <b>LSTM</b> 128h</span>
+  <span id="throughput"></span>
+  <span id="progress"></span>
+  <span id="clock"></span>
+</footer>
+<script src="/assets/panel.js?v=6"></script>
+</body>
+</html>

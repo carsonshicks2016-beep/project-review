@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'">
+  <title>Melee Brain</title><link rel="stylesheet" href="brain.css">
+</head>
+<body>
+  <header><div class="brand"><i></i><strong>MELEE <em>BRAIN</em></strong><span id="state">CONNECTING</span></div><div class="tabs" role="tablist" aria-label="Visualization"><button id="activity-tab" role="tab" aria-selected="true">Policy flow</button><button id="lineage-tab" role="tab" aria-selected="false">Full lineage</button></div><span id="identity">Waiting for training…</span></header>
+  <main>
+    <aside class="ancestry"><div class="eyebrow">CHECKPOINT ANCESTRY <span id="depth"></span></div><div id="ancestors"></div><div id="source-note">Recorded resume chain</div></aside>
+    <section class="visual"><div class="visual-heading"><span id="diagram-title">ONE SHARED POLICY · PARALLEL EXPERIENCE</span><label id="slot-label">Inspect <select id="slot" aria-label="Inspect emulator"></select></label></div><canvas id="flow" aria-label="Schematic of game observations flowing through the shared policy to sampled emulator decisions"></canvas><div id="lineage-view" hidden></div><div id="caption">Live game telemetry · flow is schematic, not neuron activations</div></section>
+    <aside class="progress"><div class="eyebrow">THIS TRAINING SESSION <span id="rate">— /s</span></div><div class="steps"><strong id="steps">—</strong><span id="budget">decisions</span></div><div class="track"><div id="progress-bar"></div></div><div class="stat-line"><span id="completion">Waiting for data</span><span id="cpu">CPU —</span></div><div class="results-label"><span>RECENT TRAINING MATCHES</span><strong id="record">—</strong></div><div id="results"></div><div class="stat-line"><span id="match-note">Last 20 · sampled policy</span><span id="save">No save yet</span></div><div id="anchor">Waiting for telemetry</div></aside>
+  </main>
+  <footer><span id="health">Waiting for the first snapshot</span><span id="placement">Read-only companion · close anytime</span></footer>
+  <script src="brain.js"></script>
+</body>
+</html>

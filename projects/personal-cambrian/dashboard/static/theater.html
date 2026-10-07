@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personal Cambrian — Theater</title>
+<link rel="stylesheet" href="/static/theater.css">
+</head>
+<body>
+<header id="top">
+  <div class="brand"><span class="o">◑</span> Personal Cambrian <span class="s">Deep-Time Theater</span></div>
+  <div class="right">
+    <span id="sess" class="pill">gen 0</span>
+    <a href="/console">Console ↗</a>
+  </div>
+</header>
+
+<div id="stage">
+  <aside id="lineage" class="panel">
+    <h2>Lineage · phylogeny</h2>
+    <div id="tree-wrap"><svg id="tree" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  </aside>
+
+  <section id="center" class="panel">
+    <canvas id="view"></canvas>
+    <div id="overlay">
+      <div class="ov" id="ov-gen">Gen: <b>—</b></div>
+      <div class="ov phys" id="ov-phys">Phys: <b>idle</b></div>
+      <div class="ov" id="ov-score">Score: <b>—</b></div>
+      <div class="ov best" id="ov-best">Best: <b>—</b></div>
+      <canvas id="spark" width="240" height="46"></canvas>
+    </div>
+    <div id="title-tag"><div class="nm" id="cname">Agent Zero</div><div id="ctrait">human seed</div></div>
+    <div id="loading">booting renderer…</div>
+  </section>
+
+  <aside id="bio" class="panel">
+    <h2>Biomechanics · anatomy</h2>
+    <canvas id="anat"></canvas>
+    <div id="gauges"></div>
+    <div id="stats"></div>
+  </aside>
+</div>
+
+<footer id="bottom">
+  <div id="timeline">
+    <label>Deep Time</label>
+    <input type="range" id="deeptime" min="0" max="0" value="0">
+    <span id="genlabel">generation 0</span>
+  </div>
+  <div id="controls">
+    <select id="seed-pick" title="seed creature for a new run">
+      <option value="quadruped">Quadruped</option>
+      <option value="agent_zero">Biped (Agent Zero)</option>
+    </select>
+    <button id="btn-play" class="go">▶ Play</button>
+    <button id="btn-step">⏭ Step</button>
+    <button id="btn-best">★ Best</button>
+    <button id="btn-reset" class="warn">⟲ Reset</button>
+  </div>
+</footer>
+
+<div class="tip" id="tip"></div>
+<script type="module" src="/static/theater.js"></script>
+</body>
+</html>

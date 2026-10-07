@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personal Cambrian — Mission Control</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header id="topbar">
+  <div class="brand"><span class="logo">◑</span> Personal Cambrian <span class="sub">Mission Control</span></div>
+  <div id="status" class="status"></div>
+</header>
+
+<div id="app">
+  <nav id="rail" aria-label="workspaces"></nav>
+
+  <main id="main">
+    <section id="actions" class="card">
+      <h2 id="cat-title">Workspace</h2>
+      <div id="action-list" class="chips"></div>
+    </section>
+
+    <section id="form-card" class="card" hidden>
+      <div class="form-head">
+        <div>
+          <h3 id="action-label"></h3>
+          <p id="action-desc" class="muted"></p>
+        </div>
+        <button id="run-btn" class="primary">▶ Run</button>
+      </div>
+      <div id="form" class="form-grid"></div>
+    </section>
+
+    <section id="job-card" class="card" hidden>
+      <div class="job-head">
+        <div><span id="job-state" class="badge"></span> <span id="job-title"></span></div>
+        <div>
+          <span id="job-stage" class="muted"></span>
+          <button id="cancel-btn" class="danger small">Stop</button>
+        </div>
+      </div>
+      <canvas id="chart" height="170"></canvas>
+      <div id="result"></div>
+      <div id="artifacts-inline" class="gallery"></div>
+      <details id="log-wrap"><summary>event log</summary><pre id="log"></pre></details>
+    </section>
+  </main>
+
+  <aside id="side">
+    <div class="side-tabs">
+      <button class="tab active" data-tab="jobs">Jobs</button>
+      <button class="tab" data-tab="gallery">Artifacts</button>
+    </div>
+    <div id="jobs" class="side-panel"></div>
+    <div id="gallery" class="side-panel" hidden></div>
+  </aside>
+</div>
+
+<div id="viewer" class="viewer" hidden><div class="viewer-inner"><button id="viewer-close">✕</button><div id="viewer-body"></div></div></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

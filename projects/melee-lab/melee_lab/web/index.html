@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b0d16"><meta name="description" content="Melee Lab — a local command center for training, evaluating, and challenging neural opponents."><title>Melee Lab / Arena intelligence</title><link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/diagnostic.css?v=5"></head>
+<body>
+<header><a class="brand" href="/"><span class="mark">M<span>↗</span></span> MELEE LAB <small>ARENA INTELLIGENCE / LOCAL</small></a><div class="header-right"><select id="theme-select" class="subtle theme-picker" aria-label="Interface theme" title="Switch theme"><option value="slippi">🎮 Slippi &amp; GC</option><option value="terminal">⌨ Nordic Terminal</option><option value="arena">⚡ Arena Violet</option></select><span id="connection" class="badge">Connecting</span><button id="open-setup" class="subtle">Setup ⚙</button></div></header>
+<main>
+<div class="intro"><div><p class="eyebrow">NEURAL COMBAT SYSTEM / 01</p><h1>The arena never sleeps<span>.</span></h1><p class="intro-copy">Train the challenger. Measure the progress. Step into the arena.</p></div><div class="run-picker"><label for="run-select">Inspect run</label><select id="run-select" aria-label="Inspect run"></select><button id="follow-active" class="subtle">Follow active ↗</button></div></div>
+<nav role="tablist" aria-label="Lab views"><button role="tab" aria-selected="true" aria-controls="monitor-panel" id="monitor-tab" data-tab="monitor">01 <span>Command center</span></button><button role="tab" aria-selected="false" aria-controls="arena-panel" id="arena-tab" data-tab="arena">02 <span>Challenge arena</span></button><button role="tab" aria-selected="false" aria-controls="readiness-panel" id="readiness-tab" data-tab="readiness">03 <span>Readiness</span></button><button role="tab" aria-selected="false" aria-controls="data-panel" id="data-tab" data-tab="data">04 <span>Match data</span></button><button role="tab" aria-selected="false" aria-controls="policies-panel" id="policies-tab" data-tab="policies">05 <span>Policy vault</span></button><button role="tab" aria-selected="false" aria-controls="overload-panel" id="overload-tab" data-tab="overload" class="overload-tab-btn" title="Classified Subsurface Telemetry">06 <span>Subsurface core</span> <span class="overload-spark">⚡</span></button><button role="tab" aria-selected="false" aria-controls="diagnostic-panel" id="diagnostic-tab" data-tab="diagnostic" class="diagnostic-tab-btn" title="Extreme Diagnostic & Stress-Testing Lab">07 <span>Diagnostic Lab</span> <span class="diag-spark">🔬</span></button><button role="tab" aria-selected="false" aria-controls="rankings-panel" id="rankings-tab" data-tab="rankings" class="rankings-tab-btn" title="Universal Leaderboard & Fleet Benchmark">08 <span>Leaderboard</span> <span class="rank-spark">🏆</span></button><div id="run-status" class="nav-status">—</div></nav>
+<div id="notice" role="status" aria-live="polite" hidden></div>
+<div class="studio-layout">
+<div class="content">
+<section id="monitor-panel" role="tabpanel" aria-labelledby="monitor-tab">
+<div id="run-error" class="error-box" hidden></div>
+<div class="metrics"><div><span>PPO DECISIONS</span><strong id="steps">—</strong><small>Cumulative policy steps</small></div><div><span>THROUGHPUT</span><strong id="throughput">—</strong><small>Decisions / second, recent</small></div><div><span>EMULATORS</span><strong id="slot-count">—</strong><small id="slot-summary">Awaiting telemetry</small></div><div><span>RUN TIME</span><strong id="elapsed">—</strong><small id="phase">No run selected</small></div></div>
+<div class="featured card"><div class="cardtop"><div><span class="eyebrow">LIVE STATE VISUALIZATION</span><h2>Final Destination <span class="live-dot"></span></h2></div><div class="featured-tools"><select id="featured-slot" aria-label="Featured emulator"></select><button id="fullscreen-arena" title="Expand arena" aria-label="Expand arena">⛶</button></div></div><div class="arena-view"><canvas id="featured-arena" width="1200" height="460" aria-label="Live schematic of player positions on Final Destination"></canvas><div class="arena-overlay"><span id="featured-label">NO SIGNAL</span><span>POSITION TELEMETRY / GAMEPLAY IN DOLPHIN</span></div></div><div class="featured-score" id="featured-score"></div></div>
+<div class="run-progress card"><div><span class="eyebrow">SESSION PROGRESS</span><strong id="session-progress">Waiting for a run</strong></div><div class="progress-track"><i id="progress-fill"></i></div><small id="progress-detail">Additional decisions are measured separately from checkpoint history.</small></div>
+<div class="section-heading"><h2>Emulator floor <span id="floor-count"></span></h2><span>Positions from game state · Gameplay in Dolphin</span></div>
+<div id="slots" class="slot-grid"></div>
+<div class="card progress-card"><div class="cardtop"><h2>Training pulse</h2><span>PPO only · this run</span></div><div id="pulse" class="pulse"><p class="muted">No recorded PPO matches yet.</p></div><p class="footnote">Training outcomes describe exploratory play. Champion scores come from separate deterministic evaluation.</p></div>
+</section>
+<section id="arena-panel" role="tabpanel" aria-labelledby="arena-tab" hidden>
+<div class="challenge-hero"><div class="challenge-copy"><p class="eyebrow">YOU / VERSUS / THE NETWORK</p><h2>Think you can<br>beat it<span>?</span></h2><p>A saved neural policy. Three stocks. Your move.</p><span class="tag">LOCAL CHALLENGE · 1× SPEED</span></div><div class="arena-emblem" aria-hidden="true"><div class="emblem-ring"></div><span>VS</span><small>HUMAN × MACHINE</small></div></div>
+<div class="challenge-layout"><div class="card challenge-form-card"><div class="cardtop"><h2>Choose your opponent</h2><span>P1 / NEURAL POLICY</span></div><form id="challenge-form"><label>Policy checkpoint<select id="challenge-policy" required></select></label><div class="two"><label>Your character<select id="human-character"><option value="MARIO">Mario</option><option value="FOX">Fox</option><option value="FALCO">Falco</option><option value="MARTH">Marth</option><option value="CPTFALCON">Captain Falcon</option><option value="PEACH">Peach</option><option value="SHEIK">Sheik</option><option value="JIGGLYPUFF">Jigglypuff</option><option value="SAMUS">Samus</option><option value="PIKACHU">Pikachu</option><option value="GANONDORF">Ganondorf</option><option value="LUIGI">Luigi</option><option value="DOC">Dr. Mario</option></select></label><label>Games to play<input id="challenge-games" type="number" min="1" max="1000" value="3" required></label></div><p id="challenge-evidence" class="help"></p><button id="start-challenge" class="primary" type="submit">Enter the arena ↗</button><p class="help">The bot is P1. You control P2 from this dashboard; watch the match in Dolphin. Input uses a local browser bridge and adds variable latency.</p></form></div>
+<div class="card controller-card"><div class="cardtop"><h2>Your controller</h2><span id="input-status">DISARMED</span></div><div class="controller-body"><div class="controller-visual" aria-hidden="true"><span class="stick-display" id="stick-display">✥</span><div><b id="button-b">B</b><b id="button-a">A</b><b id="button-y">Y</b></div></div><p id="gamepad-name">Keyboard ready · connect a standard gamepad to use analog input.</p><div class="pad-setup"><label>Controller<select id="pad-profile"><option value="standard">Standard gamepad</option><option value="single">Single Joy-Con · held sideways</option></select></label><button id="pad-rotate" type="button" class="subtle" hidden>Rotate stick ↻ <b id="pad-rotation">0°</b></button></div><p id="pad-readout" class="help mono" hidden></p><button id="arm-input" type="button">Connect controls</button><div class="keymap"><span><kbd>W A S D</kbd> Move</span><span><kbd>J</kbd> Attack</span><span><kbd>K</kbd> Special</span><span><kbd>Space</kbd> Jump</span><span><kbd>Shift</kbd> Shield</span><span><kbd>L</kbd> Grab</span><span><kbd>↑ ↓ ← →</kbd> C-stick</span><span><kbd>Esc</kbd> Release</span></div><p class="help">Keep this page visible and focused while playing. Losing focus releases controls. Gamepad: left stick moves, right stick is C-stick, south attacks, west specials, north/east jump, triggers shield, right bumper grabs. Unsupported mappings are rejected.</p></div></div></div>
+<div class="card"><div class="cardtop"><h2>Challenge scoreboard</h2><span>BOT / HUMAN · SELECTED SESSION</span></div><div id="challenge-score" class="challenge-score">Start a challenge to record your matches.</div><p class="footnote">Challenge results are recorded separately from training and CPU evaluation. Match outcomes are from the bot’s perspective; a bot loss is your win. Replays and reports are available under session artifacts.</p></div>
+</section>
+<section id="readiness-panel" role="tabpanel" aria-labelledby="readiness-tab" hidden>
+<div class="readiness-hero"><p class="eyebrow">CAPABILITY / EVIDENCE / NEXT STEPS</p><h2 id="readiness-title">Checking the system…</h2><p id="readiness-explanation"></p></div><div id="evidence-metrics" class="metrics"></div><div id="readiness-checks" class="readiness-grid"></div><div class="card architecture"><div class="cardtop"><h2>Policy architecture</h2><span>CURRENT CHECKPOINT CONTRACT</span></div><div id="architecture"></div><p class="footnote">The bot reads internal game state with no added observation delay. CPU-9 success alone does not establish human-level or superhuman play. A replay-imitation anchor, a historical opponent league, and a promotion gauntlet exist but have not yet been shown to improve play. Recurrent memory, broader stages, and controlled human evaluation remain substantial work.</p></div><div class="card move-library"><div class="cardtop"><h2>Controller & move laboratory</h2><label class="check"><input id="expanded-moves" type="checkbox" checked> Expanded controller</label></div><div class="move-summary" id="move-summary"></div><div class="move-tools"><input id="move-search" type="search" placeholder="Search moves, e.g. shield or recovery" aria-label="Search moves"></div><div class="tablewrap move-table"><table><thead><tr><th>Input / move context</th><th>Frames</th><th>Commitment</th><th>Main stick</th><th>Buttons</th></tr></thead><tbody id="move-body"></tbody></table></div><p class="footnote">These are controller inputs, not guaranteed successful techniques. The same input produces different moves on the ground, in the air, during grabs, or in hitstun. Full game-state access and no added delay differ from human perception. One-frame decisions allow 60 input decisions per game second; move animations still obey Melee’s engine.</p></div><div class="card resource-note"><p>Research direction: expert replay imitation followed by reinforcement learning and controlled human evaluation. See <a href="https://github.com/vladfi1/slippi-ai" target="_blank" rel="noreferrer">Slippi AI ↗</a> and <a href="https://arxiv.org/abs/1810.07286" target="_blank" rel="noreferrer">action-delay research ↗</a>.</p></div>
+</section>
+<section id="data-panel" role="tabpanel" aria-labelledby="data-tab" hidden>
+<div class="section-heading"><h2>Inspect the evidence.</h2><span id="record-count">All recorded matches</span></div>
+<div class="filterbar"><label>Policy type<select id="kind"><option value="ppo">PPO training</option><option value="evaluation">Deterministic evaluation</option><option value="self-play">Frozen-opponent training</option><option value="human challenge">Human challenges</option><option value="scripted demonstration">Scripted demonstrations</option><option value="all">All types, separated</option></select></label><label>CPU level<select id="data-cpu"><option value="">All levels, separated</option><option value="0">Human / policy opponent</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option></select></label><label>Compare runs <small>Up to 3 additional</small><select multiple id="compare-runs" aria-label="Compare additional runs" size="2"></select></label></div>
+<div id="data-summary" class="summary-grid"></div>
+<div class="card"><div class="cardtop"><h2>Reward over matches</h2><span>Mean reward per displayed bin</span></div><div class="chart-wrap"><canvas id="reward-chart" width="1000" height="290" aria-label="Reward over recorded matches, separated by run, policy type and CPU level"></canvas><div id="chart-tooltip" hidden></div><p id="chart-empty" hidden>No matching rewards yet.</p></div><div id="chart-legend" class="legend"></div></div>
+<div class="card comparison"><div class="cardtop"><h2>Run comparison</h2><span>95% Wilson intervals</span></div><div class="tablewrap"><table><thead><tr><th>Run / policy</th><th>CPU</th><th>Win rate · 95% CI</th><th>Episodes</th><th>Outcomes</th><th>Mean reward</th></tr></thead><tbody id="compare-body"></tbody></table></div><p class="footnote">The denominator includes all recorded matches in each group. Timeouts and interruptions stay separate from losses. Training intervals are descriptive; successive games may be correlated.</p></div>
+<div class="card"><div class="cardtop"><h2>Match history</h2><label class="inline-label">Outcome<select id="outcome"><option value="">Every outcome</option><option value="win">Win</option><option value="loss">Loss</option><option value="draw">Draw</option><option value="timeout">Timeout</option><option value="interrupted">Interrupted</option><option value="unexpected_restart">Unexpected restart</option></select></label></div><div class="tablewrap"><table><thead><tr><th># / time</th><th>Policy</th><th>CPU</th><th>Outcome</th><th>Stocks P1 / P2</th><th>Reward</th></tr></thead><tbody id="match-body"></tbody></table></div><div class="pagination"><span id="page-info">No matches</span><div><button id="previous">← Newer</button><button id="next">Older →</button></div></div></div>
+</section>
+<section id="policies-panel" role="tabpanel" aria-labelledby="policies-tab" hidden>
+<div class="section-heading"><div><h2>Champions, with receipts.</h2><p>Permanent policy copies. Scores from deterministic evaluation only.</p></div><span id="champion-count">0 kept</span></div>
+<div id="champions" class="champion-grid"></div>
+<div class="card comparison"><div class="cardtop"><h2>Champion comparison</h2><span>Each evaluation remains a separate trial</span></div><div class="tablewrap"><table><thead><tr><th>Champion</th><th>Conditions</th><th>Win rate · 95% CI</th><th>Episodes</th><th>Outcomes</th><th>Evaluated</th></tr></thead><tbody id="champion-compare"></tbody></table></div><p class="footnote">Compare policies under the same matchup and CPU level. Repeated trials are shown individually; scores are never borrowed from training.</p></div>
+<div class="section-heading"><div><h2>Promotion gauntlet</h2><p>Freeze the candidates and replay them against one fixed panel. Identical controller rules, both ports, no training.</p></div></div>
+<div class="card"><div class="cardtop"><h2>Set up a comparison</h2><span>Incumbent first</span></div><div class="two"><label>Candidates <small>2–4, same character</small><select id="gauntlet-candidates" multiple size="6" aria-label="Comparison candidates"></select></label><div><label>Games per condition<input id="gauntlet-episodes" type="number" min="1" max="1000" value="10"></label><label class="check"><input id="gauntlet-roster" type="checkbox" checked> Include the CPU-9 roster</label><label class="check"><input id="gauntlet-assisted" type="checkbox" checked> Assisted rules · recovery help for both players</label><label class="check"><input id="gauntlet-raw" type="checkbox"> Raw controller · no assistance for either player</label></div></div><p id="gauntlet-plan" class="help"></p><button id="gauntlet-launch" class="primary" type="button" disabled>Run comparison &#8599;</button><p class="footnote">Each candidate is copied into the comparison before any game is played, so training may continue afterwards without changing what was measured. A candidate also plays itself: a lasting advantage for one port would mean the two sides are still not equal.</p></div>
+<div class="card comparison" id="gauntlet-results" hidden><div class="cardtop"><h2>Comparison evidence</h2><span id="gauntlet-progress-line"></span></div><div id="gauntlet-verdict"></div><div class="tablewrap"><table><thead><tr><th>Condition</th><th>Rules</th><th>Win rate &#183; 95% CI</th><th>Inputs altered</th><th>Status</th></tr></thead><tbody id="gauntlet-body"></tbody></table></div><p class="footnote">Win rates are from the first-listed side of each row. A rejected job is one whose report does not match the conditions requested; it is replayed rather than counted.</p></div>
+<div class="section-heading"><div><h2>Checkpoint library</h2><p>Saved neural network weights. Import custom save files or select a checkpoint to evaluate or fine-tune.</p></div><div style="display:flex;gap:8px;align-items:center;"><button id="import-save-btn" class="primary" type="button" style="margin:0;padding:7px 14px;font-size:11px;width:auto;">📥 Import save file…</button><input id="policy-search" type="search" placeholder="Filter checkpoints…" aria-label="Filter checkpoints"></div></div>
+<input type="file" id="policy-save-input" accept=".zip,.gci,.raw" hidden>
+<div class="card"><div class="tablewrap"><table><thead><tr><th>Checkpoint</th><th>Steps / warm-up</th><th>Training conditions</th><th>Latest evaluation · 95% CI</th><th>Actions</th></tr></thead><tbody id="policy-body"></tbody></table></div></div>
+</section>
+<section id="overload-panel" role="tabpanel" aria-labelledby="overload-tab" hidden>
+<canvas id="subsurface-canvas" class="subsurface-canvas" aria-hidden="true"></canvas>
+<div class="overload-hud card">
+<div class="cardtop">
+<div class="hud-status"><span class="eyebrow">SUBSTRATE ACTIVATION / LAYER DECOUPLING</span><h2>Neural Core Bus &amp; Memory Stream <span class="live-dot pulse-core"></span></h2></div>
+<div class="overload-controls">
+<div class="lift-control"><label for="overload-lift">Surface lift: <b id="depth-val">65%</b></label><input id="overload-lift" type="range" min="0" max="1" step="0.01" value="0.65" aria-label="Surface Lift Depth"></div>
+<button id="overload-speed" class="subtle" type="button" title="Toggle stream rate">60Hz (Realtime)</button>
+<button id="overload-surge" class="primary surge-btn" type="button" title="Inject voltage surge into bus">⚡ Surge core</button>
+</div>
+</div>
+<div class="overload-telemetry-bar">
+<span><b>STATE VECTOR:</b> OBS_SIZE 106 FLOATS (GROUNDED + KINEMATICS + PROXIMITIES)</span>
+<span><b>DOLPHIN IPC:</b> 60Hz LOCKSTEP / FIFO BUFFER: NOMINAL</span>
+<span><b>PPO HEAD:</b> 16 DISCRETE LOGIT PROBABILITIES</span>
+</div>
+</div>
+<div id="overload-stage" class="overload-stage">
+<div class="overload-plate card plate-lift-1">
+<div class="cardtop"><div><span class="eyebrow">INPUT TENSOR BUS</span><h2>106-Feature observation state</h2></div><span class="tag">REAL-TIME TENSOR</span></div>
+<div class="plate-body">
+<div class="tensor-legend"><span><i class="dot-pos"></i> Positive activation</span><span><i class="dot-neg"></i> Negative / Velocity</span><small>106 floats fed directly into policy network on every decision frame</small></div>
+<canvas id="vector-canvas" width="900" height="100" aria-label="106-dimensional observation tensor"></canvas>
+<div class="tensor-bands"><span>0..11: P1 Dynamics</span><span>12..23: P2 Dynamics</span><span>24..35: Kinematics &amp; Dist</span><span>36..70: Ledge &amp; Stage</span><span>71..105: Action Flags</span></div>
+</div>
+</div>
+<div class="overload-split">
+<div class="overload-plate card plate-lift-2">
+<div class="cardtop"><div><span class="eyebrow">ACTION PROBABILITY SPECTRUM</span><h2>Policy softmax head</h2></div><div class="plate-stat"><small>Entropy</small><strong id="overload-entropy">1.82 bits</strong></div></div>
+<div class="plate-body"><div id="overload-logits" class="logits-grid"></div></div>
+</div>
+<div class="overload-plate card plate-lift-3">
+<div class="cardtop"><div><span class="eyebrow">CRITIC HEAD / ADVANTAGE STREAM</span><h2>V(s) &amp; TD-Error oscilloscope</h2></div><div class="plate-stat"><small>Confidence</small><strong id="overload-confidence">74%</strong></div></div>
+<div class="plate-body">
+<div class="critic-legend"><span><i class="critic-val-dot"></i> Value baseline V(s)</span><span><i class="critic-adv-dot"></i> Advantage Â(s, a)</span></div>
+<canvas id="critic-canvas" width="500" height="150" aria-label="Value baseline and advantage oscilloscope"></canvas>
+<div class="critic-meta"><small>Discount γ = 0.99 · GAE λ = 0.95 · PPO Clip ε = 0.20</small></div>
+</div>
+</div>
+</div>
+<div class="overload-plate card plate-lift-4">
+<div class="cardtop"><div><span class="eyebrow">GAMECUBE SHARED MEMORY BUS</span><h2>Dolphin IPC address map</h2></div><span id="ram-sync" class="mono-badge">FRAME SYNC: ACTIVE</span></div>
+<div class="plate-body memory-map-grid">
+<div class="mem-block"><span class="mem-addr">0x80453080 · P1_STRUCT</span><p id="ram-p1" class="mem-data mono">POS=(0.000, 0.000) DMG=0.0% ACT=0x000E</p></div>
+<div class="mem-block"><span class="mem-addr">0x804530E0 · P2_STRUCT</span><p id="ram-p2" class="mem-data mono">POS=(0.000, 0.000) DMG=0.0% ACT=0x000E</p></div>
+<div class="mem-block"><span class="mem-addr">0x80479D60 · GEOMETRY</span><p class="mem-data mono">STAGE=FINAL_DESTINATION BOUNDS=(-68.4, +68.4)</p></div>
+<div class="mem-block"><span class="mem-addr">0x8046B6A0 · JOYPAD_FIFO</span><p class="mem-data mono">POLL_RATE=60Hz BUFFER_SLIP=0 DELTA=16.6ms</p></div>
+</div>
+</div>
+<div class="overload-plate card plate-lift-5">
+<div class="cardtop"><div><span class="eyebrow">HIGH-FREQUENCY TELEMETRY PIPE</span><h2>Raw hex dump &amp; decision stream</h2></div><span class="tag">60Hz STREAM</span></div>
+<div class="plate-body"><pre id="overload-terminal" class="overload-terminal" aria-label="Raw hex telemetry dump"></pre></div>
+</div>
+</div>
+</section>
+<section id="diagnostic-panel" role="tabpanel" aria-labelledby="diagnostic-tab" hidden>
+<div class="diagnostic-hero">
+<span class="eyebrow">DEEP TELEMETRY / ARTIFACT GAUNTLET / STRESS-TEST ENGINE</span>
+<h2>Extreme Diagnostic Lab<span>.</span></h2>
+<p class="intro-desc">Universal diagnostic chamber for policy checkpoints (.zip), match replays (.slp), and demonstration datasets (.npz). Drop any artifact to run structural integrity verification and the synthetic combat stress-test gauntlet.</p>
+</div>
+
+<div class="card diag-chamber-card">
+<div class="cardtop"><div><span class="eyebrow">DIAGNOSTIC CHAMBER</span><h2>Artifact Ingestion &amp; Stress Configuration</h2></div><span class="tag">GAUNTLET READY</span></div>
+<div class="diag-chamber-body">
+<div id="diag-dropzone" class="diag-dropzone" role="button" tabindex="0" aria-label="Drop target file here">
+<input type="file" id="diag-file-input" accept=".zip,.slp,.npz,.gci,.raw" hidden>
+<div class="diag-dropzone-icon">🔬</div>
+<div class="diag-dropzone-copy">
+<h3 id="diag-dropzone-title">Drop any save file, model, replay, or dataset here</h3>
+<p id="diag-dropzone-sub">Supports .zip policy checkpoints, .gci GameCube save cards, .slp replays, and .npz datasets</p>
+</div>
+<div class="diag-dropzone-tags">
+<span class="diag-format-pill">.ZIP CHECKPOINTS</span>
+<span class="diag-format-pill">.GCI SAVE CARDS</span>
+<span class="diag-format-pill">.SLP REPLAYS</span>
+<span class="diag-format-pill">.NPZ DATASETS</span>
+</div>
+</div>
+
+<div class="diag-divider">OR SELECT FROM WORKSPACE</div>
+
+<div class="diag-controls-row">
+<div class="diag-select-wrap">
+<label for="diag-target-select">Discovered Targets</label>
+<select id="diag-target-select" aria-label="Select target artifact"></select>
+</div>
+<div class="diag-stress-wrap">
+<label>Gauntlet Intensity</label>
+<div class="diag-stress-toggle">
+<button type="button" class="diag-stress-btn" data-level="standard">Standard</button>
+<button type="button" class="diag-stress-btn extreme active" data-level="extreme">⚡ Extreme</button>
+</div>
+</div>
+<button id="run-diagnostic-btn" class="primary" type="button">Execute Diagnostic Gauntlet ↗</button>
+</div>
+</div>
+</div>
+
+<div id="gauntlet-progress" class="card gauntlet-card" hidden>
+<div class="cardtop"><h2>Executing Stress Gauntlet</h2><span class="live-dot"></span></div>
+<div class="gauntlet-steps">
+<div class="gauntlet-step active"><span class="gauntlet-step-num">01</span><span class="gauntlet-step-name">Weight Health</span></div>
+<div class="gauntlet-step"><span class="gauntlet-step-num">02</span><span class="gauntlet-step-name">Threat Reaction</span></div>
+<div class="gauntlet-step"><span class="gauntlet-step-num">03</span><span class="gauntlet-step-name">Blastzone Drift</span></div>
+<div class="gauntlet-step"><span class="gauntlet-step-num">04</span><span class="gauntlet-step-name">Lethal Confirms</span></div>
+<div class="gauntlet-step"><span class="gauntlet-step-num">05</span><span class="gauntlet-step-name">Noise Invariance</span></div>
+<div class="gauntlet-step"><span class="gauntlet-step-num">06</span><span class="gauntlet-step-name">Score Synthesis</span></div>
+</div>
+</div>
+
+<div id="diag-results" class="diag-dossier" hidden>
+<div class="card diag-summary-card">
+<div class="cardtop">
+<div><span class="eyebrow">DIAGNOSTIC DOSSIER</span><h2 id="diag-target-name">Target Dossier</h2></div>
+<div style="display:flex;align-items:center;gap:8px;">
+<span id="diag-rank-badge" class="diag-rank-badge rank-s">A-TIER COMPETITOR</span>
+<span id="diag-health-badge" class="diag-health-badge health-excellent">HEALTH: EXCELLENT</span>
+<button id="diag-import-btn" class="primary" type="button" style="margin:0;padding:5px 12px;font-size:11px;width:auto;" hidden>📥 Import to Vault</button>
+</div>
+</div>
+<div class="diag-summary-body">
+<div class="diag-score-block">
+<div class="diag-score-ring">
+<span id="diag-score-value" class="diag-score-val">84.2</span>
+</div>
+<div class="diag-score-meta">
+<span class="eyebrow">COMPOSITE COMBAT READINESS</span>
+<h3>0–100 Gauntlet Index</h3>
+<small style="color: var(--muted)">Multi-vector stress test across defensive reaction, deep recovery, and confirm fidelity.</small>
+</div>
+</div>
+<div class="diag-target-specs">
+<div><span>CHARACTER</span><strong id="diag-spec-char">FOX</strong></div>
+<div><span>ARTIFACT TYPE</span><strong id="diag-spec-type">CHECKPOINT</strong></div>
+<div><span>MAGNITUDE</span><strong id="diag-spec-size">245k Params</strong></div>
+</div>
+</div>
+</div>
+
+<div class="diag-split-grid">
+<div class="card diag-radar-card">
+<div class="cardtop" style="width: 100%;"><h2>5-Axis Combat Radar</h2><span>SYNTHETIC GAUNTLET</span></div>
+<canvas id="diag-radar-canvas" width="360" height="360" aria-label="5-Axis Radar Chart"></canvas>
+</div>
+<div id="diag-dimensions-container" class="diag-dimensions-grid"></div>
+</div>
+
+<div id="diag-deepdive-container" class="diag-deepdive-grid"></div>
+
+<div class="card diag-recomms-card">
+<div class="cardtop"><div><span class="eyebrow">TACTICAL ANALYSIS</span><h2>Diagnostic Recommendations &amp; Calibration Notes</h2></div><span class="tag">TRAINING ADVICE</span></div>
+<ul id="diag-recomms-list" class="diag-recomms-list"></ul>
+</div>
+</div>
+</section>
+<section id="rankings-panel" role="tabpanel" aria-labelledby="rankings-tab" hidden>
+  <div class="rankings-hero">
+    <span class="eyebrow">FLEET BENCHMARK &amp; ARTIFACT LEADERBOARD / 08</span>
+    <h2>Universal Leaderboard<span>.</span></h2>
+    <p class="intro-desc">Scan, stress-test, and benchmark every model policy, champion, dataset, and replay in your project. Each artifact is evaluated through the 6-axis combat gauntlet and ranked by composite combat readiness.</p>
+  </div>
+
+  <div class="card rank-control-card">
+    <div class="cardtop">
+      <div><span class="eyebrow">FLEET SCANNER ENGINE</span><h2>Batch Benchmark Controls</h2></div>
+      <span id="rank-cached-time" class="tag">READY TO SCAN</span>
+    </div>
+    <div class="rank-controls-body">
+      <div class="rank-actions-row">
+        <button id="rank-scan-btn" class="primary scan-fleet-btn" type="button">⚡ Scan &amp; Rank All Files</button>
+        <div class="rank-scope-wrap">
+          <label for="rank-scope-select">Scan Scope</label>
+          <select id="rank-scope-select">
+            <option value="distinct">Distinct Policies &amp; Runs (~86 endpoints)</option>
+            <option value="all">Exhaustive Fleet (All 250+ step snapshots)</option>
+          </select>
+        </div>
+        <div class="rank-search-wrap">
+          <label for="rank-search">Filter Leaderboard</label>
+          <input id="rank-search" type="search" placeholder="Search by name, run ID, or character…">
+        </div>
+      </div>
+
+      <div class="rank-filter-pills">
+        <button type="button" class="diag-filter-pill active" data-filter="all">All Artifacts (<span id="rank-count-all">0</span>)</button>
+        <button type="button" class="diag-filter-pill" data-filter="checkpoint">Checkpoints &amp; Champions (<span id="rank-count-ckpt">0</span>)</button>
+        <button type="button" class="diag-filter-pill" data-filter="dataset">Demonstrations (<span id="rank-count-ds">0</span>)</button>
+        <button type="button" class="diag-filter-pill" data-filter="replay">Replays (<span id="rank-count-rep">0</span>)</button>
+        <button type="button" class="diag-filter-pill" data-filter="gamecube_save">GameCube Saves (<span id="rank-count-gci">0</span>)</button>
+      </div>
+
+      <div id="rank-progress-wrap" class="rank-progress-box" hidden>
+        <div class="rank-progress-head">
+          <span id="rank-progress-msg">Scanning workspace artifacts…</span>
+          <strong id="rank-progress-pct">0%</strong>
+        </div>
+        <div class="progress-track"><i id="rank-progress-bar" style="width: 0%;"></i></div>
+        <small id="rank-progress-detail" class="muted">Initializing batch scanner…</small>
+      </div>
+    </div>
+  </div>
+
+  <div id="rank-podium-section" class="rank-podium-wrap" hidden>
+    <div class="section-heading"><div><h2>Top Combat Champions</h2><p>Highest composite scores across defensive reaction, deep recovery, and confirm fidelity.</p></div></div>
+    <div id="rank-podium-cards" class="rank-podium-grid"></div>
+  </div>
+
+  <div class="card rank-table-card">
+    <div class="cardtop">
+      <div><span class="eyebrow">GLOBAL ARTIFACT RANKING</span><h2>Master Standings Table</h2></div>
+      <span id="rank-total-count" class="mono-badge">0 ENTRIES</span>
+    </div>
+    <div class="tablewrap">
+      <table class="rank-table">
+        <thead>
+          <tr>
+            <th style="width: 65px;">Rank</th>
+            <th>Artifact &amp; Identity</th>
+            <th>Type</th>
+            <th>Combat Tier</th>
+            <th>Decisions / Scope</th>
+            <th>5-Axis Radar Breakdown</th>
+            <th style="text-align: right;">Readiness Score</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="rank-table-body">
+          <tr><td colspan="8" class="muted" style="text-align: center; padding: 30px;">Click “⚡ Scan &amp; Rank All Files” above to execute the fleet benchmark.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+</div>
+<aside class="card controls"><div class="cardtop"><h2>Mission control</h2><span class="tag">LOCAL</span></div><div id="active-context" class="control-context">No active run</div><div class="button-row"><button id="pause" disabled>Pause</button><button id="save" disabled>Save</button><button id="stop" class="danger" disabled>Stop</button></div><p id="availability" class="help">Checking emulator availability…</p><div class="divider"></div>
+<form id="launch-form"><label>Mode<select id="mode"><option value="train">Train a policy</option><option value="evaluate">Evaluate a policy</option></select></label><label id="character-label">Agent character<select id="agent-character"><option value="FOX">Fox (Superhuman Tech)</option><option value="JIGGLYPUFF">Jigglypuff (Rest Specialist)</option><option value="MARTH">Marth</option><option value="FALCO">Falco</option><option value="CPTFALCON">Captain Falcon</option><option value="PEACH">Peach</option><option value="SHEIK">Sheik</option></select></label><div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;margin-bottom:2px;"><label for="checkpoint" style="margin:0;">Starting policy</label><button id="sidebar-import-save" class="subtle" type="button" style="padding:0;font-size:10px;cursor:pointer;color:var(--mint);">+ Import save…</button></div><select id="checkpoint"><option value="">New agent</option></select><p id="policy-context" class="help">Start from random weights, with optional demonstrations.</p>
+<div class="two"><label>Emulators<input id="envs" type="number" min="1" max="12" step="1" value="1" required></label><label id="budget-label">Additional decisions<input id="budget" type="number" min="1024" max="100000000" step="1" value="100000" required></label><label id="episodes-label" hidden>Evaluation episodes<input id="episodes" type="number" min="1" max="1000" step="1" value="10" required></label></div>
+<label id="fast-inputs-label" class="check"><input id="fast-inputs" type="checkbox"> Full controller · 1 frame / decision</label><p id="fast-inputs-help" class="help" hidden>Starts a new policy with the factored controller: every stick angle, C-stick, button combo and shield depth is reachable. Creates a fresh, unevaluated policy.</p><label id="recurrent-label" class="check"><input id="recurrent" type="checkbox"> 🧠 Recurrent Memory (LSTM)</label><p id="recurrent-help" class="help" hidden>Trains with an internal LSTM recurrent hidden state across frames rather than an isolated 2-frame window. Tracks opponent conditioning, tech habits, and play patterns across the match.</p><label id="opponent-policy-label">Training opponent<select id="opponent-policy"><option value="">Built-in CPU / curriculum</option></select></label><label id="anchor-label">Tournament footage<select id="anchor"><option value="">None · pure PPO</option></select></label><p id="anchor-help" class="help" hidden>Keeps cloning the demonstrations while PPO plays, at a weight that decays to zero across the budget. Lowers the learning rate and entropy bonus so PPO does not wash the clone out before its value head calibrates.</p><label id="level-label">Starting CPU level<select id="training-level"><option value="">Checkpoint / setup default</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option></select></label><label id="benchmark-label" class="check" hidden><input id="benchmark" type="checkbox"> CPU-9 roster benchmark</label><p id="benchmark-help" class="help" hidden>Episode count applies to each of six matchups. Every matchup is reported separately.</p><label id="bootstrap-label">Demonstration decisions<input id="bootstrap" type="number" min="0" max="1000000" step="1" value="4096" required></label><label id="curriculum-label" class="check"><input id="curriculum" type="checkbox" checked> Advance CPU after 16 / 20 wins</label><div id="constraints" class="constraint"></div><p id="launch-conditions" class="help"></p><button id="launch" class="primary" type="submit">Start training ↗</button></form><p class="footnote">Checkpoints save every 2,048 decisions. A stop saves progress before closing emulators. Demonstration wins never count as agent wins.</p></aside>
+</div>
+<details id="diagnostics" class="card diagnostics"><summary><span>SESSION ARTIFACTS & DIAGNOSTICS</span><span>Logs · replays · reports ↗</span></summary><div class="diagnostic-body"><button id="refresh-diagnostics">Refresh selected session</button><div id="artifact-list"></div><pre id="worker-log">Select a run to inspect its worker log.</pre></div></details>
+<footer><span>MELEE LAB / LOCAL</span><span>State → policy → controller → reward</span><span id="updated">Waiting for connection</span></footer>
+</main>
+<dialog id="setup-dialog"><form id="setup-form"><div class="dialog-heading"><h2>Local setup</h2><button type="button" data-close="setup-dialog" aria-label="Close setup">×</button></div><p class="muted">Settings apply to new runs. Current training keeps its original configuration.</p><label>Agent character<select id="setup-character"><option value="FOX">Fox (Superhuman Tech)</option><option value="JIGGLYPUFF">Jigglypuff (Rest Specialist)</option><option value="MARTH">Marth</option><option value="FALCO">Falco</option><option value="CPTFALCON">Captain Falcon</option><option value="PEACH">Peach</option><option value="SHEIK">Sheik</option></select></label><label>Melee image<input id="iso" required></label><label>Slippi Dolphin executable<input id="dolphin" required></label><div class="two"><label>CPU level<input id="cpu" type="number" min="1" max="9" value="1" required></label><label>Emulation speed<select id="speed"><option value="0">Unlimited</option><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select></label></div><label class="check"><input type="checkbox" id="randomize-opponent"> Randomize opponent per emulator (Competitive Roster)</label><p id="setup-issue" class="help"></p><button id="settings" class="primary" type="submit">Save setup</button></form></dialog>
+<dialog id="promote-dialog"><form id="promote-form"><div class="dialog-heading"><h2>Keep a champion.</h2><button type="button" data-close="promote-dialog" aria-label="Close promotion">×</button></div><p id="promote-policy" class="muted"></p><div id="promote-evidence" class="constraint"></div><label>Champion name<input id="champion-name" maxlength="80" required placeholder="e.g. Fox / first finisher"></label><label>Note<textarea id="champion-note" maxlength="2000" rows="3" placeholder="What makes this policy worth keeping?"></textarea></label><p class="help">The model and its metadata are copied into champions/. Evaluation evidence is retained separately. Deleting the source run will not break this champion.</p><button id="promote-submit" class="primary" type="submit">Promote & keep copy ↗</button></form></dialog>
+<dialog id="import-save-dialog"><form id="import-save-form"><div class="dialog-heading"><h2 id="import-dialog-title">Import save file</h2><button type="button" data-close="import-save-dialog" aria-label="Close import dialog">×</button></div><p id="import-file-name" class="muted">No file selected</p><div id="import-preview-info" class="constraint" hidden></div><div id="import-policy-fields"><label>Display name<input id="import-display-name" maxlength="80" required placeholder="e.g. Jigglypuff Pro Save"></label><label>Agent character<select id="import-character"><option value="JIGGLYPUFF">Jigglypuff (Rest Specialist)</option><option value="FOX">Fox (Superhuman Tech)</option><option value="MARTH">Marth</option><option value="FALCO">Falco</option><option value="CPTFALCON">Captain Falcon</option><option value="PEACH">Peach</option><option value="SHEIK">Sheik</option></select></label></div><div id="import-gci-fields" hidden><p class="help">GameCube Memory Card save files (.gci / .raw) are automatically installed into Dolphin Memory Card A (<code>.runtime/dolphin-user/GC/USA/Card A/</code>) with full character unlocks and tournament rulesets.</p></div><p id="import-error" class="help error" hidden style="color:var(--red);margin-top:10px;"></p><div class="button-row" style="margin-top:16px;"><button id="import-submit" class="primary" type="submit">Import into Lab ↗</button></div></form></dialog>
+<script src="/assets/app.js?v=6"></script><script src="/assets/mission.js?v=6"></script><script src="/assets/overload.js?v=6"></script><script src="/assets/diagnostic.js?v=6"></script><script src="/assets/rankings.js?v=6"></script>
+<script src="/assets/league.js?v=1"></script>
+<script src="/assets/gauntlet.js?v=1"></script>
+</body></html>

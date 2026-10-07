@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Off-Road Rover Ops — 3D Neuroevolution & Multi-Body Terrain Command Center</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">🚜</div>
+      <div>
+        <div class="eyebrow">Autonomous Off-Road Neuroevolution Lab</div>
+        <h1>Off-Road Rover <b>Command Center</b></h1>
+      </div>
+    </div>
+    <div class="sysmeta">
+      <span id="chip-integrator" class="chip active">100 Hz Physics</span>
+      <span id="chip-control" class="chip active">20 Hz Policy</span>
+      <span id="chip-lidar" class="chip active">16-Beam LIDAR</span>
+      <span id="chip-gen" class="chip">Active: Gen 5</span>
+      <span id="chip-status" class="chip alert">Training: Idle</span>
+      <span class="chip">Port 8780</span>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <nav class="nav-rail">
+    <button class="tab-btn active" data-tab="telemetry">🎮 3D Telemetry & Viewport</button>
+    <button class="tab-btn" data-tab="training">⚡ Training Ops & Evolution Deck</button>
+    <button class="tab-btn" data-tab="population">🧬 Population & Genome Inspector</button>
+    <button class="tab-btn" data-tab="sensors">📡 LIDAR & Sensory Analytics</button>
+    <button class="tab-btn" data-tab="invariants">📐 Vehicle Dynamics & Invariants</button>
+  </nav>
+
+  <!-- MAIN VIEWPORT CONTENT -->
+  <main class="content-area">
+
+    <!-- ==================== TAB 1: 3D TELEMETRY & VIEWPORT ==================== -->
+    <section class="tab-panel active" id="panel-telemetry">
+      <div class="hero-banner">
+        <div class="hero-titles">
+          <div class="eyebrow">Platform: Overland 4x4 Multi-Body Crawler (800 kg)</div>
+          <h2>6-DOF Terrain Traversal Telemetry</h2>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat-block">
+            <span>Ground Speed</span>
+            <b id="hero-speed">0.0 km/h</b>
+          </div>
+          <div class="hero-stat-block">
+            <span>Course Progress</span>
+            <b id="hero-dist">0.0 / 150m</b>
+          </div>
+          <div class="hero-stat-block">
+            <span>Attitude (Roll/Pitch)</span>
+            <b id="hero-attitude">0.0° / 0.0°</b>
+          </div>
+          <div class="hero-stat-block">
+            <span>Drive Propulsion</span>
+            <b id="hero-propulsion">0 N</b>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-cols-3">
+        <!-- 3D Viewport Column -->
+        <div class="card" style="padding: 10px;">
+          <div class="card-head">
+            <span class="card-title">Three.js WebGL Articulated Simulation Viewport</span>
+            <div style="display:flex; gap:6px;">
+              <button class="btn-action" style="padding: 3px 8px; font-size: 11px;" id="btn-cam-chase">Chase Cam</button>
+              <button class="btn-action" style="padding: 3px 8px; font-size: 11px;" id="btn-cam-orbit">Orbit Cam</button>
+              <button class="btn-action" style="padding: 3px 8px; font-size: 11px;" id="btn-cam-cockpit">Cockpit</button>
+              <button class="btn-action" style="padding: 3px 8px; font-size: 11px;" id="btn-cam-overhead">Top-Down</button>
+            </div>
+          </div>
+
+          <div id="three-viewport">
+            <div id="viewport-banner" class="banner-danger">CRITICAL ROLLOVER - VEHICLE FLIPPED</div>
+          </div>
+
+          <!-- Playback Scrubber & Viewport Overlays Bar -->
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+            <div class="progress-container">
+              <div id="bar-course-progress" class="progress-fill" style="width: 0%;"></div>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:10px;">
+              <button id="btn-play-pause" class="btn-action" style="width: 75px; padding: 4px 8px; font-size: 11px;">⏸ Pause</button>
+              <button id="btn-restart" class="btn-action" style="width: 36px; padding: 4px 8px; font-size: 11px;" title="Restart Episode">⏮</button>
+              <input type="range" id="timeline-slider" style="flex:1;" min="0" max="100" value="0">
+              <span id="lbl-time-step" style="font-size: 11px; font-family: var(--font-mono); min-width: 65px; text-align: right;">0 / 0</span>
+              <select id="select-playback-speed" style="padding: 2px 6px; font-size: 11px;">
+                <option value="0.5">0.5x</option>
+                <option value="1.0" selected>1.0x</option>
+                <option value="2.0">2.0x</option>
+                <option value="4.0">4.0x</option>
+              </select>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:#64748b;">
+              <div style="display:flex; gap:12px;">
+                <label style="cursor:pointer;"><input type="checkbox" id="chk-rays" checked> 16 Lasers</label>
+                <label style="cursor:pointer;"><input type="checkbox" id="chk-com" checked> CoM Plumb-Bob</label>
+                <label style="cursor:pointer;"><input type="checkbox" id="chk-forces" checked> 3D Force Vectors</label>
+                <label style="cursor:pointer;"><input type="checkbox" id="chk-boulders" checked> Rock Wireframes</label>
+              </div>
+              <span>Click & Drag to Orbit | Scroll to Zoom</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: Flight Dynamics & Quick Controls -->
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <!-- Telemetry & Inclinometer -->
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">Attitude & Inclinometer HUD</span>
+              <span id="badge-stability" class="chip active">Upright Stable</span>
+            </div>
+            <div class="stat-row">
+              <span>Chassis Roll Angle</span>
+              <span class="val" id="val-roll">0.0°</span>
+            </div>
+            <div class="stat-row">
+              <span>Chassis Pitch Angle</span>
+              <span class="val" id="val-pitch">0.0°</span>
+            </div>
+            <div class="stat-row">
+              <span>Yaw Heading Error</span>
+              <span class="val" id="val-yaw">0.0°</span>
+            </div>
+            <div class="stat-row">
+              <span>Underbelly Skid Plate</span>
+              <span class="val" id="val-belly" style="color: #10b981;">Clear (0.35m)</span>
+            </div>
+          </div>
+
+          <!-- 4-Corner Suspension Compression -->
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">4-Corner Independent Suspension</span>
+              <span class="chip">Travel: [0.20m, 0.68m]</span>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+              <div class="stat-box">
+                <span class="stat-label">FRONT LEFT</span>
+                <span class="val" id="txt-susp-0">0 mm</span>
+                <div class="progress-container" style="height:5px; margin-top:2px;">
+                  <div id="bar-susp-0" class="progress-fill cyan" style="width: 50%;"></div>
+                </div>
+              </div>
+              <div class="stat-box">
+                <span class="stat-label">FRONT RIGHT</span>
+                <span class="val" id="txt-susp-1">0 mm</span>
+                <div class="progress-container" style="height:5px; margin-top:2px;">
+                  <div id="bar-susp-1" class="progress-fill cyan" style="width: 50%;"></div>
+                </div>
+              </div>
+              <div class="stat-box">
+                <span class="stat-label">REAR LEFT</span>
+                <span class="val" id="txt-susp-2">0 mm</span>
+                <div class="progress-container" style="height:5px; margin-top:2px;">
+                  <div id="bar-susp-2" class="progress-fill cyan" style="width: 50%;"></div>
+                </div>
+              </div>
+              <div class="stat-box">
+                <span class="stat-label">REAR RIGHT</span>
+                <span class="val" id="txt-susp-3">0 mm</span>
+                <div class="progress-container" style="height:5px; margin-top:2px;">
+                  <div id="bar-susp-3" class="progress-fill cyan" style="width: 50%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interactive Manual Drive Mode Override -->
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">Manual Drive Control (WASD)</span>
+              <button id="btn-toggle-manual" class="btn-action" style="padding:2px 8px; font-size:11px;">Enable Manual</button>
+            </div>
+            <div style="font-size:11px; color:#94a3b8; line-height: 1.5;">
+              Take manual control of the 4x4 rover using <b>W / S</b> (Throttle / Brake) and <b>A / D</b> (Steer). Test your human driving skill against the rough terrain!
+            </div>
+            <div class="stat-row" style="margin-top:4px;">
+              <span>Throttle Command:</span>
+              <span class="val" id="txt-manual-throttle">0%</span>
+            </div>
+            <div class="stat-row">
+              <span>Steer Command:</span>
+              <span class="val" id="txt-manual-steer">0.0°</span>
+            </div>
+            <button id="btn-manual-reset" class="btn-action" style="margin-top:4px;">🔄 Reset Rover to Start Line</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-Time Oscilloscopes Row -->
+      <div class="grid-cols-2">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Course Elevation Profile & Rover Position (150m Track)</span>
+            <span class="chip">Terrain Cross-Section</span>
+          </div>
+          <canvas id="chart-course" class="telemetry-chart"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Real-Time Inclinometer Oscilloscope (Pitch & Roll Angles)</span>
+            <span class="chip">Stability Horizon</span>
+          </div>
+          <canvas id="chart-attitude" class="telemetry-chart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: TRAINING OPS & EVOLUTION DECK ==================== -->
+    <section class="tab-panel" id="panel-training">
+      <!-- Training Orchestrator Hero Card -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Neuroevolution Genetic Algorithm Orchestrator</span>
+          <span id="train-deck-status" class="chip active">Engine Ready (40 Genomes / Gen)</span>
+        </div>
+
+        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:6px;">
+          <button id="btn-start-evolution" class="btn-action success">▶️ Start Continuous Evolution</button>
+          <button id="btn-pause-evolution" class="btn-action">⏸️ Pause Evolution</button>
+          <button id="btn-step-generation" class="btn-action primary">⏭️ Step 1 Generation</button>
+          <button id="btn-reset-training" class="btn-action danger">🔄 Reset Population</button>
+        </div>
+
+        <div class="progress-container" style="height:6px; margin-top:10px;">
+          <div id="bar-gen-progress" class="progress-fill sky" style="width: 100%;"></div>
+        </div>
+
+        <!-- Hyperparameter Tuning Sliders -->
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; margin-top:12px;">
+          <div class="slider-group">
+            <div class="slider-header"><span>Mutation Rate (μ)</span><b id="lbl-hp-mut-rate">0.12</b></div>
+            <input type="range" id="hp-mut-rate" min="0.02" max="0.40" step="0.01" value="0.12">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header"><span>Mutation Strength (σ)</span><b id="lbl-hp-mut-str">0.25</b></div>
+            <input type="range" id="hp-mut-str" min="0.05" max="0.60" step="0.05" value="0.25">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header"><span>Elitism Count</span><b id="lbl-hp-elite">6</b></div>
+            <input type="range" id="hp-elite" min="1" max="12" step="1" value="6">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header"><span>Tournament Size (k)</span><b id="lbl-hp-tourn">4</b></div>
+            <input type="range" id="hp-tourn" min="2" max="8" step="1" value="4">
+          </div>
+        </div>
+      </div>
+
+      <!-- Training Progress Oscilloscopes -->
+      <div class="grid-cols-2">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Fitness Convergence History (Best vs Mean vs Elite)</span>
+            <span class="chip">Generational Curve</span>
+          </div>
+          <canvas id="chart-train-fitness" class="telemetry-chart" style="height:220px;"></canvas>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Max Traversal Distance (m) vs Rollover Rate (%)</span>
+            <span class="chip">Course Cleared vs Crashes</span>
+          </div>
+          <canvas id="chart-train-distance" class="telemetry-chart" style="height:220px;"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: POPULATION & GENOME INSPECTOR ==================== -->
+    <section class="tab-panel" id="panel-population">
+      <div class="hero-banner">
+        <div class="hero-titles">
+          <div class="eyebrow">Generation Explorer & Individual Replay</div>
+          <h2>Population Roster & Neural Network Saliency</h2>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span style="font-size:12px; color:#94a3b8;">Select Generation:</span>
+          <select id="select-gen-inspector" style="width: 180px;">
+            <option value="gen_001">Gen 1 (Initial Chaos)</option>
+            <option value="gen_002">Gen 2 (Early Throttle)</option>
+            <option value="gen_003">Gen 3 (Mogul Crawler)</option>
+            <option value="gen_004">Gen 4 (Boulder Line)</option>
+            <option value="gen_005" selected>Gen 5 (Summit Victor)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid-cols-3">
+        <!-- Population Leaderboard Table -->
+        <div class="card" style="grid-column: span 2;">
+          <div class="card-head">
+            <span class="card-title">Individual Agents Leaderboard (Ranked by Fitness)</span>
+            <span class="chip" id="lbl-roster-count">40 Individuals</span>
+          </div>
+          <div style="max-height: 400px; overflow-y: auto;">
+            <table class="roster-table">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Agent ID</th>
+                  <th>Fitness Score</th>
+                  <th>Max Dist (m)</th>
+                  <th>Steps Survived</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="population-roster-tbody">
+                <!-- Populated dynamically via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Neural Network Architecture & Topology -->
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Controller Architecture</span>
+            <span class="chip">MLP (1,554 Params)</span>
+          </div>
+          <div class="stat-row">
+            <span>Input Dimensions:</span>
+            <span class="val">30 features</span>
+          </div>
+          <div class="stat-row">
+            <span>Hidden Layer 1:</span>
+            <span class="val">32 units (Tanh)</span>
+          </div>
+          <div class="stat-row">
+            <span>Hidden Layer 2:</span>
+            <span class="val">16 units (Tanh)</span>
+          </div>
+          <div class="stat-row">
+            <span>Action Output:</span>
+            <span class="val">2 continuous [Steer, Throttle]</span>
+          </div>
+          <div class="stat-row">
+            <span>Genome Encoding:</span>
+            <span class="val">Vectorized 1D Float32</span>
+          </div>
+
+          <div class="section-label" style="margin-top:8px; font-size:11px;">Feature Saliency / Sensor Weights</div>
+          <div style="font-size:11px; color:#94a3b8; display:flex; flex-direction:column; gap:4px;">
+            <div style="display:flex; justify-content:space-between;"><span>Near Bumper LIDAR Rays:</span><b style="color:#10b981;">34% (Obstacle avoidance)</b></div>
+            <div style="display:flex; justify-content:space-between;"><span>Pitch Rate & Inclinometer:</span><b style="color:#38bdf8;">28% (Anti-rollover)</b></div>
+            <div style="display:flex; justify-content:space-between;"><span>Forward Speed (vx):</span><b style="color:#f59e0b;">21% (Momentum hold)</b></div>
+            <div style="display:flex; justify-content:space-between;"><span>Course Centerline Offset:</span><b style="color:#8b5cf6;">17% (Track guidance)</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: SENSORY & LIDAR RADAR DECK ==================== -->
+    <section class="tab-panel" id="panel-sensors">
+      <div class="grid-cols-4">
+        <div class="card stat-box">
+          <span class="stat-label">Active LIDAR Raycasts</span>
+          <span class="stat-val-large cyan">16 Beams</span>
+          <span style="font-size:11px;color:#64748b;">10 Forward, 4 Bumper, 2 Tracks</span>
+        </div>
+        <div class="card stat-box">
+          <span class="stat-label">Maximum Range</span>
+          <span class="stat-val-large emerald">10.0 m</span>
+          <span style="font-size:11px;color:#64748b;">Sub-centimeter resolution</span>
+        </div>
+        <div class="card stat-box">
+          <span class="stat-label">Proximity Hazard Range</span>
+          <span class="stat-val-large rose">&lt; 3.0 m</span>
+          <span style="font-size:11px;color:#64748b;">Flashing crimson alert</span>
+        </div>
+        <div class="card stat-box">
+          <span class="stat-label">IMU Sensor Rate</span>
+          <span class="stat-val-large sky">100 Hz</span>
+          <span style="font-size:11px;color:#64748b;">Integrated gyro & accel</span>
+        </div>
+      </div>
+
+      <div class="grid-cols-2">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">16-Beam LIDAR Polar Radar Scanner (Top-Down Sweep)</span>
+            <span class="chip">Azimuth &plusmn;55°</span>
+          </div>
+          <canvas id="chart-radar" class="telemetry-chart" style="height:260px;"></canvas>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">IMU Tri-Axial Accelerometer & Gyroscope Telemetry</span>
+            <span class="chip">Body Coordinate Frame</span>
+          </div>
+          <div class="stat-row"><span>Forward Proper Accel (ax)</span><span class="val" id="val-imu-ax">0.0 m/s²</span></div>
+          <div class="stat-row"><span>Lateral Accel (ay)</span><span class="val" id="val-imu-ay">0.0 m/s²</span></div>
+          <div class="stat-row"><span>Vertical Gravity Accel (az)</span><span class="val" id="val-imu-az">-9.81 m/s²</span></div>
+          <div class="stat-row"><span>Roll Gyro Rate (p)</span><span class="val" id="val-imu-p">0.00 rad/s</span></div>
+          <div class="stat-row"><span>Pitch Gyro Rate (q)</span><span class="val" id="val-imu-q">0.00 rad/s</span></div>
+          <div class="stat-row"><span>Yaw Gyro Rate (r)</span><span class="val" id="val-imu-r">0.00 rad/s</span></div>
+          <div class="progress-container" style="margin-top:12px;">
+            <div id="bar-radar-hazard" class="progress-fill emerald" style="width: 20%;"></div>
+          </div>
+          <span style="font-size:11px; color:#64748b; margin-top:2px;">Overall Terrain Hazard Clearance Index</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 5: DYNAMICS & INVARIANTS ==================== -->
+    <section class="tab-panel" id="panel-invariants">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Overland 4x4 Multi-Body Mechanical & Physical Constants</span>
+          <span class="chip">SI System Units</span>
+        </div>
+        <div class="stat-row"><span>Gross Chassis Mass (m)</span><span class="val">800.0 kg</span></div>
+        <div class="stat-row"><span>Gravitational Constant (g)</span><span class="val">9.81 m/s²</span></div>
+        <div class="stat-row"><span>Chassis Wheelbase (L)</span><span class="val">2.20 m (Front +1.1m, Rear -1.1m)</span></div>
+        <div class="stat-row"><span>Chassis Track Width (W)</span><span class="val">1.60 m (Left +0.8m, Right -0.8m)</span></div>
+        <div class="stat-row"><span>Center of Mass Height Offset (z_com)</span><span class="val">-0.15 m (Below axle plane)</span></div>
+        <div class="stat-row"><span>Principal Roll Moment of Inertia (Ixx)</span><span class="val">277.3 kg·m²</span></div>
+        <div class="stat-row"><span>Principal Pitch Moment of Inertia (Iyy)</span><span class="val">734.7 kg·m²</span></div>
+        <div class="stat-row"><span>Principal Yaw Moment of Inertia (Izz)</span><span class="val">885.3 kg·m²</span></div>
+        <div class="stat-row"><span>Suspension Spring Stiffness (ks per corner)</span><span class="val">18,500.0 N/m</span></div>
+        <div class="stat-row"><span>Shock Damper Rate (cs per corner)</span><span class="val">2,400.0 N·s/m</span></div>
+        <div class="stat-row"><span>Anti-Roll Bar Coupling Stiffness (k_arb)</span><span class="val">3,500.0 N/m</span></div>
+        <div class="stat-row"><span>Tire Radius (R_wheel)</span><span class="val">0.42 m (420 mm)</span></div>
+        <div class="stat-row"><span>Peak Dry Rock Friction (μ_peak)</span><span class="val">1.15</span></div>
+        <div class="stat-row"><span>Peak All-Wheel Drive Torque</span><span class="val">2,400.0 N·m (50/50 locked center differential)</span></div>
+        <div class="stat-row"><span>Maximum Front Wheel Steer Angle</span><span class="val">±32.0° (0.558 rad)</span></div>
+      </div>
+
+      <div class="grid-cols-2">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Empirical Pacejka Non-Linear Tire Traction Curves</span>
+            <span class="chip">Combined Slip Model</span>
+          </div>
+          <canvas id="chart-pacejka" class="telemetry-chart" style="height:200px;"></canvas>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">150-Meter Multi-Zone Obstacle Course Breakdown</span>
+            <span class="chip">Elevation Profile</span>
+          </div>
+          <div class="stat-row"><span>Zone 1: Rolling Whoops (0 - 20m)</span><span class="val">Gentle sinusoidal washboard</span></div>
+          <div class="stat-row"><span>Zone 2: Bouldering Alley (20 - 50m)</span><span class="val">32 scattered rocks (0.4m - 1.1m)</span></div>
+          <div class="stat-row"><span>Zone 3: Mogul Ridge (50 - 90m)</span><span class="val">Cross-axial articulation mounds</span></div>
+          <div class="stat-row"><span>Zone 4: The Wall (90 - 130m)</span><span class="val">Steep 30% incline climb (12m gain)</span></div>
+          <div class="stat-row"><span>Zone 5: Summit Plateau (130 - 150m)</span><span class="val">High victory plateau</span></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="rover_data.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>

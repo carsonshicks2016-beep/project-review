@@ -1,0 +1,161 @@
+benchmark:
+  name: manduca_rigid_base_hover_wake
+  version: 0.1.0
+  status: UNVALIDATED
+  solver: IBAMR
+  solver_version: 0.19.0
+  solver_git_tag: v0.19.0
+  solver_commit: a0a8d0a4dc5deb6f576a5837b211baf0d99f5df6
+  dimension: 3
+  flow_model: incompressible_transient_viscous_navier_stokes
+  immersed_boundary: prescribed_rigid_thin_surface
+  policy_training: out_of_scope
+  validation_claim: none
+
+primary_reference:
+  citation: "Nakata, T. and Liu, H. (2012). Proc. R. Soc. B 279:722-731. DOI 10.1098/rspb.2011.1023"
+  url: https://pmc.ncbi.nlm.nih.gov/articles/PMC3248719/
+  model_scope: "Hovering M. sexta kinematics; wing/body outlines traced from Agrius convolvuli and chord-scaled; paired fore/hind wings represented as one pair."
+  caveat: "The article text swaps beta/chi labels in one sentence. This manifest uses figure 1(c)'s geometric labels: beta is body angle, chi is stroke-plane angle. The source PDF and figure should govern any further interpretation."
+
+parameters:
+  - name: wingbeat_frequency
+    symbol: f
+    value: 26.1
+    unit: Hz
+    uncertainty: "Not reported for this modeled reference case; retain as reported nominal value."
+    source: "Nakata & Liu 2012, section 2(a)(i), based on cited M. sexta hovering kinematics."
+  - name: wing_length
+    symbol: R
+    value: 0.0483
+    unit: m
+    uncertainty: "Reported mean/model value; specimen-level distribution not supplied in the article text."
+    source: "Nakata & Liu 2012, section 2(a)(i)."
+  - name: mean_chord
+    symbol: c_m
+    value: 0.0183
+    unit: m
+    uncertainty: "Reported mean/model value; specimen-level distribution not supplied in the article text."
+    source: "Nakata & Liu 2012, section 2(a)(i)."
+  - name: air_density
+    symbol: rho
+    value: 1.23
+    unit: kg m^-3
+    uncertainty: "Article nominal value; ambient-condition uncertainty not reported."
+    source: "Nakata & Liu 2012, section 2(c)."
+  - name: kinematic_viscosity
+    symbol: nu
+    value: 1.5e-5
+    unit: m^2 s^-1
+    uncertainty: "Article nominal value; ambient-condition uncertainty not reported."
+    source: "Nakata & Liu 2012, section 2(a)(i)."
+  - name: body_angle
+    symbol: beta
+    value: 39.8
+    unit: degree
+    uncertainty: "Reported nominal angle. The prose has a beta/chi label inconsistency; use figure 1(c) for definitions."
+    source: "Nakata & Liu 2012, figure 1(c) and section 2(a)(i)."
+  - name: stroke_plane_angle
+    symbol: chi
+    value: 15.0
+    unit: degree
+    uncertainty: "Reported nominal angle. The prose has a beta/chi label inconsistency; use figure 1(c) for definitions."
+    source: "Nakata & Liu 2012, figure 1(c) and section 2(a)(i)."
+  - name: peak_to_peak_stroke_amplitude
+    symbol: Phi
+    value: 2.0
+    unit: rad
+    uncertainty: "Reported nominal. Equation 2.1 uses a harmonic coefficient; its value is digitized/derived from the plotted cycle and must remain separately identified."
+    source: "Nakata & Liu 2012, section 2(a)(i), equation 2.1, figure 1(d)."
+  - name: positional_angle_first_harmonic_amplitude
+    symbol: phi_c1
+    value: 1.0
+    unit: rad
+    uncertainty: "Derived as half of reported 2 rad peak-to-peak stroke amplitude; confirm against source supplementary data before claiming exact reconstruction."
+    source: "Derived from Nakata & Liu 2012 reported Phi; explicit modeling assumption."
+  - name: feathering_first_harmonic_amplitude
+    symbol: alpha_s1
+    value: 0.87
+    unit: rad
+    uncertainty: "Approximate visual estimate from raster figure 1(d), about 50 degrees; provisional uncertainty +/-0.08 rad. No pixel-to-axis trace is retained yet. Replace with source supplementary kinematics if obtainable."
+    source: "Nakata & Liu 2012, figure 1(d); visual estimate, not a reproducible digitization or tabulated value."
+  - name: elevation_angle
+    symbol: theta
+    value: 0.0
+    unit: rad
+    uncertainty: "Set to zero for equation 2.1 rigid-base harmonic model."
+    source: "Nakata & Liu 2012, equation 2.1."
+  - name: kinematics_scale
+    symbol: s_k
+    value: 1.0
+    unit: dimensionless
+    uncertainty: "Numerical control. Set to zero only for stationary-surface verification; production hover uses 1.0."
+    source: "Benchmark implementation switch; not a biological parameter."
+  - name: target_point_stiffness
+    symbol: k_target
+    value: 15.0
+    unit: N m^-1 per Lagrangian target point
+    uncertainty: "Numerical penalty parameter only. The 1.0e5 trial caused catastrophic first-step instability; 15.0 passed only the short zero-motion control. Moving-boundary enforcement and stiffness sensitivity remain unevaluated."
+    source: "Numerical pilot; not measured moth tissue stiffness and not accepted as calibrated."
+  - name: moving_boundary_cfl_limit
+    symbol: C_kin
+    value: 0.5
+    unit: dimensionless
+    uncertainty: "Conservative implementation bound based on the harmonic angular-rate sum and wing radius; must be checked against realized displacement and fluid CFL."
+    source: "Benchmark numerical safeguard."
+  - name: reported_reynolds_number
+    symbol: Re
+    value: 6300
+    unit: dimensionless
+    uncertainty: "Approximate source-reported value. Recompute from the final declared velocity/length convention and report any difference."
+    source: "Nakata & Liu 2012, section 2(a)(i)."
+  - name: reported_reduced_frequency
+    symbol: k
+    value: 0.3
+    unit: dimensionless
+    uncertainty: "Approximate source-reported value. Definition must be reproduced from equation 2.2 before interpreting."
+    source: "Nakata & Liu 2012, section 2(a)(i)."
+
+geometry:
+  source_species_outline: Agrius convolvuli
+  scale_species: Manduca sexta
+  planform_source: "Figure 1(b), provisional manual outline estimate from the published CFD raster; not pixel-registered."
+  body_source: "Figure 1(b), no geometry currently implemented."
+  simplification: "Each side uses a single synchronized fore/hind pair in keeping with the published model."
+  flexible_wings: false
+  body_motion: fixed
+  body_geometry_in_current_implementation: omitted
+  current_force_scope: wing_only
+  geometry_uncertainty: "Manual estimate has no pixel-to-axis transform or formal uncertainty yet; raster line thickness, image scaling, and omitted venation/deformation must be quantified before a validation claim."
+  coordinate_convention: "x chord/fore-aft at the neutral root, y spanwise/lateral, z vertical and wake direction; this explicit implementation convention must be checked against the source figure pose before force-axis comparisons."
+
+independent_piv_reference:
+  doi: 10.5061/dryad.tqjq2bw6d
+  url: https://datadryad.org/dataset/doi:10.5061/dryad.tqjq2bw6d
+  dataset_version: 4
+  version_published: 2025-01-10
+  license: CC0-1.0
+  files_expected: [DPIV_DATA.mat, DPIV.avi, README.md]
+  file_manifest_from_dryad_api:
+    - name: DPIV_DATA.mat
+      size_bytes: 134473
+      sha256: 92d5b0b4dc3e825d5cc0fdd6a3f9af35b61c42b20f0c67a408ac62daab889e18
+      local_status: not_downloaded
+    - name: DPIV.avi
+      size_bytes: 40715264
+      sha256: 1cd09d9f556e7b2dd30b37488af3b87f38a2383250204c2ce8cc80a2b58cf6b2
+      local_status: not_downloaded
+    - name: README.md
+      size_bytes: 936
+      sha256: 850ce9b658fd12714059dd5496c5c8fee9ec12798d330af54a58d444350925c2
+      local_status: not_downloaded
+  experiment: "2D DPIV at 75% span, 2000 fps, 2.6 mm vector spacing."
+  specimen: "Separate moth from the Nakata & Liu model; dataset paper reports 1.47 g moth, 4.2 cm span."
+  relationship: independent_cross_study_comparison
+  local_data_status: not_obtained
+  local_access_note: "Dryad v2 metadata and file checksums were accessible, but its authenticated API download returned Unauthorized and the public file-stream URL remained on Dryad's browser security-validation page. No raw files were obtained. Do not fabricate or synthesize raw PIV observations."
+
+resource_limits:
+  max_mpi_ranks: 8
+  max_solver_memory_gb: 8
+  minimum_free_disk_gb: 40
