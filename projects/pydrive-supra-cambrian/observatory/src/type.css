@@ -1,0 +1,15 @@
+@font-face {
+  font-family: "Observatory Sans";
+  src: local("Avenir Next"), local("Helvetica Neue");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Observatory Mono";
+  src: local("SFMono-Regular"), local("Menlo"), local("Monaco");
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+}

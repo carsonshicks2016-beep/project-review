@@ -1,0 +1,360 @@
+/* ==========================================================================
+   PIT WALL — Quantum Particle Swarm training screen (tab-fable)
+   The board is built from light on a void: panel borders are particle
+   streams drawn by pitwall.js on a canvas layer; the circuit is a river of
+   evaluations; the headline gap number is swarm-formed. Data text stays
+   crisp — an unreadable pit wall is scenery, not an instrument.
+   Everything is scoped under #dock so the rest of the dashboard is
+   untouched. Static files are no-cache: edit + refresh.
+   ========================================================================== */
+#dock {
+  /* Dock now rides the shared token system: structural neutrals from the
+     shell, brand/primary accent = the active car identity, and the data
+     channels (clean / heat / death / pace) stay semantic so telemetry
+     colour still encodes meaning. Re-tints per <html data-car>. */
+  --pw-void: var(--void);
+  --pw-pane: rgba(16, 20, 26, .5);
+  --pw-pane-2: rgba(10, 13, 17, .58);
+  --pw-ink: var(--ink);
+  --pw-ink-2: var(--dim);
+  --pw-ink-3: var(--muted);
+  --pw-amber: var(--warn);          /* heat / caution (semantic) */
+  --pw-cyan: var(--id);             /* brand / primary accent -> car identity */
+  --pw-violet: #b79bff;             /* pace (data channel) */
+  --pw-green: var(--good);          /* clean (semantic) */
+  --pw-red: var(--danger);          /* death / dirty (semantic) */
+  --pw-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --pw-disp: "Avenir Next Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --pw-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--void);
+  color: var(--ink);
+  font-family: var(--pw-body);
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 14px 16px 40px;
+  overflow-y: auto;
+}
+/* offline canvas charts (charts.js) — give them a definite box to fill */
+#dock .td-chart-container { position: relative; height: 190px; }
+#dock .td-chart-container canvas { display: block; width: 100%; height: 100%; }
+#dock .pw-wall { position: relative; z-index: 2; display: flex;
+                      flex-direction: column; gap: 14px; }
+#dock .num { font-family: var(--pw-mono); font-variant-numeric: tabular-nums; }
+
+/* ---------- panels: ghost fills; the swarm draws the borders ---------- */
+#dock .pw-panel {
+  background: var(--pw-pane);
+  border: none;
+  border-radius: 6px;
+  padding: 14px 16px;
+  position: relative;
+  min-width: 0;
+  box-shadow: inset 0 0 60px rgba(20, 60, 100, .07);
+}
+#dock .pw-ph {
+  display: flex; align-items: baseline; gap: 8px;
+  font-family: var(--pw-disp); font-weight: 600; font-size: 13px;
+  letter-spacing: .16em; text-transform: uppercase; color: var(--pw-ink-2);
+  margin-bottom: 10px;
+  text-shadow: 0 0 8px rgba(120, 180, 230, .25);
+}
+#dock .pw-ph .pw-chip { width: 7px; height: 7px; border-radius: 50%;
+  align-self: center; box-shadow: 0 0 8px currentColor; }
+#dock .pw-ph .pw-sub { margin-left: auto; font-family: var(--pw-mono);
+  font-size: 10.5px; letter-spacing: 0; text-transform: none;
+  color: var(--pw-ink-3); text-shadow: none; }
+
+/* ---------- race control header ---------- */
+#dock .pw-rc { display: flex; align-items: center; gap: 18px;
+  padding: 12px 18px; flex-wrap: wrap; }
+#dock .pw-brand { font-family: var(--pw-disp); font-weight: 700;
+  font-size: 19px; letter-spacing: .06em;
+  text-shadow: 0 0 14px rgba(140, 200, 255, .35); }
+#dock .pw-brand small { color: var(--pw-amber); font-size: 19px; font-weight: 700;
+  letter-spacing: .12em; margin-left: 6px; text-shadow: 0 0 14px rgba(255,194,77,.5); }
+#dock .pw-brand .pw-brand-sub { display: block; font-size: 10px; font-weight: 500;
+  letter-spacing: .22em; color: var(--pw-ink-3); text-shadow: none; }
+#dock .pw-rail { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+#dock .pw-rail .pw-st {
+  font-family: var(--pw-disp); font-size: 11px; font-weight: 600; letter-spacing: .1em;
+  text-transform: uppercase; padding: 4px 10px 3px; border-radius: 3px;
+  color: var(--pw-ink-3); background: var(--pw-pane-2);
+  display: flex; flex-direction: column; line-height: 1.25; min-width: 74px;
+}
+#dock .pw-rail .pw-st .pw-sc { font-family: var(--pw-mono); font-size: 10px;
+  color: var(--pw-ink-3); letter-spacing: 0; }
+#dock .pw-rail .pw-st.done { color: var(--pw-green); }
+#dock .pw-rail .pw-st.done .pw-sc { color: rgba(124, 255, 176, .5); }
+#dock .pw-rail .pw-st.live { color: var(--pw-cyan); background: var(--id-soft);
+  text-shadow: 0 0 10px var(--id-glow);
+  box-shadow: 0 0 24px var(--id-glow); }
+#dock .pw-rail .pw-st.live .pw-sc { color: var(--id-ink); }
+#dock .pw-rail .pw-arrow { color: var(--pw-ink-3); font-size: 10px; }
+#dock .pw-grow { flex: 1; }
+#dock .pw-idblock { text-align: right; line-height: 1.3; }
+#dock .pw-idblock .pw-run { font-family: var(--pw-mono); font-size: 12px;
+  color: var(--pw-ink); }
+#dock .pw-idblock .pw-meta { font-family: var(--pw-mono); font-size: 10.5px;
+  color: var(--pw-ink-3); }
+#dock .pw-led { display: flex; align-items: center; gap: 7px;
+  font-family: var(--pw-disp); font-size: 12px; font-weight: 600;
+  letter-spacing: .16em; color: var(--pw-ink-3); }
+#dock .pw-led i { width: 8px; height: 8px; border-radius: 50%;
+  background: var(--pw-ink-3); }
+#dock .pw-led.live { color: var(--pw-amber);
+  text-shadow: 0 0 10px rgba(255, 194, 77, .6); }
+#dock .pw-led.live i { background: var(--pw-amber);
+  box-shadow: 0 0 12px var(--pw-amber); animation: pw-pulse 1.6s ease-in-out infinite; }
+@keyframes pw-pulse { 50% { opacity: .3; box-shadow: 0 0 3px var(--pw-amber); } }
+#dock .pw-budget { width: 210px; }
+#dock .pw-budget .pw-lbl { display: flex; justify-content: space-between;
+  font-family: var(--pw-mono); font-size: 10px; color: var(--pw-ink-3);
+  margin-bottom: 3px; }
+#dock .pw-budget .pw-bar { height: 4px; background: rgba(30, 50, 70, .4);
+  border-radius: 2px; }
+#dock .pw-budget .pw-bar i { display: block; height: 100%; width: 0;
+  background: var(--pw-cyan); border-radius: 2px; box-shadow: 0 0 8px var(--pw-cyan); }
+
+/* ---------- the chase ---------- */
+#dock .pw-chase { display: grid; grid-template-columns: 320px 1fr 250px;
+  gap: 22px; align-items: center; padding: 18px 22px; }
+#dock .pw-cap { font-family: var(--pw-disp); font-size: 11px; font-weight: 600;
+  letter-spacing: .2em; color: var(--pw-ink-3); text-transform: uppercase; }
+#dock .pw-delta-big { font-family: var(--pw-mono);
+  font-variant-numeric: tabular-nums; font-size: 54px; font-weight: 700;
+  line-height: 1.08; color: var(--pw-ink); letter-spacing: -.02em;
+  position: relative; text-shadow: 0 0 18px rgba(160, 210, 255, .3);
+  white-space: nowrap; }
+#dock .pw-delta-big.swarmed { color: transparent; text-shadow: none; }
+#dock .pw-delta-big small { font-size: 22px; font-weight: 500; }
+#dock .pw-delta-to { font-family: var(--pw-disp); font-size: 13px;
+  letter-spacing: .1em; color: var(--pw-violet); text-transform: uppercase;
+  font-weight: 600; text-shadow: 0 0 12px rgba(195, 155, 255, .45); }
+#dock .pw-delta-to.superhuman { color: var(--pw-amber);
+  text-shadow: 0 0 16px rgba(255, 194, 77, .7); }
+#dock .pw-axis { min-width: 0; }
+#dock .pw-bestcard { text-align: right; }
+#dock .pw-bestcard .pw-lap { font-family: var(--pw-mono); font-size: 30px;
+  font-weight: 600; color: var(--pw-green);
+  text-shadow: 0 0 16px rgba(124, 255, 176, .4); }
+#dock .pw-bestcard .pw-meta { font-family: var(--pw-mono); font-size: 10.5px;
+  color: var(--pw-ink-3); }
+
+/* ---------- main grid ---------- */
+#dock .pw-maingrid { display: grid;
+  grid-template-columns: 350px minmax(0, 1fr) 332px; gap: 14px;
+  align-items: start; }
+#dock .pw-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+#dock .pw-mapwrap svg { width: 100%; height: auto; display: block; }
+#dock .pw-maplegend { display: flex; gap: 12px; margin-top: 8px;
+  font-family: var(--pw-mono); font-size: 10px; color: var(--pw-ink-3);
+  flex-wrap: wrap; }
+#dock .pw-maplegend b { width: 12px; height: 3px; display: inline-block;
+  border-radius: 2px; vertical-align: middle; margin-right: 4px;
+  box-shadow: 0 0 6px currentColor; }
+
+#dock .pw-tower table { width: 100%; border-collapse: collapse; font-size: 11px; }
+#dock .pw-tower th { font-family: var(--pw-disp); font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase; font-size: 9.5px;
+  color: var(--pw-ink-3); text-align: left; padding: 2px 6px 6px; }
+#dock .pw-tower td { padding: 3px 6px;
+  border-top: 1px solid rgba(50, 80, 110, .12); font-family: var(--pw-mono);
+  font-variant-numeric: tabular-nums; color: var(--pw-ink-2); white-space: nowrap; }
+#dock .pw-tower td.pw-name { font-family: var(--pw-body); max-width: 128px;
+  overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
+#dock .pw-tower tr.sel td, #dock .pw-tower tr:hover td {
+  background: rgba(60, 120, 190, .08); color: var(--pw-ink); }
+#dock .pw-pacebar { width: 64px; height: 3px; background: rgba(30, 50, 70, .5);
+  border-radius: 2px; display: inline-block; vertical-align: middle; }
+#dock .pw-pacebar i { display: block; height: 100%; border-radius: 2px;
+  box-shadow: 0 0 6px currentColor; }
+#dock .pw-schip { font-family: var(--pw-disp); font-size: 9px; font-weight: 600;
+  letter-spacing: .1em; padding: 1px 6px; border-radius: 2px; }
+#dock .pw-schip.clean { color: var(--pw-green); background: rgba(30, 90, 60, .18); }
+#dock .pw-schip.dirty { color: var(--pw-red); background: rgba(120, 35, 25, .2);
+  text-shadow: 0 0 8px rgba(255, 122, 110, .5); }
+#dock .pw-heatcell { display: inline-block; width: 26px; height: 7px;
+  border-radius: 2px; }
+
+#dock .pw-chart svg { width: 100%; height: auto; display: block; }
+#dock .pw-smgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+#dock .pw-sm .pw-smcap { display: flex; justify-content: space-between;
+  font-family: var(--pw-mono); font-size: 10px; color: var(--pw-ink-3);
+  margin-bottom: 2px; }
+#dock .pw-sm .pw-smcap b { color: var(--pw-ink-2); font-weight: 600; }
+
+#dock .pw-feed { display: flex; flex-direction: column; gap: 6px;
+  max-height: 336px; overflow-y: auto; padding-right: 2px; }
+#dock .pw-call { display: grid; grid-template-columns: 3px 52px 1fr; gap: 8px;
+  background: var(--pw-pane-2); border-radius: 3px; padding: 6px 8px 6px 0; }
+#dock .pw-call .pw-flag { border-radius: 3px 0 0 3px;
+  box-shadow: 0 0 8px currentColor; }
+#dock .pw-call.rollback .pw-flag { background: var(--pw-red); color: var(--pw-red); }
+#dock .pw-call.continue .pw-flag,
+#dock .pw-call.best .pw-flag { background: var(--pw-green); color: var(--pw-green); }
+#dock .pw-call.watch .pw-flag { background: var(--pw-amber); color: var(--pw-amber); }
+#dock .pw-call.reseed .pw-flag,
+#dock .pw-call.consolidate .pw-flag { background: var(--pw-violet); color: var(--pw-violet); }
+#dock .pw-call .pw-t { font-family: var(--pw-mono); font-size: 10px;
+  color: var(--pw-ink-3); padding-top: 1px; }
+#dock .pw-call .pw-msg { font-size: 11px; color: var(--pw-ink-2); line-height: 1.35; }
+#dock .pw-call .pw-msg b { font-family: var(--pw-disp); font-weight: 600;
+  letter-spacing: .1em; font-size: 10.5px; }
+#dock .pw-call.rollback .pw-msg b { color: var(--pw-red);
+  text-shadow: 0 0 8px rgba(255, 122, 110, .5); }
+#dock .pw-call.best .pw-msg b,
+#dock .pw-call.continue .pw-msg b { color: var(--pw-green); }
+#dock .pw-call.watch .pw-msg b { color: var(--pw-amber); }
+#dock .pw-call.reseed .pw-msg b,
+#dock .pw-call.consolidate .pw-msg b { color: var(--pw-violet); }
+
+#dock .pw-gate { margin-bottom: 10px; }
+#dock .pw-gate .pw-gcap { display: flex; justify-content: space-between;
+  font-family: var(--pw-mono); font-size: 10.5px; color: var(--pw-ink-3);
+  margin-bottom: 3px; }
+#dock .pw-gate .pw-gcap b { color: var(--pw-ink-2); font-weight: 600; }
+#dock .pw-bullet { position: relative; height: 7px;
+  background: rgba(30, 50, 70, .4); border-radius: 2px; }
+#dock .pw-bullet .pw-fill { position: absolute; inset: 1px auto 1px 1px;
+  border-radius: 1px; box-shadow: 0 0 8px currentColor; }
+#dock .pw-bullet .pw-tick { position: absolute; top: -3px; bottom: -3px;
+  width: 2px; background: var(--pw-ink-2); }
+#dock .pw-verdict { display: flex; align-items: center; gap: 8px;
+  margin-top: 10px; padding: 7px 10px; border-radius: 3px;
+  font-family: var(--pw-disp); font-weight: 600; letter-spacing: .12em;
+  font-size: 11px; }
+#dock .pw-verdict.bad { background: rgba(120, 35, 25, .16); color: var(--pw-red);
+  text-shadow: 0 0 10px rgba(255, 122, 110, .5); }
+#dock .pw-verdict.ok { background: rgba(30, 90, 60, .14); color: var(--pw-green); }
+#dock .pw-levers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+#dock .pw-lever { background: var(--pw-pane-2); border-radius: 3px;
+  padding: 8px 6px; text-align: center; }
+#dock .pw-lever .pw-v { font-family: var(--pw-mono); font-size: 17px;
+  font-weight: 600; color: var(--pw-ink); }
+#dock .pw-lever .pw-v small { font-size: 10px; color: var(--pw-ink-3); }
+#dock .pw-lever .pw-k { font-family: var(--pw-disp); font-size: 9px;
+  font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--pw-ink-3); margin-top: 2px; }
+#dock .pw-lever.hot .pw-v { color: var(--pw-red);
+  text-shadow: 0 0 12px rgba(255, 122, 110, .55); }
+#dock .pw-lever.warm .pw-v { color: var(--pw-amber);
+  text-shadow: 0 0 12px rgba(255, 194, 77, .5); }
+
+#dock .pw-garage { display: flex; flex-direction: column; gap: 7px; }
+#dock .pw-brain { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px;
+  background: var(--pw-pane-2); border-radius: 3px; padding: 8px 10px; }
+#dock .pw-brain .pw-cat { font-family: var(--pw-disp); font-size: 10px;
+  font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--pw-violet); text-shadow: 0 0 8px rgba(195, 155, 255, .4); }
+#dock .pw-brain .pw-file { font-family: var(--pw-mono); font-size: 10px;
+  color: var(--pw-ink-3); grid-column: 1 / -1; overflow: hidden;
+  text-overflow: ellipsis; }
+#dock .pw-brain .pw-stat { font-family: var(--pw-mono); font-size: 12px;
+  color: var(--pw-ink); text-align: right; }
+#dock .pw-brain .pw-acts { grid-column: 1 / -1; display: flex; gap: 6px;
+  margin-top: 3px; }
+
+/* buttons — the swarm scatters these on click */
+#dock .pw-bt { font-family: var(--pw-disp); font-size: 9.5px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--pw-ink-2);
+  background: rgba(25, 45, 65, .35); border: 1px solid rgba(90, 140, 190, .18);
+  border-radius: 3px; padding: 3px 9px; cursor: pointer;
+  transition: color .2s, box-shadow .2s; position: relative; }
+#dock .pw-bt:hover, #dock .pw-bt:focus-visible { color: var(--pw-ink);
+  outline: none; box-shadow: 0 0 14px rgba(111, 227, 255, .25),
+  inset 0 0 8px rgba(111, 227, 255, .08); }
+#dock .pw-bt.amber { color: var(--pw-amber); border-color: rgba(255, 194, 77, .3); }
+#dock .pw-bt.stop { color: var(--pw-red); border-color: rgba(255, 122, 110, .3); }
+#dock .pw-bt.big { font-size: 11px; padding: 7px 14px; }
+#dock .pw-bt.scattered { color: transparent; text-shadow: none;
+  border-color: transparent; background: transparent; box-shadow: none; }
+#dock .pw-bt.reformed { animation: pw-reform .5s ease-out; }
+@keyframes pw-reform {
+  0% { text-shadow: 0 0 22px currentColor; letter-spacing: .3em; opacity: .4; }
+  100% { letter-spacing: .12em; opacity: 1; } }
+
+/* brain lab + behavior */
+#dock .pw-lab svg { width: 100%; height: auto; display: block; }
+#dock .pw-labmeta { display: flex; gap: 18px; font-family: var(--pw-mono);
+  font-size: 10.5px; color: var(--pw-ink-3); margin-top: 6px; flex-wrap: wrap; }
+#dock .pw-labmeta b { color: var(--pw-ink-2); font-weight: 600; }
+#dock .pw-beh { display: grid; grid-template-columns: repeat(6, 1fr) 1.6fr;
+  gap: 14px; }
+#dock .pw-tile { background: var(--pw-pane); border-radius: 6px;
+  padding: 10px 12px; box-shadow: inset 0 0 40px rgba(20, 60, 100, .06); }
+#dock .pw-tile .pw-v { font-family: var(--pw-mono); font-size: 21px;
+  font-weight: 600; color: var(--pw-ink);
+  text-shadow: 0 0 10px rgba(160, 210, 255, .25); }
+#dock .pw-tile .pw-v small { font-size: 11px; color: var(--pw-ink-3);
+  font-weight: 500; }
+#dock .pw-tile .pw-k { font-family: var(--pw-disp); font-size: 9.5px;
+  font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--pw-ink-3); margin-top: 2px; }
+
+/* pit board drawer (the real launch controls, re-housed) */
+#dock .pw-dock { display: flex; align-items: center; gap: 8px;
+  padding: 12px 16px; flex-wrap: wrap; }
+#dock .pw-dock .pw-note { margin-left: auto; font-family: var(--pw-mono);
+  font-size: 10.5px; color: var(--pw-ink-3); }
+#dock .pw-drawer { display: none; }
+#dock .pw-drawer.open { display: block; }
+#dock .pw-drawer .pw-controls { display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 16px;
+  margin: 8px 0 12px; }
+#dock .pw-drawer .field label { color: var(--pw-ink-3);
+  font-family: var(--pw-disp); font-size: 10px; letter-spacing: .12em;
+  text-transform: uppercase; }
+#dock .pw-drawer .field b { color: var(--pw-amber); }
+#dock .pw-drawer input[type="range"] { accent-color: #FFC24D; width: 100%; }
+#dock .pw-drawer select, #dock .pw-drawer input[type="text"],
+#dock .pw-drawer input:not([type]) {
+  background: rgba(4, 8, 14, .8); color: var(--pw-ink);
+  border: 1px solid rgba(90, 140, 190, .2); border-radius: 3px;
+  font-family: var(--pw-mono); font-size: 11px; padding: 4px 6px; width: 100%; }
+#dock .pw-drawer .seg { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 10px; }
+#dock .pw-drawer .seg button { background: rgba(25, 45, 65, .35);
+  color: var(--pw-ink-2); border: 1px solid rgba(90, 140, 190, .18);
+  border-radius: 3px; font-family: var(--pw-disp); font-size: 10px;
+  letter-spacing: .1em; text-transform: uppercase; padding: 4px 10px; cursor: pointer; }
+#dock .pw-drawer .seg button.on { color: var(--pw-amber);
+  border-color: rgba(255, 194, 77, .4); background: rgba(60, 42, 8, .35); }
+#dock .pw-empty { font-family: var(--pw-mono); font-size: 11px;
+  color: var(--pw-ink-3); padding: 12px 0; }
+
+#pw-tip { position: fixed; pointer-events: none; background: rgba(2, 5, 10, .92);
+  border: 1px solid rgba(111, 227, 255, .25); border-radius: 3px; padding: 6px 9px;
+  font-family: ui-monospace, Menlo, monospace; font-size: 10.5px; color: #DCEAF5;
+  z-index: 200; display: none; white-space: pre; line-height: 1.5;
+  box-shadow: 0 0 24px rgba(40, 120, 200, .25); }
+
+@media (max-width: 1280px) {
+  #dock .pw-maingrid { grid-template-columns: 1fr 1fr; }
+  #dock .pw-col.right { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
+  #dock .pw-col.right .pw-panel { flex: 1 1 300px; }
+  #dock .pw-beh { grid-template-columns: repeat(3, 1fr); }
+  #dock .pw-chase { grid-template-columns: 1fr; gap: 10px; }
+  #dock .pw-bestcard { text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #dock .pw-led.live i { animation: none; }
+  #dock .pw-bt.reformed { animation: none; }
+  #dock .pw-panel { border: 1px dotted rgba(70, 110, 150, .2); }
+}
+
+/* Lightweight handoff to the full-page Observatory (no dashboard WebGL). */
+#dock .pw-observatory-card {
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(60, 210, 220, .2);
+  border-radius: 6px;
+  background: radial-gradient(circle at 85% 15%, rgba(40, 190, 210, .12), transparent 55%),
+              rgba(4, 12, 16, .6);
+}
+#dock .pw-observatory-card b { color: #92f0f4; overflow-wrap: anywhere; }
+#dock .pw-observatory-card span { color: var(--pw-muted); font-size: 11px; line-height: 1.5; }

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carson's Coding Control Center</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕹️</text></svg>">
+  
+  <!-- Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+  <!-- Chart.js for real-time training telemetry plots -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- Background Blur Blobs -->
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+
+  <div class="app-container">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="user-avatar">CH</div>
+        <div class="user-info">
+          <h2>Carson Hicks</h2>
+          <span class="user-role">Developer & Researcher</span>
+        </div>
+      </div>
+      
+      <!-- System Telemetry Panel -->
+      <div class="telemetry-panel">
+        <div class="telemetry-header">
+          <h3>System Monitor</h3>
+          <span class="pulse-indicator"></span>
+        </div>
+        <div class="telemetry-item">
+          <div class="telemetry-label">CPU Load</div>
+          <div class="telemetry-bar-wrapper">
+            <div class="telemetry-bar" id="cpu-bar" style="width: 0%"></div>
+          </div>
+          <div class="telemetry-val" id="cpu-val">0%</div>
+        </div>
+        <div class="telemetry-item">
+          <div class="telemetry-label">Memory</div>
+          <div class="telemetry-bar-wrapper">
+            <div class="telemetry-bar" id="mem-bar" style="width: 0%"></div>
+          </div>
+          <div class="telemetry-val" id="mem-val">0%</div>
+        </div>
+        <div class="telemetry-meta">
+          <div>Host: <span id="host-val">Mac</span></div>
+          <div>Uptime: <span id="uptime-val">0h</span></div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="category-nav">
+        <h3>Categories</h3>
+        <ul>
+          <li class="active" data-category="all">
+            <span class="cat-icon">📁</span> All Projects <span class="cat-count" id="count-all">0</span>
+          </li>
+          <li data-category="ai-racing">
+            <span class="cat-icon">🏎️</span> AI Racing <span class="cat-count" id="count-ai-racing">0</span>
+          </li>
+          <li data-category="game-ai">
+            <span class="cat-icon">🎮</span> Game AI <span class="cat-count" id="count-game-ai">0</span>
+          </li>
+          <li data-category="trading">
+            <span class="cat-icon">📈</span> Trading AI <span class="cat-count" id="count-trading">0</span>
+          </li>
+          <li data-category="health">
+            <span class="cat-icon">🧬</span> Health & Bio <span class="cat-count" id="count-health">0</span>
+          </li>
+          <li data-category="creative">
+            <span class="cat-icon">🎨</span> Creative Canvas <span class="cat-count" id="count-creative">0</span>
+          </li>
+          <li data-category="tools">
+            <span class="cat-icon">🛠️</span> Fun & Tools <span class="cat-count" id="count-tools">0</span>
+          </li>
+        </ul>
+      </nav>
+      
+      <!-- Running Processes Monitor -->
+      <div class="running-processes-aside">
+        <h3>Running Tasks</h3>
+        <ul id="running-tasks-list">
+          <li class="empty-state">No background tasks</li>
+        </ul>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- Header -->
+      <header class="main-header">
+        <div class="header-title">
+          <h1>Command Center</h1>
+          <p id="clock-display">00:00:00 PM</p>
+        </div>
+        
+        <!-- Search & Filters -->
+        <div class="filter-actions">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Search projects, tags, scripts...">
+          </div>
+        </div>
+      </header>
+
+      <!-- Dashboard Grid -->
+      <section class="projects-grid" id="projects-grid">
+        <!-- Project cards injected dynamically -->
+      </section>
+    </main>
+  </div>
+
+  <!-- Command Configuration / Launch Modal -->
+  <div class="modal-overlay" id="config-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">Configure Execution</h2>
+        <button class="close-btn" id="close-modal-btn">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-fields-container">
+        <!-- Fields injected dynamically based on project -->
+      </div>
+      <div class="modal-footer">
+        <div class="command-preview">
+          <span class="cmd-label">Generated Command:</span>
+          <code id="command-preview-text">python3 run.py</code>
+        </div>
+        <div class="launch-actions">
+          <button class="btn btn-secondary" id="cancel-launch-btn">Cancel</button>
+          <button class="btn btn-primary" id="launch-task-btn">
+            <span class="btn-icon">▶️</span> Launch Task
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Log Terminal Panel -->
+  <div class="terminal-panel-floating minimized" id="terminal-drawer">
+    <div class="terminal-header" id="terminal-header-bar">
+      <div class="terminal-title">
+        <span class="terminal-icon">📟</span>
+        <span>Console</span>
+        <div class="terminal-tabs-container" id="terminal-process-tabs">
+          <!-- Active stream tabs -->
+        </div>
+      </div>
+      <!-- View mode toggles -->
+      <div class="terminal-view-selector" id="terminal-view-selector">
+        <button class="view-tab active" data-view="logs">📟 Logs</button>
+        <button class="view-tab" data-view="metrics">📊 Charts</button>
+        <button class="view-tab" data-view="dual">🖥️ Dual View</button>
+      </div>
+      <div class="terminal-controls">
+        <button id="term-clear" title="Clear screen">Clear</button>
+        <button id="term-autoscroll" class="active" title="Toggle Auto-Scroll">Scroll ✓</button>
+        <button id="term-stop-proc" class="btn-danger" title="Stop current process">Stop</button>
+        <button id="term-toggle-size" title="Minimize/Maximize">&#9650;</button>
+      </div>
+    </div>
+    <div class="terminal-body" id="terminal-body">
+      <div class="terminal-workspace-wrapper view-logs" id="terminal-workspace-wrapper">
+        <!-- Text logs console -->
+        <div class="terminal-pane text-pane" id="terminal-text-pane">
+          <pre class="terminal-stdout" id="terminal-stdout">Select a running project to stream logs...</pre>
+        </div>
+        <!-- Metrics Plotting workspace -->
+        <div class="terminal-pane chart-pane" id="terminal-chart-pane">
+          <div class="metrics-stats-grid" id="metrics-stats-grid">
+            <div class="stat-placeholder">No active metrics running. Start training to plot live stats.</div>
+          </div>
+          <div class="chart-canvas-container">
+            <canvas id="metrics-chart-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
