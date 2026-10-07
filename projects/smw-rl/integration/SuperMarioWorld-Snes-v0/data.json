@@ -1,0 +1,72 @@
+{
+  "info": {
+    "x_pos": {
+      "address": 8257684,
+      "type": "<u2"
+    },
+    "y_pos": {
+      "address": 8257686,
+      "type": "<u2"
+    },
+    "player_anim": {
+      "address": 8257649,
+      "type": "|u1"
+    },
+    "in_air": {
+      "address": 8257650,
+      "type": "|u1"
+    },
+    "powerup": {
+      "address": 8257561,
+      "type": "|u1"
+    },
+    "game_mode": {
+      "address": 8257792,
+      "type": "|u1"
+    },
+    "translevel": {
+      "address": 8262591,
+      "type": "|u1"
+    },
+    "end_level_timer": {
+      "address": 8262803,
+      "type": "|u1"
+    },
+    "secret_exit": {
+      "address": 8262684,
+      "type": "|u1"
+    },
+    "overworld_exit_mode": {
+      "address": 8261077,
+      "type": "|u1"
+    },
+    "star_timer": {
+      "address": 8262800,
+      "type": "|u1"
+    },
+    "lives": {
+      "address": 8261054,
+      "type": "|i1"
+    },
+    "coins": {
+      "address": 8261055,
+      "type": "|u1"
+    },
+    "score": {
+      "address": 8261428,
+      "type": "<u4"
+    },
+    "timer_hundreds": {
+      "address": 8261425,
+      "type": "|u1"
+    },
+    "timer_tens": {
+      "address": 8261426,
+      "type": "|u1"
+    },
+    "timer_ones": {
+      "address": 8261427,
+      "type": "|u1"
+    }
+  }
+}

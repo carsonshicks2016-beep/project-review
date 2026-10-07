@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RallyAI</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main id="game" aria-label="Rally replay">
+      <canvas id="view"></canvas>
+      <div id="status" class="status">Loading replay…</div>
+    </main>
+
+    <div class="transport">
+      <button id="play" title="Space">❚❚</button>
+      <input id="scrub" type="range" min="0" max="1" step="0.01" value="0" />
+      <span id="rate" class="tag">1x</span>
+      <span id="cam" class="tag">auto·chase</span>
+      <span id="mute" class="tag">sound</span>
+      <span class="keys">space · ←/→ · [ ] · c · m · p · r</span>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,48 @@
+[project]
+name = "rallyai"
+version = "0.1.0"
+description = "A reinforcement-learning agent that teaches itself to drive a rally car flat-out."
+requires-python = ">=3.12"
+
+dependencies = [
+    "numpy>=2.0",
+    "gymnasium>=1.0",
+    "torch>=2.4",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "websockets>=13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "jsonschema>=4.23",
+    "ruff>=0.7",
+    "httpx>=0.27",
+]
+
+[project.scripts]
+rallyai-gen-stage = "rallyai.stage.cli:main"
+rallyai-drive = "rallyai.env.drive:main"
+rallyai-control = "rallyai.control.__main__:main"
+rallyai-train = "rallyai.train.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["rallyai*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+# Vendored code is copied verbatim and must not be reformatted.
+extend-exclude = ["rallyai/physics/vendor"]
+
+[tool.ruff.lint.per-file-ignores]
+# Worker IPC: pipe death and teardown must swallow OSError subclasses without
+# taking the overnight run down. Blind-except here is intentional.
+"rallyai/train/vec_env.py" = ["BLE001", "S110"]

@@ -1,0 +1,25 @@
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@600;700;800&display=swap");
+
+@font-face {
+  font-family: "Observatory Display";
+  src: local("Barlow Condensed"), local("Arial Narrow");
+  font-style: normal;
+  font-weight: 500 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Observatory Sans";
+  src: local("Syne"), local("Avenir Next"), local("Helvetica Neue");
+  font-style: normal;
+  font-weight: 600 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Observatory Mono";
+  src: local("IBM Plex Mono"), local("SFMono-Regular"), local("Menlo");
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+}

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Council of 9 // Neural Telemetry</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --term-green: #00ff41;
+            --term-dark: #0a0a0a;
+            --node-core: #8b5cf6;
+            --node-glow: rgba(139, 92, 246, 0.5);
+            --bg-grid: rgba(0, 255, 65, 0.05);
+        }
+
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            background-color: var(--term-dark);
+            color: var(--term-green);
+            font-family: 'VT323', monospace;
+            overflow: hidden;
+        }
+
+        /* CRT Scanline Effect */
+        .scanlines {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-rows: 60px 1fr;
+            grid-template-columns: 2fr 1fr;
+            height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+            gap: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            border-bottom: 2px solid var(--term-green);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-transform: uppercase;
+        }
+
+        header h1 { margin: 0; font-size: 2.5rem; text-shadow: 0 0 10px var(--term-green); }
+        .sys-status { font-size: 1.5rem; animation: pulse 2s infinite; }
+
+        .canvas-container {
+            border: 1px solid var(--term-green);
+            position: relative;
+            background-image: 
+                linear-gradient(var(--bg-grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+            background-size: 30px 30px;
+            box-shadow: inset 0 0 50px rgba(0,255,65,0.1);
+        }
+
+        #terminal-panel {
+            border: 1px solid var(--term-green);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 255, 65, 0.02);
+        }
+
+        #terminal-panel h3 {
+            margin-top: 0; border-bottom: 1px dashed var(--term-green); padding-bottom: 10px; font-size: 1.8rem;
+        }
+
+        #sentience-log {
+            flex-grow: 1;
+            overflow-y: auto;
+            font-size: 1.4rem;
+            line-height: 1.4;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .log-entry { opacity: 0.8; }
+        .log-entry:last-child { opacity: 1; text-shadow: 0 0 8px var(--term-green); }
+        .log-timestamp { color: #888; font-size: 1.1rem; margin-right: 10px; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* D3 SVG Styles */
+        .node-core { fill: var(--node-core); }
+        .node-pulse { fill: var(--node-glow); }
+        .link { stroke: var(--term-green); stroke-opacity: 0.3; stroke-width: 1.5px; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--term-dark); border-left: 1px solid var(--term-green); }
+        ::-webkit-scrollbar-thumb { background: var(--term-green); }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+    
+    <div class="dashboard">
+        <header>
+            <h1>[ COUNCIL OF 9 ] :: SYSTEM_CORE</h1>
+            <div class="sys-status">STATUS: ONLINE_</div>
+        </header>
+
+        <div class="canvas-container" id="brain-canvas"></div>
+
+        <div id="terminal-panel">
+            <h3>// SENTIENCE_LOG</h3>
+            <div id="sentience-log"></div>
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('brain-canvas');
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+
+        const svg = d3.select("#brain-canvas").append("svg")
+            .attr("width", width).attr("height", height);
+
+        // SVG Filters for glowing effect
+        const defs = svg.append("defs");
+        const filter = defs.append("filter").attr("id", "glow");
+        filter.append("feGaussianBlur").attr("stdDeviation", "4").attr("result", "coloredBlur");
+        const feMerge = filter.append("feMerge");
+        feMerge.append("feMergeNode").attr("in", "coloredBlur");
+        feMerge.append("feMergeNode").attr("in", "SourceGraphic");
+
+        const nodes = Array.from({length: 9}, (_, i) => ({
+            id: i, 
+            label: i === 0 ? "META" : `C-${i}`
+        }));
+        const links = nodes.slice(1).map((n, i) => ({source: 0, target: i + 1}));
+
+        const simulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink(links).id(d => d.id).distance(120))
+            .force("charge", d3.forceManyBody().strength(-300))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collide", d3.forceCollide().radius(30));
+
+        const link = svg.append("g").selectAll(".link")
+            .data(links).enter().append("line").attr("class", "link");
+
+        const nodeGroup = svg.append("g").selectAll(".node-group")
+            .data(nodes).enter().append("g");
+
+        // Outer pulsing aura
+        nodeGroup.append("circle")
+            .attr("class", "node-pulse")
+            .attr("r", 15)
+            .style("filter", "url(#glow)");
+
+        // Inner solid core
+        nodeGroup.append("circle")
+            .attr("class", "node-core")
+            .attr("r", 6);
+
+        // Node labels
+        nodeGroup.append("text")
+            .text(d => d.label)
+            .attr("fill", "#fff")
+            .attr("font-size", "14px")
+            .attr("font-family", "VT323")
+            .attr("dx", 18)
+            .attr("dy", 5);
+
+        function updateGraph() {
+            fetch('/api/brain_state')
+                .then(r => r.json())
+                .then(data => {
+                    // Update Terminal
+                    const logContainer = document.getElementById('sentience-log');
+                    const entry = document.createElement('div');
+                    entry.className = 'log-entry';
+                    
+                    const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: "numeric", minute: "numeric", second: "numeric" });
+                    entry.innerHTML = `<span class="log-timestamp">[${time}]</span>> ${data.thought}`;
+                    
+                    logContainer.appendChild(entry);
+                    
+                    // Keep max 20 entries
+                    if(logContainer.children.length > 20) {
+                        logContainer.removeChild(logContainer.firstChild);
+                    }
+                    
+                    // Auto-scroll to bottom
+                    logContainer.scrollTop = logContainer.scrollHeight;
+
+                    // Animate Nodes
+                    nodeGroup.selectAll(".node-pulse").transition().duration(500)
+                        .attr("r", () => 10 + (Math.random() * 25))
+                        .style("fill", () => Math.random() > 0.5 ? "rgba(0,255,65,0.6)" : "rgba(139,92,246,0.6)");
+                })
+                .catch(err => console.log("Awaiting core sync..."));
+        }
+
+        simulation.on("tick", () => {
+            link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+            nodeGroup.attr("transform", d => `translate(${d.x},${d.y})`);
+        });
+
+        setInterval(updateGraph, 3000);
+    </script>
+</body>
+</html>

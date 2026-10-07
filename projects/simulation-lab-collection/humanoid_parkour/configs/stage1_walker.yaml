@@ -1,0 +1,35 @@
+# Stage 1: Warmup - Walker2d Locomotion PPO Configuration
+exp_name: "stage1_walker2d"
+seed: 42
+torch_deterministic: True
+cuda: False # CPU vectorized execution is optimal on Apple Silicon for C++ MuJoCo
+
+# Environment
+env_id: "Walker2d-v5"
+num_envs: 8
+capture_video: True
+
+# PPO Hyperparameters
+total_timesteps: 1000000
+learning_rate: 3.0e-4
+num_steps: 2048 # Steps per environment rollout
+anneal_lr: True
+gamma: 0.99
+gae_lambda: 0.95
+num_minibatches: 64 # minibatch_size = (8 * 2048) / 64 = 256
+update_epochs: 10
+norm_adv: True
+clip_coef: 0.2
+clip_vloss: True
+ent_coef: 0.001
+vf_coef: 0.5
+max_grad_norm: 0.5
+target_kl: 0.015
+
+# Evaluation & Checkpointing
+eval_freq_iterations: 5 # Evaluate and record video every 5 PPO updates (~82k steps)
+eval_episodes: 3
+checkpoint_freq_iterations: 10
+model_dir: "humanoid_parkour/models"
+video_dir: "humanoid_parkour/videos"
+run_dir: "humanoid_parkour/runs"

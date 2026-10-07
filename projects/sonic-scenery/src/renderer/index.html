@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sonic Scenery</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+      #stage { display: block; width: 100vw; height: 100vh; }
+      #hint {
+        position: fixed; left: 12px; bottom: 10px; z-index: 10;
+        font: 12px/1.4 -apple-system, system-ui, sans-serif;
+        color: rgba(255, 255, 255, 0.55); user-select: none; pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="stage"></canvas>
+    <div id="hint">Sonic Scenery — demo world. Press <b>W</b> to crossfade between worlds.</div>
+    <script type="module">
+      import { bootstrap } from "./index.ts";
+      import { DEMO_WORLD, DEMO_WORLD_ALT } from "./demoWorld.ts";
+
+      const canvas = document.getElementById("stage");
+      const handle = bootstrap(canvas, DEMO_WORLD);
+      const hint = document.getElementById("hint");
+
+      // When running inside Electron, the main process pushes a generated
+      // WorldSpec per Spotify track change — crossfade to it.
+      window.sonicScenery?.onWorld((spec) => {
+        handle.swapWorld(spec);
+        if (hint) hint.textContent = `Sonic Scenery — ${spec.biome}`;
+      });
+      window.sonicScenery?.onStatus((s) => {
+        if (hint && s.mode === "demo") {
+          hint.textContent = "Sonic Scenery — demo world. Press W to crossfade. " + (s.message ?? "");
+        }
+      });
+
+      // Demo / standalone: press "w" to crossfade between the two hand-written
+      // worlds, exercising the track-change dissolve without Spotify running.
+      let showingAlt = false;
+      window.addEventListener("keydown", (e) => {
+        if (e.key.toLowerCase() === "w") {
+          showingAlt = !showingAlt;
+          handle.swapWorld(showingAlt ? DEMO_WORLD_ALT : DEMO_WORLD);
+        }
+      });
+    </script>
+  </body>
+</html>
