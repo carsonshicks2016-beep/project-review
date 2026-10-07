@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#101214" />
+    <meta
+      name="description"
+      content="Fable Five Watch 2.5D — PS1-leaning Nordschleife ribbon viewer on Python-truth telemetry."
+    />
+    <title>Fable Watch 2.5D</title>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="stage" aria-label="Watch 2.5D stage"></canvas>
+      <header class="hud" aria-label="Live telemetry">
+        <div class="hud-top">
+          <div class="brand">
+            <em>WATCH 2.5D</em>
+            <strong>PHASE 5</strong>
+          </div>
+          <div class="hud-right">
+            <button type="button" id="toggle-audio" class="audio-toggle" aria-pressed="false" data-state="off">
+              AUDIO
+            </button>
+            <dl class="meta-readouts">
+              <div>
+                <dt>CONN</dt>
+                <dd id="hud-conn" data-state="connecting">CONNECTING</dd>
+              </div>
+              <div>
+                <dt>CAM</dt>
+                <dd id="hud-cam">CHASE</dd>
+              </div>
+              <div>
+                <dt>WX</dt>
+                <dd id="hud-wx">CLEAR</dd>
+              </div>
+              <div>
+                <dt>CRT</dt>
+                <dd id="hud-crt">CRT</dd>
+              </div>
+              <div>
+                <dt>SEQ</dt>
+                <dd id="hud-seq">—</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+        <div class="dash" aria-label="Rally dash">
+          <div class="dash-speed">
+            <span class="dash-label">SPD</span>
+            <span id="hud-speed" class="dash-digits">000</span>
+            <span class="dash-unit">km/h</span>
+          </div>
+          <div class="dash-gear">
+            <span class="dash-label">GEAR</span>
+            <span id="hud-gear" class="dash-gear-digit">N</span>
+          </div>
+          <div class="dash-lap">
+            <span class="dash-label">PROG</span>
+            <span id="hud-progress" class="dash-lap-digits">0.0%</span>
+            <span id="hud-laptime" class="dash-time">0:00.0</span>
+          </div>
+        </div>
+        <p id="hud-note" class="hud-note" hidden></p>
+        <p id="hud-status" class="status">loading track…</p>
+      </header>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

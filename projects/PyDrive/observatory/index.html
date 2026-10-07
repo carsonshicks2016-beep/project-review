@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#030507" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23040608'/%3E%3Ccircle cx='32' cy='32' r='19' fill='none' stroke='%235ee1ff' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='6' fill='%235ee1ff'/%3E%3C/svg%3E"
+    />
+    <meta
+      name="description"
+      content="Fable Five Observatory — deterministic Python-truth playback of trained Nordschleife brains."
+    />
+    <title>Fable Observatory</title>
+  </head>
+  <body>
+    <div id="app" data-quality="high" data-panel="none" data-weather="clear-day">
+      <canvas id="stage" aria-label="Fable Five playback stage"></canvas>
+      <div class="stage-grade" aria-hidden="true"></div>
+
+      <!-- ── top strip: provenance left, link state right ─────────────── -->
+      <header class="strip">
+        <div class="plate" id="identity-plate">
+          <button class="plate-head" id="plate-toggle" type="button" aria-expanded="false">
+            <span class="sigil" aria-hidden="true"></span>
+            <span class="plate-title">
+              <em>OBSERVATORY</em>
+              <strong id="identity-car">RESOLVING</strong>
+            </span>
+            <span class="plate-brief">
+              <span id="identity-edition">—</span>
+              <span id="identity-stage">—</span>
+            </span>
+          </button>
+          <dl class="plate-detail" id="plate-detail">
+            <div class="wide"><dt>Checkpoint</dt><dd id="identity-checkpoint">NO CHECKPOINT</dd></div>
+            <div class="wide mono"><dt>Policy SHA-256</dt><dd id="identity-hash">HASH UNAVAILABLE</dd></div>
+            <div><dt>Classification</dt><dd id="identity-classification">UNVERIFIED PLAYBACK</dd></div>
+            <div><dt>Drivetrain</dt><dd id="identity-drivetrain">—</dd></div>
+            <div><dt>Observation</dt><dd id="identity-observation">—</dd></div>
+            <div><dt>Compatibility</dt><dd id="identity-compatibility">—</dd></div>
+            <div class="wide"><dt>Notices</dt><dd id="identity-warnings">none</dd></div>
+          </dl>
+        </div>
+        <div class="link">
+          <span class="truth-tag">PYTHON&nbsp;TRUTH</span>
+          <span id="connection-state" data-state="connecting">CONNECTING</span>
+        </div>
+      </header>
+
+      <!-- ── bottom band: shot · speed cluster · lap ──────────────────── -->
+      <footer class="band">
+        <div class="shot">
+          <i class="rec" aria-hidden="true"></i>
+          <strong id="camera-shot">SIGNAL ACQUIRING</strong>
+        </div>
+        <div class="cluster" aria-label="Speed and gear">
+          <div class="vel"><strong id="telemetry-speed">000</strong><span>KM/H</span></div>
+          <div class="cog">
+            <strong id="telemetry-gear">N</strong>
+            <span id="telemetry-rpm">0 RPM</span>
+          </div>
+        </div>
+        <div class="lap">
+          <span><em>LAP</em><strong id="telemetry-lap">—</strong></span>
+          <span><em>DIST</em><strong id="telemetry-progress">0.0%</strong></span>
+          <span><em>PACE</em><strong id="telemetry-pace">—</strong></span>
+        </div>
+      </footer>
+
+      <!-- ── dock ─────────────────────────────────────────────────────── -->
+      <nav class="dock" aria-label="Workspaces">
+        <button id="mode-cinematic" type="button" class="on" aria-pressed="true">STAGE</button>
+        <button id="toggle-controls" type="button" aria-pressed="false">VIEW</button>
+        <button id="toggle-engineer" type="button" aria-pressed="false">ENGINEER</button>
+        <button id="toggle-xray" type="button" aria-pressed="false">BRAIN</button>
+        <button id="toggle-replay" type="button" aria-pressed="false">REPLAY</button>
+        <button id="toggle-audio" type="button" aria-pressed="false">AUDIO OFF</button>
+      </nav>
+
+      <!-- ── panels (right sheet) ─────────────────────────────────────── -->
+      <section class="sheet" id="view-controls" data-open="false" aria-label="View controls">
+        <h2>View</h2>
+        <label class="row">
+          <span>Camera</span>
+          <select id="camera-mode">
+            <option value="broadcast">Broadcast director</option>
+            <option value="chase">Chase</option>
+            <option value="roof">Onboard roof</option>
+            <option value="trackside">Trackside</option>
+            <option value="drone">Drone orbit</option>
+            <option value="free">Free look</option>
+          </select>
+        </label>
+        <label class="row">
+          <span>Conditions</span>
+          <select id="weather-mode">
+            <option value="clear-day">Clear day</option>
+            <option value="overcast-day">Overcast day</option>
+            <option value="wet-day">Wet day</option>
+            <option value="rain-day">Rain day</option>
+            <option value="clear-dusk">Clear dusk</option>
+            <option value="wet-dusk">Wet dusk</option>
+            <option value="rain-dusk">Rain dusk</option>
+            <option value="clear-night">Clear night</option>
+            <option value="rain-night">Rain night</option>
+          </select>
+        </label>
+        <p class="fine">Camera and weather are presentation only. Physics, policy, and audio stay in Python.</p>
+      </section>
+
+      <section class="sheet" id="engineer-overlay" data-open="false" aria-label="Engineer">
+        <h2>Engineer</h2>
+        <div class="bars">
+          <label><span>Throttle</span><meter id="telemetry-throttle" min="0" max="1" value="0"></meter></label>
+          <label><span>Brake</span><meter id="telemetry-brake" min="0" max="1" value="0"></meter></label>
+          <label><span>Steer</span><meter id="telemetry-steer" min="-1" max="1" value="0"></meter></label>
+        </div>
+        <table class="wheels" aria-label="Wheel telemetry">
+          <thead><tr><th></th><th>Load</th><th>Slip</th><th>Grip</th></tr></thead>
+          <tbody id="wheel-rows"></tbody>
+        </table>
+        <dl class="kv">
+          <div><dt>Surface</dt><dd id="telemetry-surface">TRACK</dd></div>
+          <div><dt>Boost</dt><dd id="telemetry-boost">—</dd></div>
+          <div><dt>Hybrid SOC</dt><dd id="telemetry-soc">—</dd></div>
+          <div><dt>MGU</dt><dd id="telemetry-mgu">—</dd></div>
+          <div><dt>Aero</dt><dd id="telemetry-aero">—</dd></div>
+          <div><dt>Fable</dt><dd id="telemetry-fable">—</dd></div>
+        </dl>
+      </section>
+
+      <section class="sheet" id="brain-overlay" data-open="false" aria-label="Brain">
+        <h2>Brain</h2>
+        <div class="bars">
+          <label><span>Steer cmd</span><meter id="brain-steer" min="-1" max="1" value="0"></meter></label>
+          <label><span>Long cmd</span><meter id="brain-long" min="-1" max="1" value="0"></meter></label>
+          <label><span>Gear cmd</span><meter id="brain-gear" min="-1" max="1" value="0"></meter></label>
+        </div>
+        <dl class="kv">
+          <div><dt>Critic</dt><dd id="brain-critic">—</dd></div>
+          <div><dt>Policy σ</dt><dd id="brain-std">—</dd></div>
+        </dl>
+        <h3>Hidden activations</h3>
+        <canvas id="brain-hidden" width="256" height="56"></canvas>
+        <h3>Observation vector</h3>
+        <canvas id="brain-obs" width="256" height="28"></canvas>
+        <p class="fine">Sensor rays and the predicted path draw in-world while this panel is open.</p>
+      </section>
+
+      <section class="sheet" id="replay-overlay" data-open="false" aria-label="Replay">
+        <h2>Replay</h2>
+        <div class="clockline">
+          <strong id="replay-clock">00:00.000</strong>
+          <span id="replay-episode">EP —</span>
+        </div>
+        <div class="transport">
+          <button id="control-pause" type="button">Pause</button>
+          <button id="control-step" type="button">Step</button>
+          <button id="control-reset" type="button">Reset</button>
+          <select id="control-speed" aria-label="Playback speed">
+            <option value="0.25">0.25×</option>
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="2">2×</option>
+          </select>
+        </div>
+        <label class="scrubline">
+          <span>Rewind (seconds ago · 120 s memory)</span>
+          <input id="control-scrub" type="range" min="0" max="120" step="0.5" value="0" />
+        </label>
+        <div class="events" id="replay-events" aria-live="polite"><span>event log armed</span></div>
+      </section>
+
+      <!-- ── loading + toast ──────────────────────────────────────────── -->
+      <div class="loader" id="loading-card" data-hidden="false">
+        <span class="sigil big" aria-hidden="true"></span>
+        <strong id="loading-title">Bringing the Nordschleife online</strong>
+        <div class="gauge"><i id="loading-progress"></i></div>
+        <small id="loading-detail">contacting playback service</small>
+      </div>
+
+      <div id="toast" data-open="false" role="status" aria-live="polite"></div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
