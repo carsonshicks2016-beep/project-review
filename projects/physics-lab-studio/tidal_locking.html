@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tidal Locking & Spin-Orbit Resonance Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body, html { margin: 0; padding: 0; overflow: hidden; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .glass-panel { background: rgba(17, 26, 34, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(29, 43, 56, 1); border-radius: 1rem; }
+        input[type=range] { width: 100%; accent-color: #00f0ff; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 3px; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-300">
+
+    <canvas id="simCanvas" class="absolute inset-0 w-full h-full"></canvas>
+
+    <!-- Start Audio Button -->
+    <button id="startAudioBtn" class="absolute top-4 left-1/2 -translate-x-1/2 px-6 py-2 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-full shadow-lg transition z-50">
+        Start Audio & Simulation
+    </button>
+
+    <!-- HUD Left -->
+    <div class="absolute top-4 left-4 w-72 glass-panel p-5 flex flex-col gap-3 z-40">
+        <h1 class="text-xl font-bold text-sky-400 mb-2">Tidal Locking Sim</h1>
+        
+        <div class="text-sm border-b border-slate-700 pb-2">
+            <div class="flex justify-between"><span class="text-slate-400">Spin Period:</span> <span id="outSpinPeriod" class="font-mono text-emerald-400">--</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Orbital Period:</span> <span id="outOrbPeriod" class="font-mono text-sky-400">--</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Ratio (Spin/Orbit):</span> <span id="outRatio" class="font-mono font-bold text-white">--</span></div>
+        </div>
+
+        <div class="text-sm border-b border-slate-700 pb-2">
+            <div class="flex justify-between"><span class="text-slate-400">Eccentricity (e):</span> <span id="outEcc" class="font-mono text-amber-400">--</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Distance (r):</span> <span id="outDist" class="font-mono">--</span></div>
+        </div>
+
+        <div class="text-sm pb-2">
+            <div class="flex justify-between"><span class="text-slate-400">Tidal Torque (τ):</span> <span id="outTorque" class="font-mono text-rose-400">--</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Tidal Heating:</span> <span id="outHeating" class="font-mono text-orange-400">--</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Locking State:</span> <span id="outState" class="font-mono text-white">--</span></div>
+        </div>
+    </div>
+
+    <!-- Controls Right -->
+    <div class="absolute top-4 right-4 w-80 glass-panel p-5 z-40 custom-scroll" style="max-height: calc(100vh - 12rem); overflow-y: auto;">
+        <h2 class="text-lg font-semibold text-white mb-4">Controls</h2>
+        
+        <div class="mb-4">
+            <label class="text-xs text-slate-400 uppercase tracking-wider">Initial Spin Rate (ω_spin)</label>
+            <input type="range" id="slSpin" min="0.1" max="5" step="0.01" value="2.5">
+            <button id="btnSetSpin" class="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-white mt-1 w-full">Set Spin Rate</button>
+        </div>
+
+        <div class="mb-4">
+            <label class="text-xs text-slate-400 uppercase tracking-wider">Orbital Eccentricity (e) <span id="valEcc" class="float-right text-sky-400">0.00</span></label>
+            <input type="range" id="slEcc" min="0" max="0.6" step="0.01" value="0">
+        </div>
+
+        <div class="mb-4">
+            <label class="text-xs text-slate-400 uppercase tracking-wider">Planet-Moon Distance <span id="valDist" class="float-right text-sky-400">1.0</span></label>
+            <input type="range" id="slDist" min="0.5" max="2.0" step="0.05" value="1.0">
+        </div>
+
+        <div class="mb-4">
+            <label class="text-xs text-slate-400 uppercase tracking-wider">Tidal Viscosity (Speed) <span id="valVisc" class="float-right text-sky-400">1x</span></label>
+            <input type="range" id="slVisc" min="0" max="5" step="0.1" value="1.5">
+        </div>
+
+        <div class="mb-4">
+            <label class="text-xs text-slate-400 uppercase tracking-wider mb-2 block">Toggles</label>
+            <div class="flex items-center mb-1"><input type="checkbox" id="tgBulge" checked class="mr-2 accent-sky-500"><label class="text-sm">Exaggerate Tidal Bulge</label></div>
+            <div class="flex items-center mb-1"><input type="checkbox" id="tgTorque" checked class="mr-2 accent-sky-500"><label class="text-sm">Show Torque Vectors</label></div>
+            <div class="flex items-center mb-1"><input type="checkbox" id="tgTerminator" checked class="mr-2 accent-sky-500"><label class="text-sm">Show Day/Night Terminator</label></div>
+        </div>
+
+        <div class="mb-2">
+            <label class="text-xs text-slate-400 uppercase tracking-wider mb-2 block">Presets</label>
+            <div class="grid grid-cols-1 gap-2">
+                <button class="preset-btn text-xs py-1.5 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700" data-preset="earth-moon">Earth-Moon (1:1 Locked)</button>
+                <button class="preset-btn text-xs py-1.5 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700" data-preset="early-moon">Early Moon (Fast Spin)</button>
+                <button class="preset-btn text-xs py-1.5 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700" data-preset="mercury">Mercury-Sun (3:2 Res)</button>
+                <button class="preset-btn text-xs py-1.5 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700" data-preset="io">Io (Tidal Heating)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Explainer Cards Bottom -->
+    <div class="absolute bottom-4 left-4 right-4 flex gap-4 z-40 pointer-events-none">
+        <div class="glass-panel p-4 flex-1 pointer-events-auto">
+            <h3 class="text-sky-400 font-bold mb-1 text-sm">1. Two Tidal Bulges</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">Gravity weakens with distance. The planet pulls the moon's near side harder than its center, and the center harder than its far side. This differential pull stretches the moon into an ellipsoid, creating two bulges facing toward and away from the planet.</p>
+        </div>
+        <div class="glass-panel p-4 flex-1 pointer-events-auto">
+            <h3 class="text-sky-400 font-bold mb-1 text-sm">2. Tidal Torque & Lag</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">If the moon spins faster than its orbit, friction pulls the tidal bulges slightly ahead of the planet-moon line (lag angle δ). The planet's gravity pulls back on this misaligned bulge, creating a torque that slows the moon's spin down over millions of years.</p>
+        </div>
+        <div class="glass-panel p-4 flex-1 pointer-events-auto">
+            <h3 class="text-sky-400 font-bold mb-1 text-sm">3. Eccentricity & Resonance</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">In an elliptical orbit, orbital speed varies (Kepler's 2nd Law). Tidal forces are strongest at periapsis (closest approach). If eccentricity is high enough, the moon can lock its spin to match the orbital speed *only at periapsis*, leading to higher-order resonances like Mercury's 3:2.</p>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const startAudioBtn = document.getElementById('startAudioBtn');
+
+        // Physics State
+        let G_M = 10000; // Gravitational parameter
+        let baseDist = 300;
+        let distMult = 1.0;
+        let semiMajorAxis = baseDist;
+        let eccentricity = 0.0;
+        let trueAnomaly = 0; // Angle of orbit
+        
+        let omegaSpin = 0.05; // Current spin angular velocity
+        let thetaSpin = 0; // Current rotation angle
+
+        let viscSpeed = 1.5;
+        let time = 0;
+
+        // Constants
+        const R_moon = 40;
+        const R_planet = 70;
+
+        // Visuals
+        let dpr = window.devicePixelRatio || 1;
+        let width, height;
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Audio System
+        let audioCtx;
+        let masterGain, droneOsc, droneFilter, frictionOsc, frictionGain, lockChimeOsc, lockChimeGain;
+        let audioStarted = false;
+
+        function initAudio() {
+            if (audioStarted) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.5;
+            masterGain.connect(audioCtx.destination);
+
+            // Drone (Orbital/Gravitational presence)
+            droneOsc = audioCtx.createOscillator();
+            droneOsc.type = 'sine';
+            droneOsc.frequency.value = 55;
+            
+            droneFilter = audioCtx.createBiquadFilter();
+            droneFilter.type = 'lowpass';
+            droneFilter.frequency.value = 100;
+            
+            droneOsc.connect(droneFilter);
+            droneFilter.connect(masterGain);
+            droneOsc.start();
+
+            // Friction Groan (Tidal torque)
+            frictionOsc = audioCtx.createOscillator();
+            frictionOsc.type = 'sawtooth';
+            frictionOsc.frequency.value = 110;
+            
+            let frictionFilter = audioCtx.createBiquadFilter();
+            frictionFilter.type = 'bandpass';
+            frictionFilter.frequency.value = 300;
+            frictionFilter.Q.value = 2;
+
+            frictionGain = audioCtx.createGain();
+            frictionGain.gain.value = 0;
+
+            frictionOsc.connect(frictionFilter);
+            frictionFilter.connect(frictionGain);
+            frictionGain.connect(masterGain);
+            frictionOsc.start();
+
+            // Lock Chime
+            lockChimeOsc = audioCtx.createOscillator();
+            lockChimeOsc.type = 'triangle';
+            lockChimeOsc.frequency.value = 880;
+            
+            lockChimeGain = audioCtx.createGain();
+            lockChimeGain.gain.value = 0;
+            
+            lockChimeOsc.connect(lockChimeGain);
+            lockChimeGain.connect(masterGain);
+            lockChimeOsc.start();
+
+            audioStarted = true;
+            startAudioBtn.style.display = 'none';
+        }
+
+        startAudioBtn.addEventListener('click', initAudio);
+
+        // Simulation Loop
+        let lastTime = performance.now();
+        
+        function getOrbitalDistance(theta) {
+            return (semiMajorAxis * (1 - eccentricity * eccentricity)) / (1 + eccentricity * Math.cos(theta));
+        }
+
+        function getOrbitalAngularVelocity(r) {
+            // v = sqrt(GM(2/r - 1/a))
+            // h = r^2 * d(theta)/dt = sqrt(GM * a * (1-e^2))
+            const h = Math.sqrt(G_M * semiMajorAxis * (1 - eccentricity * eccentricity));
+            return h / (r * r);
+        }
+
+        let lockedFrames = 0;
+        let lastResonance = 0;
+
+        function updatePhysics(dt) {
+            semiMajorAxis = baseDist * distMult;
+
+            // Orbital motion
+            let r = getOrbitalDistance(trueAnomaly);
+            let omegaOrbit = getOrbitalAngularVelocity(r);
+            
+            // Time step
+            let dtSim = (dt / 1000) * 0.5; // Base simulation speed
+            
+            trueAnomaly += omegaOrbit * dtSim;
+            if (trueAnomaly > Math.PI * 2) trueAnomaly -= Math.PI * 2;
+            
+            thetaSpin += omegaSpin * dtSim;
+            if (thetaSpin > Math.PI * 2) thetaSpin -= Math.PI * 2;
+
+            // Tidal physics
+            // Instantaneous tidal torque approx proportional to (omegaSpin - omegaOrbit) / r^6
+            let spinDiff = omegaSpin - omegaOrbit;
+            let viscosityFactor = Math.pow(10, viscSpeed) * 0.000000001; // Scale factor
+            
+            // Torque calculation
+            let r_scaled = r / 100;
+            let torque = -viscosityFactor * spinDiff / Math.pow(r_scaled, 6);
+            
+            // Apply torque to spin
+            let momentOfInertia = 1.0; 
+            omegaSpin += (torque / momentOfInertia) * dtSim * 10000; // Accelerated time
+
+            // Damping near resonances (1:1, 3:2, 2:1)
+            let avgOmegaOrbit = Math.sqrt(G_M / Math.pow(semiMajorAxis, 3));
+            let ratio = omegaSpin / avgOmegaOrbit;
+            
+            let isLocked = false;
+            let resonanceRatio = 1.0;
+
+            if (eccentricity < 0.05) {
+                if (Math.abs(ratio - 1.0) < 0.02) {
+                    omegaSpin = avgOmegaOrbit;
+                    isLocked = true;
+                    resonanceRatio = 1.0;
+                }
+            } else {
+                // Check 3:2 resonance (Mercury)
+                if (Math.abs(ratio - 1.5) < 0.02 && eccentricity > 0.15) {
+                    omegaSpin = avgOmegaOrbit * 1.5;
+                    isLocked = true;
+                    resonanceRatio = 1.5;
+                } else if (Math.abs(ratio - 1.0) < 0.02) {
+                    omegaSpin = avgOmegaOrbit;
+                    isLocked = true;
+                    resonanceRatio = 1.0;
+                }
+            }
+
+            // Audio Synthesis Update
+            if (audioStarted) {
+                // Drone volume pulses with orbital distance (1/r^3)
+                let rNorm = baseDist / r;
+                let tidalStress = Math.pow(rNorm, 3);
+                droneFilter.frequency.setTargetAtTime(100 + tidalStress * 300, audioCtx.currentTime, 0.1);
+                
+                // Friction Groan
+                let frictionVal = Math.abs(torque) * 1e8;
+                frictionGain.gain.setTargetAtTime(Math.min(frictionVal * 5, 0.3), audioCtx.currentTime, 0.05);
+                frictionOsc.frequency.setTargetAtTime(110 + frictionVal * 200, audioCtx.currentTime, 0.1);
+
+                // Lock Chime
+                if (isLocked) {
+                    lockedFrames++;
+                    if (lockedFrames === 10) {
+                        lockChimeGain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                        lockChimeGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 2.0);
+                    }
+                } else {
+                    lockedFrames = 0;
+                }
+            }
+
+            // UI Updates
+            document.getElementById('outSpinPeriod').innerText = (2 * Math.PI / omegaSpin).toFixed(1);
+            document.getElementById('outOrbPeriod').innerText = (2 * Math.PI / avgOmegaOrbit).toFixed(1);
+            document.getElementById('outRatio').innerText = ratio.toFixed(3) + "x";
+            
+            document.getElementById('outEcc').innerText = eccentricity.toFixed(2);
+            document.getElementById('outDist').innerText = (r/100).toFixed(2);
+            
+            let displayTorque = Math.abs(torque * 1e9);
+            document.getElementById('outTorque').innerText = displayTorque.toFixed(2) + " N·m";
+            document.getElementById('outHeating').innerText = (displayTorque * Math.abs(spinDiff) * 100).toFixed(1) + " GW";
+            
+            let stateElem = document.getElementById('outState');
+            if (isLocked) {
+                stateElem.innerText = resonanceRatio === 1.5 ? "3:2 Resonance" : "1:1 Locked";
+                stateElem.className = "font-mono font-bold text-emerald-400";
+            } else {
+                stateElem.innerText = ratio > 1 ? "Spinning Down..." : "Spinning Up...";
+                stateElem.className = "font-mono text-amber-400";
+            }
+
+            return { r, omegaOrbit, torque, avgOmegaOrbit };
+        }
+
+        function draw(state) {
+            ctx.clearRect(0, 0, width, height);
+            
+            let cx = width / 2;
+            let cy = height / 2;
+
+            // Draw Central Planet
+            ctx.beginPath();
+            ctx.arc(cx, cy, R_planet, 0, Math.PI * 2);
+            let planetGrad = ctx.createRadialGradient(cx - 20, cy - 20, 10, cx, cy, R_planet);
+            planetGrad.addColorStop(0, '#00f0ff');
+            planetGrad.addColorStop(1, '#0369a1');
+            ctx.fillStyle = planetGrad;
+            ctx.fill();
+            
+            // Atmosphere glow
+            ctx.beginPath();
+            ctx.arc(cx, cy, R_planet + 15, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 240, 255, 0.1)';
+            ctx.fill();
+
+            // Draw Orbit Path
+            ctx.beginPath();
+            for(let th = 0; th <= Math.PI * 2; th += 0.05) {
+                let r = getOrbitalDistance(th);
+                let x = cx + Math.cos(th) * r;
+                let y = cy + Math.sin(th) * r;
+                if(th === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Draw Moon
+            let moonX = cx + Math.cos(trueAnomaly) * state.r;
+            let moonY = cy + Math.sin(trueAnomaly) * state.r;
+
+            ctx.save();
+            ctx.translate(moonX, moonY);
+            
+            // Spin visual rotation
+            ctx.rotate(thetaSpin);
+
+            let exag = document.getElementById('tgBulge').checked ? 1.4 : 1.0;
+            let tidalStretchX = R_moon * exag;
+            let tidalStretchY = R_moon * 0.9;
+
+            // Tidal Bulge Ellipse (Lagged)
+            // The bulge points towards the planet, but delayed by lag angle δ
+            let lagAngle = Math.sign(omegaSpin - state.omegaOrbit) * 0.3 * (exag > 1 ? 1 : 0);
+            let bulgeAngle = trueAnomaly - thetaSpin - lagAngle;
+
+            ctx.save();
+            ctx.rotate(bulgeAngle);
+            
+            ctx.beginPath();
+            ctx.ellipse(0, 0, tidalStretchX, tidalStretchY, 0, 0, Math.PI * 2);
+            
+            let moonGrad = ctx.createRadialGradient(-10, -10, 5, 0, 0, R_moon);
+            moonGrad.addColorStop(0, '#94a3b8');
+            moonGrad.addColorStop(1, '#475569');
+            ctx.fillStyle = moonGrad;
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.stroke();
+
+            // Draw Surface Features to show rotation
+            ctx.fillStyle = '#1d2b38';
+            ctx.beginPath(); ctx.arc(10, 10, 8, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(-15, -5, 12, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(5, -15, 6, 0, Math.PI*2); ctx.fill();
+
+            // Marker for "Near Side"
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(tidalStretchX - 5, 0, 4, 0, Math.PI*2);
+            ctx.fill();
+
+            ctx.restore(); // Restore to raw spin rotation
+
+            // Terminator (Day/Night)
+            if (document.getElementById('tgTerminator').checked) {
+                ctx.save();
+                ctx.rotate(trueAnomaly - thetaSpin + Math.PI/2);
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.beginPath();
+                ctx.arc(0, 0, R_moon * exag + 2, 0, Math.PI);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            ctx.restore(); // Restore from moon translation
+
+            // Torque Vectors
+            if (document.getElementById('tgTorque').checked && Math.abs(state.torque) > 1e-12) {
+                let vecLen = Math.min(Math.abs(state.torque) * 1e10, 80);
+                let vecDir = Math.sign(state.torque);
+                
+                ctx.save();
+                ctx.translate(moonX, moonY);
+                // Draw arc for torque
+                ctx.beginPath();
+                ctx.arc(0, 0, R_moon + 20, trueAnomaly - Math.PI/4, trueAnomaly + Math.PI/4, vecDir < 0);
+                ctx.strokeStyle = '#e6004c';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Arrow head
+                let tipAngle = vecDir < 0 ? trueAnomaly - Math.PI/4 : trueAnomaly + Math.PI/4;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(tipAngle)*(R_moon+20), Math.sin(tipAngle)*(R_moon+20));
+                ctx.lineTo(Math.cos(tipAngle+0.1*vecDir)*(R_moon+10), Math.sin(tipAngle+0.1*vecDir)*(R_moon+10));
+                ctx.lineTo(Math.cos(tipAngle+0.1*vecDir)*(R_moon+30), Math.sin(tipAngle+0.1*vecDir)*(R_moon+30));
+                ctx.fillStyle = '#e6004c';
+                ctx.fill();
+                
+                ctx.restore();
+            }
+
+            // Draw line connecting planet and moon
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(moonX, moonY);
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.3)';
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function loop(timestamp) {
+            let dt = timestamp - lastTime;
+            lastTime = timestamp;
+            if (dt > 100) dt = 16; // Prevent huge jumps if tab was inactive
+
+            let state = updatePhysics(dt);
+            draw(state);
+
+            requestAnimationFrame(loop);
+        }
+
+        // Event Listeners for Controls
+        document.getElementById('slEcc').addEventListener('input', (e) => {
+            eccentricity = parseFloat(e.target.value);
+            document.getElementById('valEcc').innerText = eccentricity.toFixed(2);
+        });
+
+        document.getElementById('slDist').addEventListener('input', (e) => {
+            distMult = parseFloat(e.target.value);
+            document.getElementById('valDist').innerText = distMult.toFixed(2);
+        });
+
+        document.getElementById('slVisc').addEventListener('input', (e) => {
+            viscSpeed = parseFloat(e.target.value);
+            document.getElementById('valVisc').innerText = Math.pow(10, viscSpeed).toPrecision(2) + 'x';
+        });
+
+        document.getElementById('btnSetSpin').addEventListener('click', () => {
+            let mult = parseFloat(document.getElementById('slSpin').value);
+            let avgOmegaOrbit = Math.sqrt(G_M / Math.pow(baseDist * distMult, 3));
+            omegaSpin = avgOmegaOrbit * mult;
+        });
+
+        // Presets
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                let preset = e.target.getAttribute('data-preset');
+                let avgOmegaOrbit = Math.sqrt(G_M / Math.pow(baseDist * distMult, 3));
+                
+                if (preset === 'earth-moon') {
+                    document.getElementById('slEcc').value = 0.05;
+                    document.getElementById('slDist').value = 1.0;
+                    distMult = 1.0; eccentricity = 0.05;
+                    omegaSpin = Math.sqrt(G_M / Math.pow(baseDist, 3));
+                } else if (preset === 'early-moon') {
+                    document.getElementById('slEcc').value = 0.05;
+                    document.getElementById('slDist').value = 0.6;
+                    distMult = 0.6; eccentricity = 0.05;
+                    omegaSpin = avgOmegaOrbit * 3.5;
+                } else if (preset === 'mercury') {
+                    document.getElementById('slEcc').value = 0.20;
+                    document.getElementById('slDist').value = 1.0;
+                    distMult = 1.0; eccentricity = 0.20;
+                    omegaSpin = avgOmegaOrbit * 1.5;
+                } else if (preset === 'io') {
+                    document.getElementById('slEcc').value = 0.15;
+                    document.getElementById('slDist').value = 0.5;
+                    distMult = 0.5; eccentricity = 0.15;
+                    omegaSpin = Math.sqrt(G_M / Math.pow(baseDist * 0.5, 3));
+                }
+                
+                document.getElementById('valEcc').innerText = eccentricity.toFixed(2);
+                document.getElementById('valDist').innerText = distMult.toFixed(2);
+                
+                // trigger inputs
+                document.getElementById('slEcc').dispatchEvent(new Event('input'));
+                document.getElementById('slDist').dispatchEvent(new Event('input'));
+            });
+        });
+
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>

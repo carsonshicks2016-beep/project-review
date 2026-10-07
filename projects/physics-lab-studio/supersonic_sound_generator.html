@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supersonic Aircraft Speed & Sound Simulator</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+  <style>
+    /* Custom styling for aviation HUD and scopes */
+    .hud-grid {
+      background-size: 24px 24px;
+      background-image: 
+        linear-gradient(to right, rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+    }
+    input[type=range] {
+      accent-color: #0284c7;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased p-3 md:p-6 select-none">
+
+  <!-- Main Container -->
+  <div class="max-w-6xl mx-auto space-y-4">
+    
+    <!-- Top Header & Status -->
+    <header class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 md:p-5 backdrop-blur shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-3">
+          <span class="p-2 bg-sky-500/10 border border-sky-500/30 rounded-lg text-sky-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </span>
+          <div>
+            <h1 class="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+              Supersonic Speed & Sound Generator
+              <span id="badge-mach" class="text-xs uppercase px-2.5 py-0.5 rounded-full font-mono font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                Mach 1.40 Supersonic
+              </span>
+            </h1>
+            <p class="text-xs md:text-sm text-slate-400">
+              Acoustic retardation physics, Mach cone shockwave geometry, and real-time ground audio calculation
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <button id="btn-play" class="flex items-center gap-2 px-5 py-2.5 bg-sky-500 hover:bg-sky-400 active:scale-95 text-slate-950 font-bold rounded-xl transition shadow-lg shadow-sky-500/20 text-sm cursor-pointer">
+          <svg id="icon-play" class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+          <span id="text-play">Flyby Simulation</span>
+        </button>
+
+        <button id="btn-reset" class="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 font-medium rounded-xl transition text-sm cursor-pointer">
+          Reset
+        </button>
+
+        <button id="btn-download" title="Export Calculated Audio as 44.1kHz WAV" class="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition text-sm border border-slate-700 cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          <span>Save WAV</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Aircraft Presets Bar -->
+    <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 flex items-center gap-2 overflow-x-auto text-xs font-medium">
+      <span class="text-slate-400 uppercase tracking-wider font-mono text-[11px] px-2 flex-shrink-0">Presets:</span>
+      
+      <button class="preset-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition whitespace-nowrap cursor-pointer" data-mach="0.80" data-alt="8000" data-name="Subsonic Commercial">
+        🛫 Subsonic Airliner (M 0.80)
+      </button>
+      <button class="preset-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition whitespace-nowrap cursor-pointer" data-mach="1.00" data-alt="2000" data-name="Sound Barrier">
+        ⚡ Transonic Barrier (M 1.00)
+      </button>
+      <button class="preset-btn px-3 py-1.5 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 transition whitespace-nowrap cursor-pointer" data-mach="1.40" data-alt="1200" data-name="F/A-18 Hornet Flyby">
+        💥 F/A-18 Low Flyby (M 1.40)
+      </button>
+      <button class="preset-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition whitespace-nowrap cursor-pointer" data-mach="2.04" data-alt="14000" data-name="Concorde SST">
+        ✈️ Concorde SST (M 2.04)
+      </button>
+      <button class="preset-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition whitespace-nowrap cursor-pointer" data-mach="3.20" data-alt="22000" data-name="SR-71 Blackbird">
+        🚀 SR-71 Blackbird (M 3.20)
+      </button>
+      <button class="preset-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition whitespace-nowrap cursor-pointer" data-mach="5.00" data-alt="26000" data-name="X-43 Hypersonic">
+        ☄️ Hypersonic Glider (M 5.00)
+      </button>
+    </div>
+
+    <!-- Main Visual Canvas & Telemetry Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      
+      <!-- Primary Simulation Viewport (Canvas) -->
+      <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col relative shadow-xl">
+        <!-- Canvas Header Bar with live state -->
+        <div class="bg-slate-900/90 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between text-xs font-mono">
+          <div class="flex items-center gap-3">
+            <span class="inline-flex items-center gap-1.5 text-slate-300">
+              <span id="sim-status-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span id="sim-status-text">READY</span>
+            </span>
+            <span class="text-slate-600">|</span>
+            <span class="text-slate-400">ACOUSTIC SPEED: <strong class="text-slate-200">343 m/s</strong></span>
+          </div>
+          
+          <div class="flex items-center gap-3">
+            <span id="observer-state-badge" class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-semibold border border-slate-700">
+              Awaiting Flyby
+            </span>
+          </div>
+        </div>
+
+        <!-- Simulation Canvas Container -->
+        <div class="relative w-full h-[360px] md:h-[400px] hud-grid bg-slate-950 flex items-center justify-center overflow-hidden">
+          <canvas id="sim-canvas" class="w-full h-full block cursor-crosshair"></canvas>
+          
+          <!-- Sonic Boom Screen Flash Overlay -->
+          <div id="shock-flash" class="absolute inset-0 bg-sky-200/20 pointer-events-none opacity-0 transition-opacity duration-150"></div>
+          
+          <!-- Observer HUD Overlay Box -->
+          <div class="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-lg p-2.5 text-[11px] font-mono text-slate-300 space-y-1 pointer-events-none">
+            <div class="text-sky-400 font-bold flex items-center gap-1.5">
+              <span>📍 GROUND OBSERVER (YOU)</span>
+            </div>
+            <div>STATUS: <span id="hud-obs-status" class="text-slate-200 font-bold">SILENCE</span></div>
+            <div>BOOM DELAY: <span id="hud-boom-delay" class="text-amber-300">0.00 s</span></div>
+            <div>DISTANCE TO JET: <span id="hud-jet-dist" class="text-slate-200">1,200 m</span></div>
+          </div>
+
+          <!-- Mach Cone Angle Overlay Box -->
+          <div class="absolute top-3 right-3 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-lg p-2.5 text-[11px] font-mono text-slate-300 space-y-1 pointer-events-none">
+            <div class="text-emerald-400 font-bold">MACH CONE GEOMETRY</div>
+            <div>CONE HALF-ANGLE μ: <span id="hud-cone-angle" class="text-emerald-300 font-bold">45.6°</span></div>
+            <div>WAVE FRONT: <span id="hud-cone-type" class="text-slate-200">Mach Wedge</span></div>
+          </div>
+        </div>
+
+        <!-- Playback Scrub Timeline -->
+        <div class="bg-slate-900/90 border-t border-slate-800 p-3 flex items-center gap-3">
+          <span class="text-xs font-mono text-slate-400">T:</span>
+          <input id="time-scrubber" type="range" min="0" max="100" value="0" step="0.1" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+          <span id="time-display" class="text-xs font-mono text-slate-300 w-14 text-right">0.00s</span>
+        </div>
+      </div>
+
+      <!-- Telemetry, Oscilloscope & Controls Sidebar -->
+      <div class="space-y-4">
+        
+        <!-- Live Acoustic Oscilloscope & VU Meter -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-mono uppercase tracking-wider text-slate-400 font-bold flex items-center gap-2">
+              <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+              </svg>
+              Ground Observer Audio Scope
+            </h2>
+            <span id="scope-peak-db" class="text-xs font-mono font-bold text-slate-400">0.0 dB</span>
+          </div>
+
+          <!-- Oscilloscope Canvas (Shows N-Wave pressure signature!) -->
+          <div class="bg-slate-950 rounded-xl p-2 border border-slate-800/80 relative">
+            <canvas id="scope-canvas" height="90" class="w-full block"></canvas>
+            <div class="flex items-center justify-between text-[10px] font-mono text-slate-500 mt-1">
+              <span>-ΔP (Expansion)</span>
+              <span class="text-sky-400 font-semibold">PRESSURE ΔP(t)</span>
+              <span>+ΔP (Bow Shock)</span>
+            </div>
+          </div>
+
+          <!-- VU Level Meter -->
+          <div class="space-y-1">
+            <div class="flex justify-between text-[10px] font-mono text-slate-400">
+              <span>ACOUSTIC INTENSITY</span>
+              <span id="spl-readout">0 dB SPL</span>
+            </div>
+            <div class="w-full h-2 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-800">
+              <div id="vu-bar" class="h-full bg-gradient-to-r from-emerald-500 via-amber-400 to-rose-500 rounded-full w-0 transition-all duration-75"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Flight Parameters & Controls -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-mono uppercase tracking-wider text-slate-400 font-bold">Flight Parameters</h2>
+            <span class="text-[11px] font-mono text-sky-400 font-semibold" id="speed-mach-label">M 1.40</span>
+          </div>
+
+          <!-- Mach Speed Slider -->
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-300 font-medium">Aircraft Speed</span>
+              <span id="val-mach-display" class="font-mono font-bold text-sky-400 text-sm">Mach 1.40</span>
+            </div>
+            <input id="slider-mach" type="range" min="0.2" max="5.0" step="0.05" value="1.40" class="w-full h-2 bg-slate-950 rounded-lg appearance-none cursor-pointer">
+            <div class="flex justify-between text-[11px] font-mono text-slate-500">
+              <span>Mach 0.2</span>
+              <span id="val-airspeed">1,729 km/h (1,074 mph)</span>
+              <span>Mach 5.0</span>
+            </div>
+          </div>
+
+          <!-- Altitude Slider -->
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-300 font-medium">Flight Altitude</span>
+              <span id="val-alt-display" class="font-mono font-bold text-sky-400 text-sm">1,200 m (3,937 ft)</span>
+            </div>
+            <input id="slider-altitude" type="range" min="300" max="25000" step="100" value="1200" class="w-full h-2 bg-slate-950 rounded-lg appearance-none cursor-pointer">
+            <div class="flex justify-between text-[11px] font-mono text-slate-500">
+              <span>Low (300 m)</span>
+              <span>Stratosphere (25,000 m)</span>
+            </div>
+          </div>
+
+          <!-- Acoustic Environment Toggles -->
+          <div class="pt-2 border-t border-slate-800/80 space-y-2 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-300">Ground Boundary Reflection (+6 dB)</span>
+              <input id="chk-ground" type="checkbox" checked class="w-4 h-4 rounded text-sky-500 bg-slate-950 border-slate-700 cursor-pointer">
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-300">Atmospheric Air Absorption</span>
+              <input id="chk-air" type="checkbox" checked class="w-4 h-4 rounded text-sky-500 bg-slate-950 border-slate-700 cursor-pointer">
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Physics Explainer Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+      
+      <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-4 space-y-2">
+        <div class="flex items-center gap-2 text-sky-400 font-semibold font-mono text-sm">
+          <span>1. Subsonic (M &lt; 1)</span>
+        </div>
+        <p class="text-slate-300 leading-relaxed">
+          The sound waves travel at 343 m/s, faster than the aircraft. As the jet flies, waves compress ahead (Doppler blueshift / higher pitch) and stretch behind (redshift / lower rumble). The listener hears the approaching jet well before it passes overhead.
+        </p>
+      </div>
+
+      <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-4 space-y-2">
+        <div class="flex items-center gap-2 text-amber-400 font-semibold font-mono text-sm">
+          <span>2. Mach 1.0 (Transonic)</span>
+        </div>
+        <p class="text-slate-300 leading-relaxed">
+          The aircraft matches its own acoustic wave speed. Every newly emitted spherical wave front piles up precisely along the aircraft's nose into a vertical shock wall. All acoustic energy arrives in one intense plane directly overhead.
+        </p>
+      </div>
+
+      <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-4 space-y-2">
+        <div class="flex items-center gap-2 text-rose-400 font-semibold font-mono text-sm">
+          <span>3. Supersonic (M &gt; 1)</span>
+        </div>
+        <p class="text-slate-300 leading-relaxed">
+          The jet outruns its own sound. Ahead is the <strong class="text-slate-100">Zone of Silence</strong>: you hear nothing until the trailing <strong class="text-rose-300">Mach Cone</strong> sweeps across the ground. The sudden compression produces the classic <strong class="text-white">N-wave double boom</strong> followed by twin-ray engine roar!
+        </p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- JavaScript Audio Synthesis & Visual Simulation Engine -->
+  <script>
+    const SPEED_OF_SOUND = 343.0; // m/s
+    const SAMPLE_RATE = 44100;
+    const DURATION_S = 7.0;
+
+    let mach = 1.40;
+    let altitude = 1200;
+    let simTime = 0.0;
+    let isPlaying = false;
+    let animFrameId = null;
+    let groundReflection = true;
+    let airAbsorption = true;
+
+    let audioCtx = null;
+    let currentSourceNode = null;
+    let currentBuffer = null;
+    let analyserNode = null;
+    let startTimeAudio = 0;
+
+    const simCanvas = document.getElementById('sim-canvas');
+    const simCtx = simCanvas.getContext('2d');
+    const scopeCanvas = document.getElementById('scope-canvas');
+    const scopeCtx = scopeCanvas.getContext('2d');
+
+    const sliderMach = document.getElementById('slider-mach');
+    const sliderAltitude = document.getElementById('slider-altitude');
+    const valMachDisplay = document.getElementById('val-mach-display');
+    const valAirspeed = document.getElementById('val-airspeed');
+    const valAltDisplay = document.getElementById('val-alt-display');
+    const badgeMach = document.getElementById('badge-mach');
+    const btnPlay = document.getElementById('btn-play');
+    const btnReset = document.getElementById('btn-reset');
+    const btnDownload = document.getElementById('btn-download');
+    const textPlay = document.getElementById('text-play');
+    const iconPlay = document.getElementById('icon-play');
+    const timeScrubber = document.getElementById('time-scrubber');
+    const timeDisplay = document.getElementById('time-display');
+    const shockFlash = document.getElementById('shock-flash');
+    const hudObsStatus = document.getElementById('hud-obs-status');
+    const hudBoomDelay = document.getElementById('hud-boom-delay');
+    const hudJetDist = document.getElementById('hud-jet-dist');
+    const hudConeAngle = document.getElementById('hud-cone-angle');
+    const hudConeType = document.getElementById('hud-cone-type');
+    const observerStateBadge = document.getElementById('observer-state-badge');
+    const vuBar = document.getElementById('vu-bar');
+    const splReadout = document.getElementById('spl-readout');
+    const scopePeakDb = document.getElementById('scope-peak-db');
+    const speedMachLabel = document.getElementById('speed-mach-label');
+
+    function resizeCanvases() {
+      const rect = simCanvas.parentElement.getBoundingClientRect();
+      simCanvas.width = rect.width * window.devicePixelRatio;
+      simCanvas.height = rect.height * window.devicePixelRatio;
+      simCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+      const scopeRect = scopeCanvas.parentElement.getBoundingClientRect();
+      scopeCanvas.width = (scopeRect.width - 16) * window.devicePixelRatio;
+      scopeCanvas.height = 90 * window.devicePixelRatio;
+      scopeCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    }
+    window.addEventListener('resize', resizeCanvases);
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 512;
+        analyserNode.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function getBoomDelay(m, h) {
+      if (m > 1.0001) {
+        return (h * Math.sqrt(m * m - 1.0)) / (m * SPEED_OF_SOUND);
+      }
+      return h / SPEED_OF_SOUND;
+    }
+
+    // Synthesize physical audio buffer for given mach & altitude
+    function computeAudioBuffer(m, h) {
+      const ctx = getAudioContext();
+      const numSamples = Math.floor(DURATION_S * SAMPLE_RATE);
+      const audioBuffer = ctx.createBuffer(2, numSamples, SAMPLE_RATE);
+      const chL = audioBuffer.getChannelData(0);
+      const chR = audioBuffer.getChannelData(1);
+
+      const v = m * SPEED_OF_SOUND;
+      const c = SPEED_OF_SOUND;
+      const tBoomExact = getBoomDelay(m, h);
+
+      const tOverhead = DURATION_S * 0.35;
+      const tBoomObserver = tOverhead + tBoomExact;
+
+      // 1. Generate broadband turbulent jet noise
+      const noiseLen = numSamples + 88200;
+      const rawNoise = new Float32Array(noiseLen);
+      for (let i = 0; i < noiseLen; i++) {
+        const u1 = Math.random() || 1e-6;
+        const u2 = Math.random() || 1e-6;
+        rawNoise[i] = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+      }
+
+      // Filter for jet engine roar (~320 Hz)
+      const jetNoise = new Float32Array(noiseLen);
+      let y1 = 0, y2 = 0;
+      const fCut = 320.0 / SAMPLE_RATE;
+      const q = 0.707;
+      const omega = 2.0 * Math.PI * fCut;
+      const alpha = Math.sin(omega) / (2.0 * q);
+      const b0 = (1.0 - Math.cos(omega)) / 2.0;
+      const b1 = 1.0 - Math.cos(omega);
+      const b2 = (1.0 - Math.cos(omega)) / 2.0;
+      const a0 = 1.0 + alpha;
+      const a1 = -2.0 * Math.cos(omega);
+      const a2 = 1.0 - alpha;
+
+      let x1 = 0, x2 = 0;
+      for (let i = 0; i < noiseLen; i++) {
+        const inVal = rawNoise[i];
+        const outVal = (b0/a0)*inVal + (b1/a0)*x1 + (b2/a0)*x2 - (a1/a0)*y1 - (a2/a0)*y2;
+        x2 = x1; x1 = inVal;
+        y2 = y1; y1 = outVal;
+        jetNoise[i] = outVal;
+      }
+
+      const srcCenter = Math.floor(noiseLen / 2);
+      function sampleJet(t_s) {
+        const idx = srcCenter + Math.floor(t_s * SAMPLE_RATE);
+        if (idx >= 0 && idx < noiseLen) return jetNoise[idx];
+        return 0.0;
+      }
+
+      const aircraftLength = 19.0;
+      const deltaTn = Math.min(0.22, Math.max(0.08, 0.007 * aircraftLength * Math.sqrt(m)));
+      const tauRise = 0.002;
+      const pPeak = (12.0 * Math.pow(m, 0.75)) / (Math.pow(h / 500.0, 0.75) + 0.1);
+
+      for (let i = 0; i < numSamples; i++) {
+        const t_obs = i / SAMPLE_RATE;
+        const t_rel = t_obs - tOverhead;
+
+        let valL = 0.0;
+        let valR = 0.0;
+
+        if (m < 0.999) {
+          const a_q = c*c - v*v;
+          const b_q = -2.0 * c * c * t_rel;
+          const c_q = c * c * t_rel * t_rel - h * h;
+          const disc = b_q * b_q - 4.0 * a_q * c_q;
+
+          if (disc >= 0) {
+            const t_s = (-b_q - Math.sqrt(disc)) / (2.0 * a_q);
+            if (t_rel >= t_s) {
+              const R = Math.sqrt(v * t_s * v * t_s + h * h);
+              const cosTheta = (v * t_s) / R;
+              const doppler = 1.0 / Math.max(0.08, 1.0 + m * cosTheta);
+              const invDist = Math.min(1.0, 300.0 / (R + 1.0));
+              const exhaustDir = 0.6 + 0.4 * (1.0 - cosTheta) / 2.0;
+
+              const sample = sampleJet(t_s) * invDist * Math.sqrt(doppler) * exhaustDir;
+
+              const pan = Math.min(1.0, Math.max(-1.0, (v * t_s) / (h * 1.5)));
+              const panAngle = (pan + 1.0) * (Math.PI / 4.0);
+              valL += sample * Math.cos(panAngle);
+              valR += sample * Math.sin(panAngle);
+            }
+          }
+        } else if (Math.abs(m - 1.0) <= 0.001) {
+          if (t_obs >= tBoomObserver) {
+            const safe_t = Math.max(t_rel, h / c);
+            const t_s = (c * c * safe_t * safe_t - h * h) / (2.0 * c * c * safe_t);
+            const R = Math.sqrt(v * t_s * v * t_s + h * h);
+            const sample = sampleJet(t_s) * (350.0 / Math.max(100.0, R));
+
+            const tau = t_obs - tBoomObserver;
+            let transPulse = 0.0;
+            if (tau >= 0 && tau < 0.15) {
+              transPulse = Math.sin(2.0 * Math.PI * 40.0 * tau) * Math.exp(-tau / 0.035) * 6.0;
+            }
+            valL += sample + transPulse;
+            valR += sample + transPulse;
+          }
+        } else {
+          // Supersonic: Dead silence until shock front sweeps observer!
+          if (t_obs >= tBoomObserver) {
+            const a_q = v * v - c * c;
+            const termB = 2.0 * c * c * t_rel;
+            const termC = h * h - c * c * t_rel * t_rel;
+            const disc = termB * termB - 4.0 * a_q * termC;
+
+            if (disc >= 0) {
+              const sqrtDisc = Math.sqrt(disc);
+              const t_s1 = (-termB - sqrtDisc) / (2.0 * a_q);
+              const t_s2 = (-termB + sqrtDisc) / (2.0 * a_q);
+
+              const rays = [t_s1, t_s2];
+              for (let r = 0; r < 2; r++) {
+                const t_s = rays[r];
+                const R = Math.sqrt(v * t_s * v * t_s + h * h);
+                const cosTheta = (v * t_s) / R;
+                const dt_dts = Math.abs(1.0 + m * cosTheta);
+                const doppler = Math.min(4.0, 1.0 / (dt_dts + 0.12));
+                const invDist = 350.0 / Math.max(100.0, R);
+
+                const sample = sampleJet(t_s) * invDist * Math.pow(doppler, 0.4) * 0.75;
+                const pan = Math.min(1.0, Math.max(-1.0, (v * t_s) / (h * 1.5)));
+                const panAngle = (pan + 1.0) * (Math.PI / 4.0);
+
+                valL += sample * Math.cos(panAngle);
+                valR += sample * Math.sin(panAngle);
+              }
+            }
+
+            // Dual N-Wave Impulse
+            const tau = t_obs - tBoomObserver;
+            if (tau >= 0 && tau <= deltaTn * 2.5) {
+              let shock = 0.0;
+              if (tau < deltaTn) {
+                const linearSlope = 1.0 - 2.0 * (tau / deltaTn);
+                const bowRise = 1.0 - Math.exp(-tau / tauRise);
+                shock = linearSlope * bowRise;
+              } else {
+                const dtTail = tau - deltaTn;
+                const tailRise = 1.0 - Math.exp(-dtTail / tauRise);
+                const tailDecay = Math.exp(-dtTail / 0.045);
+                shock = (1.0 - 0.5 * (dtTail / 0.045)) * tailRise * tailDecay * 0.8;
+              }
+
+              let crackle = 0.0;
+              if (tau < 0.005 || Math.abs(tau - deltaTn) < 0.005) {
+                crackle = (Math.random() * 2.0 - 1.0) * 0.35;
+              }
+
+              let boomTotal = (shock + crackle) * pPeak;
+              if (groundReflection) boomTotal *= 1.85;
+
+              valL += boomTotal;
+              valR += boomTotal;
+            }
+          }
+        }
+
+        chL[i] = valL;
+        chR[i] = valR;
+      }
+
+      if (airAbsorption) {
+        const cutoffHz = Math.min(8500.0, Math.max(380.0, 3600.0 * (1200.0 / (h + 600.0))));
+        applyOnePoleLPF(chL, cutoffHz);
+        applyOnePoleLPF(chR, cutoffHz);
+      }
+
+      applySubBass(chL);
+      applySubBass(chR);
+
+      let maxPeak = 0.001;
+      for (let i = 0; i < numSamples; i++) {
+        const pL = Math.abs(chL[i]);
+        const pR = Math.abs(chR[i]);
+        if (pL > maxPeak) maxPeak = pL;
+        if (pR > maxPeak) maxPeak = pR;
+      }
+
+      const drive = maxPeak * 0.7;
+      for (let i = 0; i < numSamples; i++) {
+        chL[i] = Math.tanh(chL[i] / drive) * 0.92;
+        chR[i] = Math.tanh(chR[i] / drive) * 0.92;
+      }
+
+      return { buffer: audioBuffer, tBoomObserver };
+    }
+
+    function applyOnePoleLPF(channel, freq) {
+      const dt = 1.0 / SAMPLE_RATE;
+      const rc = 1.0 / (2.0 * Math.PI * freq);
+      const alpha = dt / (rc + dt);
+      let prev = 0;
+      for (let i = 0; i < channel.length; i++) {
+        prev += alpha * (channel[i] - prev);
+        channel[i] = prev;
+      }
+    }
+
+    function applySubBass(channel) {
+      const dt = 1.0 / SAMPLE_RATE;
+      const rc = 1.0 / (2.0 * Math.PI * 80.0);
+      const alpha = dt / (rc + dt);
+      let prev = 0;
+      for (let i = 0; i < channel.length; i++) {
+        prev += alpha * (channel[i] - prev);
+        channel[i] += prev * 0.8;
+      }
+    }
+
+    function audioBufferToWav(buffer) {
+      const numChannels = buffer.numberOfChannels;
+      const sampleRate = buffer.sampleRate;
+      const bitDepth = 16;
+      const numSamples = buffer.length;
+      const blockAlign = numChannels * (bitDepth / 8);
+      const byteRate = sampleRate * blockAlign;
+      const dataSize = numSamples * blockAlign;
+      const bufferSize = 44 + dataSize;
+      const arrayBuffer = new ArrayBuffer(bufferSize);
+      const view = new DataView(arrayBuffer);
+
+      function writeString(offset, string) {
+        for (let i = 0; i < string.length; i++) {
+          view.setUint8(offset + i, string.charCodeAt(i));
+        }
+      }
+
+      writeString(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeString(8, 'WAVE');
+      writeString(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true); // PCM
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, byteRate, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, bitDepth, true);
+      writeString(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      const ch0 = buffer.getChannelData(0);
+      const ch1 = numChannels > 1 ? buffer.getChannelData(1) : ch0;
+      let offset = 44;
+      for (let i = 0; i < numSamples; i++) {
+        let s0 = Math.max(-1, Math.min(1, ch0[i]));
+        view.setInt16(offset, s0 < 0 ? s0 * 0x8000 : s0 * 0x7FFF, true);
+        offset += 2;
+        if (numChannels > 1) {
+          let s1 = Math.max(-1, Math.min(1, ch1[i]));
+          view.setInt16(offset, s1 < 0 ? s1 * 0x8000 : s1 * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      return new Blob([arrayBuffer], { type: 'audio/wav' });
+    }
+
+    function updatePhysicsHUD() {
+      valMachDisplay.textContent = `Mach ${mach.toFixed(2)}`;
+      speedMachLabel.textContent = `M ${mach.toFixed(2)}`;
+      const speedKmh = Math.round(mach * SPEED_OF_SOUND * 3.6);
+      const speedMph = Math.round(speedKmh * 0.621371);
+      valAirspeed.textContent = `${speedKmh.toLocaleString()} km/h (${speedMph.toLocaleString()} mph)`;
+      valAltDisplay.textContent = `${altitude.toLocaleString()} m (${Math.round(altitude * 3.28084).toLocaleString()} ft)`;
+
+      const delay = getBoomDelay(mach, altitude);
+      hudBoomDelay.textContent = `${delay.toFixed(2)} s`;
+
+      if (mach > 1.0) {
+        const muRad = Math.asin(1.0 / mach);
+        const muDeg = (muRad * 180.0 / Math.PI).toFixed(1);
+        hudConeAngle.textContent = `${muDeg}°`;
+        hudConeType.textContent = "Mach Wedge / Cone";
+        badgeMach.className = "text-xs uppercase px-2.5 py-0.5 rounded-full font-mono font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30";
+        badgeMach.textContent = `Mach ${mach.toFixed(2)} Supersonic`;
+      } else if (Math.abs(mach - 1.0) <= 0.05) {
+        hudConeAngle.textContent = "90.0° (Perpendicular)";
+        hudConeType.textContent = "Sound Barrier Plane";
+        badgeMach.className = "text-xs uppercase px-2.5 py-0.5 rounded-full font-mono font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30";
+        badgeMach.textContent = `Mach ${mach.toFixed(2)} Transonic`;
+      } else {
+        hudConeAngle.textContent = "N/A (Subsonic)";
+        hudConeType.textContent = "Elliptic Doppler Waves";
+        badgeMach.className = "text-xs uppercase px-2.5 py-0.5 rounded-full font-mono font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+        badgeMach.textContent = `Mach ${mach.toFixed(2)} Subsonic`;
+      }
+    }
+
+    let currentCalc = null;
+    function refreshAudioBuffer() {
+      currentCalc = computeAudioBuffer(mach, altitude);
+      currentBuffer = currentCalc.buffer;
+    }
+
+    function playSimulation() {
+      const ctx = getAudioContext();
+      stopSimulation();
+
+      refreshAudioBuffer();
+
+      currentSourceNode = ctx.createBufferSource();
+      currentSourceNode.buffer = currentBuffer;
+      currentSourceNode.connect(analyserNode);
+
+      currentSourceNode.onended = () => {
+        isPlaying = false;
+        textPlay.textContent = "Flyby Simulation";
+        iconPlay.innerHTML = '<path d="M8 5v14l11-7z"/>';
+      };
+
+      startTimeAudio = ctx.currentTime;
+      currentSourceNode.start(0);
+      isPlaying = true;
+      textPlay.textContent = "Stop";
+      iconPlay.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+    }
+
+    function stopSimulation() {
+      if (currentSourceNode) {
+        try { currentSourceNode.stop(); } catch(e) {}
+        currentSourceNode = null;
+      }
+      isPlaying = false;
+      textPlay.textContent = "Flyby Simulation";
+      iconPlay.innerHTML = '<path d="M8 5v14l11-7z"/>';
+    }
+
+    btnPlay.addEventListener('click', () => {
+      if (isPlaying) {
+        stopSimulation();
+      } else {
+        playSimulation();
+      }
+    });
+
+    btnReset.addEventListener('click', () => {
+      stopSimulation();
+      simTime = 0.0;
+      timeScrubber.value = 0;
+      timeDisplay.textContent = "0.00s";
+    });
+
+    btnDownload.addEventListener('click', () => {
+      if (!currentBuffer) refreshAudioBuffer();
+      const blob = audioBufferToWav(currentBuffer);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `supersonic_mach_${mach.toFixed(2)}_alt_${altitude}m.wav`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.preset-btn').forEach(b => {
+          b.className = "preset-btn px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition whitespace-nowrap cursor-pointer";
+        });
+        btn.className = "preset-btn px-3 py-1.5 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 transition whitespace-nowrap cursor-pointer";
+
+        mach = parseFloat(btn.dataset.mach);
+        altitude = parseInt(btn.dataset.alt);
+        sliderMach.value = mach;
+        sliderAltitude.value = altitude;
+
+        updatePhysicsHUD();
+        stopSimulation();
+        playSimulation();
+      });
+    });
+
+    sliderMach.addEventListener('input', (e) => {
+      mach = parseFloat(e.target.value);
+      updatePhysicsHUD();
+    });
+    sliderMach.addEventListener('change', () => {
+      if (isPlaying) playSimulation();
+    });
+
+    sliderAltitude.addEventListener('input', (e) => {
+      altitude = parseInt(e.target.value);
+      updatePhysicsHUD();
+    });
+    sliderAltitude.addEventListener('change', () => {
+      if (isPlaying) playSimulation();
+    });
+
+    document.getElementById('chk-ground').addEventListener('change', (e) => {
+      groundReflection = e.target.checked;
+      if (isPlaying) playSimulation();
+    });
+    document.getElementById('chk-air').addEventListener('change', (e) => {
+      airAbsorption = e.target.checked;
+      if (isPlaying) playSimulation();
+    });
+
+    timeScrubber.addEventListener('input', (e) => {
+      simTime = (parseFloat(e.target.value) / 100.0) * DURATION_S;
+      timeDisplay.textContent = `${simTime.toFixed(2)}s`;
+      if (isPlaying) stopSimulation();
+    });
+
+    let lastFlashTime = -1;
+    function render(timestamp) {
+      if (isPlaying && audioCtx) {
+        simTime = audioCtx.currentTime - startTimeAudio;
+        if (simTime > DURATION_S) {
+          simTime = DURATION_S;
+          stopSimulation();
+        }
+        timeScrubber.value = (simTime / DURATION_S) * 100;
+        timeDisplay.textContent = `${simTime.toFixed(2)}s`;
+      }
+
+      const w = simCanvas.width / window.devicePixelRatio;
+      const h = simCanvas.height / window.devicePixelRatio;
+
+      simCtx.clearRect(0, 0, w, h);
+
+      const obsCanvasX = w * 0.5;
+      const obsCanvasY = h - 45;
+
+      const flightCanvasY = 60;
+
+      const tOverhead = DURATION_S * 0.35;
+      const tBoomObserver = tOverhead + getBoomDelay(mach, altitude);
+
+      const v = mach * SPEED_OF_SOUND;
+      const planeWorldX = v * (simTime - tOverhead);
+
+      const worldWidthMeters = Math.max(5000, v * DURATION_S * 0.85);
+      const pxPerMeter = w / worldWidthMeters;
+
+      const planeCanvasX = obsCanvasX + planeWorldX * pxPerMeter;
+
+      // 1. Ground & Sky
+      simCtx.fillStyle = '#111a22';
+      simCtx.fillRect(0, obsCanvasY, w, h - obsCanvasY);
+
+      simCtx.strokeStyle = '#334155';
+      simCtx.lineWidth = 2;
+      simCtx.beginPath();
+      simCtx.moveTo(0, obsCanvasY);
+      simCtx.lineTo(w, obsCanvasY);
+      simCtx.stroke();
+
+      // 2. Observer
+      simCtx.save();
+      simCtx.translate(obsCanvasX, obsCanvasY);
+      simCtx.fillStyle = '#00f0ff';
+      simCtx.beginPath();
+      simCtx.arc(0, -18, 5, 0, Math.PI * 2);
+      simCtx.fill();
+      simCtx.strokeStyle = '#00f0ff';
+      simCtx.lineWidth = 2.5;
+      simCtx.beginPath();
+      simCtx.moveTo(0, -13);
+      simCtx.lineTo(0, 0);
+      simCtx.moveTo(-7, -4);
+      simCtx.lineTo(0, -9);
+      simCtx.lineTo(7, -4);
+      simCtx.stroke();
+
+      simCtx.fillStyle = '#94a3b8';
+      simCtx.font = '10px monospace';
+      simCtx.textAlign = 'center';
+      simCtx.fillText('LISTENER (YOU)', 0, 16);
+      simCtx.restore();
+
+      // 3. Acoustic Wavefront Circles
+      const waveInterval = 0.08;
+      const maxEmitTime = simTime;
+      const minEmitTime = Math.max(0, simTime - 4.5);
+
+      simCtx.lineWidth = 1.2;
+
+      for (let t_emit = minEmitTime; t_emit <= maxEmitTime; t_emit += waveInterval) {
+        const emitPlaneX = v * (t_emit - tOverhead);
+        const emitCanvasX = obsCanvasX + emitPlaneX * pxPerMeter;
+        const radiusWorld = SPEED_OF_SOUND * (simTime - t_emit);
+        const radiusPx = radiusWorld * pxPerMeter;
+
+        const age = simTime - t_emit;
+        const alpha = Math.max(0.04, 0.45 * Math.exp(-age / 1.6));
+
+        simCtx.strokeStyle = `rgba(0, 240, 255, ${alpha})`;
+        simCtx.beginPath();
+        simCtx.arc(emitCanvasX, flightCanvasY, radiusPx, 0, Math.PI * 2);
+        simCtx.stroke();
+      }
+
+      // 4. Mach Cone
+      if (mach >= 1.0) {
+        const mu = Math.asin(1.0 / mach);
+        const coneLengthPx = w * 1.5;
+        const dx = -Math.cos(mu) * coneLengthPx;
+        const dy = Math.sin(mu) * coneLengthPx;
+
+        simCtx.save();
+        simCtx.beginPath();
+        simCtx.moveTo(planeCanvasX, flightCanvasY);
+        simCtx.lineTo(planeCanvasX + dx, flightCanvasY + dy);
+        simCtx.lineTo(planeCanvasX + dx, flightCanvasY - dy);
+        simCtx.closePath();
+        simCtx.fillStyle = 'rgba(0, 212, 224, 0.06)';
+        simCtx.fill();
+
+        simCtx.strokeStyle = '#00f0ff';
+        simCtx.lineWidth = 2.5;
+        simCtx.shadowColor = '#0284c7';
+        simCtx.shadowBlur = 10;
+        simCtx.beginPath();
+        simCtx.moveTo(planeCanvasX, flightCanvasY);
+        simCtx.lineTo(planeCanvasX + dx, flightCanvasY + dy);
+        simCtx.moveTo(planeCanvasX, flightCanvasY);
+        simCtx.lineTo(planeCanvasX + dx, flightCanvasY - dy);
+        simCtx.stroke();
+        simCtx.restore();
+
+        if (planeCanvasX < w - 100) {
+          simCtx.fillStyle = 'rgba(148, 163, 184, 0.4)';
+          simCtx.font = '11px monospace';
+          simCtx.textAlign = 'left';
+          simCtx.fillText('← ZONE OF SILENCE', planeCanvasX + 35, flightCanvasY + 2);
+        }
+      }
+
+      // 5. Flight Trajectory & Altitude Marker
+      simCtx.strokeStyle = 'rgba(71, 85, 105, 0.4)';
+      simCtx.setLineDash([4, 4]);
+      simCtx.beginPath();
+      simCtx.moveTo(0, flightCanvasY);
+      simCtx.lineTo(w, flightCanvasY);
+      simCtx.stroke();
+      simCtx.setLineDash([]);
+
+      simCtx.strokeStyle = 'rgba(0, 240, 255, 0.3)';
+      simCtx.beginPath();
+      simCtx.moveTo(30, flightCanvasY);
+      simCtx.lineTo(30, obsCanvasY);
+      simCtx.stroke();
+      simCtx.fillStyle = '#00f0ff';
+      simCtx.font = '9px monospace';
+      simCtx.fillText(`ALT: ${altitude}m`, 38, (flightCanvasY + obsCanvasY) / 2);
+
+      // 6. Aircraft & Afterburner
+      simCtx.save();
+      simCtx.translate(planeCanvasX, flightCanvasY);
+
+      simCtx.fillStyle = '#f8fafc';
+      simCtx.beginPath();
+      simCtx.moveTo(18, 0);
+      simCtx.lineTo(-12, -7);
+      simCtx.lineTo(-6, -2);
+      simCtx.lineTo(-16, -2);
+      simCtx.lineTo(-16, 2);
+      simCtx.lineTo(-6, 2);
+      simCtx.lineTo(-12, 7);
+      simCtx.closePath();
+      simCtx.fill();
+
+      simCtx.fillStyle = '#f97316';
+      simCtx.beginPath();
+      simCtx.moveTo(-16, -2);
+      simCtx.lineTo(-24 - Math.random() * 8, 0);
+      simCtx.lineTo(-16, 2);
+      simCtx.fill();
+      simCtx.restore();
+
+      // 7. Observer State
+      const currentDist = Math.round(Math.sqrt(planeWorldX * planeWorldX + altitude * altitude));
+      hudJetDist.textContent = `${currentDist.toLocaleString()} m`;
+
+      const timeToBoom = tBoomObserver - simTime;
+
+      if (mach > 1.0) {
+        if (simTime < tBoomObserver) {
+          hudObsStatus.innerHTML = '<span class="text-slate-400">ZONE OF SILENCE (0 dB)</span>';
+          observerStateBadge.className = "px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-semibold border border-slate-700";
+          observerStateBadge.textContent = `Silence (Boom in ${timeToBoom.toFixed(2)}s)`;
+        } else if (Math.abs(simTime - tBoomObserver) < 0.25) {
+          hudObsStatus.innerHTML = '<span class="text-rose-400 font-bold animate-pulse">💥 SONIC BOOM (N-WAVE)!</span>';
+          observerStateBadge.className = "px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-semibold border border-rose-500/40 animate-pulse";
+          observerStateBadge.textContent = "💥 SONIC BOOM IMPACT!";
+
+          if (simTime - lastFlashTime > 0.5) {
+            shockFlash.style.opacity = '1';
+            setTimeout(() => { shockFlash.style.opacity = '0'; }, 160);
+            lastFlashTime = simTime;
+          }
+
+          simCtx.strokeStyle = 'rgba(230, 0, 76, 0.8)';
+          simCtx.lineWidth = 3;
+          simCtx.beginPath();
+          const rShock = (simTime - tBoomObserver) * 200 + 15;
+          simCtx.arc(obsCanvasX, obsCanvasY - 10, rShock, 0, Math.PI * 2);
+          simCtx.stroke();
+        } else {
+          hudObsStatus.innerHTML = '<span class="text-amber-400">TRAILING JET ROAR</span>';
+          observerStateBadge.className = "px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/40";
+          observerStateBadge.textContent = "Trailing Jet Roar";
+        }
+      } else {
+        if (Math.abs(simTime - tOverhead) < 0.3) {
+          hudObsStatus.innerHTML = '<span class="text-sky-300">PASSING OVERHEAD</span>';
+          observerStateBadge.textContent = "Closest Point (Overhead)";
+        } else if (simTime < tOverhead) {
+          hudObsStatus.innerHTML = '<span class="text-sky-400">APPROACHING (HIGH PITCH)</span>';
+          observerStateBadge.textContent = "Approaching (Doppler Shift)";
+        } else {
+          hudObsStatus.innerHTML = '<span class="text-slate-400">RECEDING (LOW PITCH)</span>';
+          observerStateBadge.textContent = "Receding (Doppler Drop)";
+        }
+      }
+
+      // 8. Oscilloscope & VU
+      renderOscilloscope();
+
+      animFrameId = requestAnimationFrame(render);
+    }
+
+    const timeDataArray = new Uint8Array(512);
+    function renderOscilloscope() {
+      const w = scopeCanvas.width / window.devicePixelRatio;
+      const h = scopeCanvas.height / window.devicePixelRatio;
+
+      scopeCtx.clearRect(0, 0, w, h);
+
+      scopeCtx.strokeStyle = 'rgba(29, 43, 56, 0.7)';
+      scopeCtx.lineWidth = 1;
+      scopeCtx.beginPath();
+      scopeCtx.moveTo(0, h / 2);
+      scopeCtx.lineTo(w, h / 2);
+      scopeCtx.stroke();
+
+      let rms = 0.0;
+
+      if (analyserNode && isPlaying) {
+        analyserNode.getByteTimeDomainData(timeDataArray);
+
+        scopeCtx.lineWidth = 2;
+        scopeCtx.strokeStyle = '#00f0ff';
+        scopeCtx.beginPath();
+
+        const sliceWidth = w / 512;
+        let x = 0;
+
+        for (let i = 0; i < 512; i++) {
+          const vNorm = (timeDataArray[i] - 128) / 128.0;
+          rms += vNorm * vNorm;
+          const y = (1.0 - vNorm) * (h / 2);
+
+          if (i === 0) scopeCtx.moveTo(x, y);
+          else scopeCtx.lineTo(x, y);
+          x += sliceWidth;
+        }
+        scopeCtx.stroke();
+
+        rms = Math.sqrt(rms / 512);
+      } else {
+        if (currentBuffer) {
+          const chData = currentBuffer.getChannelData(0);
+          scopeCtx.lineWidth = 1.5;
+          scopeCtx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+          scopeCtx.beginPath();
+
+          const step = Math.floor(chData.length / w);
+          for (let i = 0; i < w; i++) {
+            const sample = chData[i * step] || 0;
+            const y = (1.0 - sample * 0.8) * (h / 2);
+            if (i === 0) scopeCtx.moveTo(i, y);
+            else scopeCtx.lineTo(i, y);
+          }
+          scopeCtx.stroke();
+        }
+      }
+
+      const db = isPlaying ? Math.max(-60, 20 * Math.log10(rms + 1e-4) + 12) : -60;
+      const normPct = Math.min(100, Math.max(0, (db + 50) * 2.2));
+      vuBar.style.width = `${normPct}%`;
+
+      const splVal = isPlaying ? Math.round(Math.min(138, Math.max(30, db + 94))) : 0;
+      splReadout.textContent = isPlaying ? `${splVal} dB SPL` : `0 dB SPL`;
+      scopePeakDb.textContent = isPlaying ? `${db.toFixed(1)} dB` : `-inf dB`;
+    }
+
+    resizeCanvases();
+    updatePhysicsHUD();
+    refreshAudioBuffer();
+    animFrameId = requestAnimationFrame(render);
+
+  </script>
+</body>
+</html>

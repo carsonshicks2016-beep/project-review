@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reynolds Number & von Kármán Vortex Street Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; }
+        .hud-panel { backdrop-filter: blur(8px); }
+        .canvas-container { position: relative; width: 100%; height: 60vh; overflow: hidden; }
+        #sim-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        /* Range slider styling */
+        input[type=range] { accent-color: #00f0ff; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 h-screen flex flex-col overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center z-10 relative">
+        <div>
+            <h1 class="text-2xl font-bold text-sky-400">Reynolds Number & Vortex Street</h1>
+            <p class="text-slate-400 text-sm">Interactive Fluid Dynamics & Sonification</p>
+        </div>
+        <button id="btn-audio" class="px-4 py-2 bg-rose-500/20 text-rose-400 border border-rose-500/50 rounded-lg hover:bg-rose-500/30 transition flex items-center gap-2 font-medium">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5 10v4a2 2 0 002 2h2l4 4V4L9 8H7a2 2 0 00-2 2z"></path></svg>
+            Enable Audio
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col relative">
+        
+        <!-- Canvas Area -->
+        <div class="canvas-container bg-slate-950">
+            <canvas id="sim-canvas"></canvas>
+            
+            <!-- Live HUD Readouts -->
+            <div class="absolute top-4 left-4 p-4 rounded-2xl bg-slate-900/80 border border-slate-700 hud-panel shadow-xl pointer-events-none w-64">
+                <h2 class="text-sky-400 font-bold mb-2 border-b border-slate-700 pb-1">Telemetry</h2>
+                <div class="grid grid-cols-2 gap-y-2 text-sm">
+                    <span class="text-slate-400">Reynolds (Re):</span>
+                    <span id="out-re" class="font-mono text-emerald-400 text-right">0</span>
+                    
+                    <span class="text-slate-400">Flow Velocity:</span>
+                    <span class="font-mono text-right"><span id="out-v">0</span> m/s</span>
+                    
+                    <span class="text-slate-400">Diameter:</span>
+                    <span class="font-mono text-right"><span id="out-d">0</span> m</span>
+                    
+                    <span class="text-slate-400">Strouhal (St):</span>
+                    <span id="out-st" class="font-mono text-right">0.00</span>
+                    
+                    <span class="text-slate-400">Shed Freq (f):</span>
+                    <span class="font-mono text-sky-400 text-right"><span id="out-f">0</span> Hz</span>
+                </div>
+                <div class="mt-3 pt-2 border-t border-slate-700">
+                    <span class="text-slate-400 text-xs uppercase tracking-wider">Regime</span>
+                    <div id="out-regime" class="font-bold text-lg text-emerald-400 mt-1">Laminar</div>
+                </div>
+            </div>
+
+            <!-- Controls Sidebar -->
+            <div class="absolute top-4 right-4 p-4 rounded-2xl bg-slate-900/90 border border-slate-700 hud-panel shadow-xl w-80 max-h-[90%] overflow-y-auto z-20">
+                <h2 class="text-sky-400 font-bold mb-4">Controls</h2>
+                
+                <div class="space-y-4">
+                    <!-- Velocity -->
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <label class="text-slate-300">Flow Velocity (v)</label>
+                            <span id="val-v" class="font-mono text-sky-300">1.0 m/s</span>
+                        </div>
+                        <input type="range" id="slider-v" min="0.1" max="5.0" step="0.1" value="1.0" class="w-full">
+                    </div>
+                    
+                    <!-- Diameter -->
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <label class="text-slate-300">Cylinder Dia. (D)</label>
+                            <span id="val-d" class="font-mono text-sky-300">0.05 m</span>
+                        </div>
+                        <input type="range" id="slider-d" min="0.01" max="0.2" step="0.01" value="0.05" class="w-full">
+                    </div>
+
+                    <!-- Reynolds Override -->
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <label class="text-slate-300">Force Reynolds (Re)</label>
+                            <span id="val-re" class="font-mono text-sky-300">100</span>
+                        </div>
+                        <input type="range" id="slider-re" min="1" max="500" step="1" value="100" class="w-full">
+                        <p class="text-xs text-slate-500 mt-1">Changes viscosity to hit target Re.</p>
+                    </div>
+
+                    <!-- Viz Mode -->
+                    <div class="pt-2 border-t border-slate-700">
+                        <label class="text-slate-300 text-sm mb-2 block">Visualization</label>
+                        <select id="sel-viz" class="w-full bg-slate-800 border border-slate-600 rounded p-1 text-sm text-slate-200">
+                            <option value="particles">Dye Particles</option>
+                            <option value="streaklines">Streaklines</option>
+                            <option value="vorticity">Vorticity Heatmap</option>
+                        </select>
+                    </div>
+
+                    <!-- Presets -->
+                    <div class="pt-2 border-t border-slate-700">
+                        <label class="text-slate-300 text-sm mb-2 block">Presets</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button class="preset-btn bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-1 text-xs transition" data-re="5" data-v="0.5" data-d="0.1">Creeping (Re=5)</button>
+                            <button class="preset-btn bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-1 text-xs transition" data-re="25" data-v="1.0" data-d="0.05">Attached (Re=25)</button>
+                            <button class="preset-btn bg-sky-900/50 hover:bg-sky-800/50 border border-sky-700 rounded p-1 text-xs transition text-sky-300" data-re="120" data-v="2.5" data-d="0.02">Singing Wire (120)</button>
+                            <button class="preset-btn bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded p-1 text-xs transition" data-re="500" data-v="5.0" data-d="0.15">Turbulent (Re=500)</button>
+                        </div>
+                    </div>
+                    
+                    <div class="pt-2 flex gap-2">
+                        <button id="btn-play" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded py-1 text-sm font-medium transition">Pause</button>
+                        <button id="btn-reset" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded py-1 text-sm font-medium transition">Reset Dye</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Explainer Cards -->
+        <div class="bg-slate-900 p-6 flex-1 border-t border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto">
+            <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 shadow-inner">
+                <div class="w-10 h-10 bg-indigo-500/20 text-indigo-400 rounded-xl flex items-center justify-center mb-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-200 mb-2">The Reynolds Number (Re)</h3>
+                <p class="text-slate-400 text-sm leading-relaxed mb-2">
+                    Defined as <code class="bg-slate-800 px-1 rounded text-sky-300">Re = ρvD/μ</code>, it's the ratio of <strong>inertial forces</strong> (momentum keeping fluid moving) to <strong>viscous forces</strong> (friction keeping fluid together).
+                </p>
+                <p class="text-slate-400 text-sm leading-relaxed">
+                    At low Re, honey-like viscosity dominates (smooth flow). At high Re, inertia dominates, leading to instability and chaos.
+                </p>
+            </div>
+
+            <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 shadow-inner">
+                <div class="w-10 h-10 bg-rose-500/20 text-rose-400 rounded-xl flex items-center justify-center mb-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-200 mb-2">Hopf Bifurcation & Shedding</h3>
+                <p class="text-slate-400 text-sm leading-relaxed mb-2">
+                    Around Re ≈ 47, the symmetric eddies behind the cylinder become unstable. A tiny perturbation causes them to peel off alternately.
+                </p>
+                <p class="text-slate-400 text-sm leading-relaxed">
+                    This forms the <strong>von Kármán Vortex Street</strong>. The shedding frequency <code class="bg-slate-800 px-1 rounded text-sky-300">f = St·v/D</code> depends on the Strouhal number (St ≈ 0.2).
+                </p>
+            </div>
+
+            <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 shadow-inner">
+                <div class="w-10 h-10 bg-amber-500/20 text-amber-400 rounded-xl flex items-center justify-center mb-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-200 mb-2">Real-World Impacts</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">
+                    This oscillating wake creates alternating low-pressure zones, pulling the object side to side. It causes <strong>telephone wires to "sing"</strong> in the wind, car antennas to vibrate, and famously contributed to the twisting collapse of the Tacoma Narrows Bridge.
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- State & Physics Params ---
+        let params = {
+            v: 1.0,         // Flow velocity (m/s)
+            d: 0.05,        // Cylinder diameter (m)
+            re: 100,        // Reynolds number
+            viz: 'particles',
+            playing: true
+        };
+        
+        let simTime = 0;
+        let lastShedTime = 0;
+        let vortices = [];
+        let particles = [];
+        const MAX_PARTICLES = 2500;
+        
+        // --- Audio Context ---
+        let actx = null;
+        let masterGain, osc, noiseNode, noiseFilter, noiseGain, oscGain;
+        let audioEnabled = false;
+
+        function initAudio() {
+            if(actx) return;
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            actx = new AudioContext();
+            
+            masterGain = actx.createGain();
+            masterGain.gain.value = 0.5;
+            masterGain.connect(actx.destination);
+
+            // Oscillator for singing tone
+            osc = actx.createOscillator();
+            osc.type = 'sine';
+            oscGain = actx.createGain();
+            oscGain.gain.value = 0;
+            osc.connect(oscGain);
+            oscGain.connect(masterGain);
+            osc.start();
+
+            // Noise for wind/turbulence
+            const bufferSize = actx.sampleRate * 2;
+            const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            noiseNode = actx.createBufferSource();
+            noiseNode.buffer = buffer;
+            noiseNode.loop = true;
+            
+            noiseFilter = actx.createBiquadFilter();
+            noiseFilter.type = 'lowpass';
+            noiseFilter.frequency.value = 400;
+            
+            noiseGain = actx.createGain();
+            noiseGain.gain.value = 0;
+            
+            noiseNode.connect(noiseFilter);
+            noiseFilter.connect(noiseGain);
+            noiseGain.connect(masterGain);
+            noiseNode.start();
+
+            audioEnabled = true;
+            document.getElementById('btn-audio').classList.replace('text-rose-400', 'text-emerald-400');
+            document.getElementById('btn-audio').classList.replace('bg-rose-500/20', 'bg-emerald-500/20');
+            document.getElementById('btn-audio').classList.replace('border-rose-500/50', 'border-emerald-500/50');
+            document.getElementById('btn-audio').innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c-1.105 0-2-.895-2-2s.895-2 2-2 2 .895 2 2-.895 2-2 2zm12-3c-1.105 0-2-.895-2-2s.895-2 2-2 2 .895 2 2-.895 2-2 2zM9 10l12-3"></path></svg> Audio Active`;
+        }
+
+        document.getElementById('btn-audio').addEventListener('click', () => {
+            initAudio();
+            if(actx.state === 'suspended') actx.resume();
+        });
+
+        // --- Canvas Setup ---
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, cx, cy;
+        const pixelsPerMeter = 1000; // Scaling factor for drawing
+
+        function resize() {
+            const container = canvas.parentElement;
+            width = container.clientWidth;
+            height = container.clientHeight;
+            canvas.width = width * window.devicePixelRatio;
+            canvas.height = height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            cx = width * 0.25; // Cylinder located at 25% from left
+            cy = height / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- Controls Binding ---
+        const ui = {
+            v: document.getElementById('slider-v'),
+            d: document.getElementById('slider-d'),
+            re: document.getElementById('slider-re'),
+            viz: document.getElementById('sel-viz'),
+            outRe: document.getElementById('out-re'),
+            outV: document.getElementById('out-v'),
+            outD: document.getElementById('out-d'),
+            outSt: document.getElementById('out-st'),
+            outF: document.getElementById('out-f'),
+            outRegime: document.getElementById('out-regime'),
+            btnPlay: document.getElementById('btn-play'),
+            btnReset: document.getElementById('btn-reset')
+        };
+
+        function updateParamsFromUI() {
+            params.v = parseFloat(ui.v.value);
+            params.d = parseFloat(ui.d.value);
+            params.re = parseFloat(ui.re.value);
+            params.viz = ui.viz.value;
+            
+            document.getElementById('val-v').textContent = params.v.toFixed(1) + ' m/s';
+            document.getElementById('val-d').textContent = params.d.toFixed(2) + ' m';
+            document.getElementById('val-re').textContent = params.re.toFixed(0);
+        }
+
+        ui.v.addEventListener('input', updateParamsFromUI);
+        ui.d.addEventListener('input', updateParamsFromUI);
+        ui.re.addEventListener('input', updateParamsFromUI);
+        ui.viz.addEventListener('change', updateParamsFromUI);
+
+        ui.btnPlay.addEventListener('click', () => {
+            params.playing = !params.playing;
+            ui.btnPlay.textContent = params.playing ? "Pause" : "Play";
+            ui.btnPlay.className = params.playing 
+                ? "flex-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded py-1 text-sm font-medium transition"
+                : "flex-1 bg-amber-600 hover:bg-amber-500 text-white rounded py-1 text-sm font-medium transition";
+        });
+
+        ui.btnReset.addEventListener('click', initParticles);
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                ui.re.value = e.target.dataset.re;
+                ui.v.value = e.target.dataset.v;
+                ui.d.value = e.target.dataset.d;
+                updateParamsFromUI();
+            });
+        });
+
+        // --- Physics Engine ---
+        function getStrouhal(re) {
+            if (re < 47) return 0;
+            // Roshko empirical fit
+            return 0.198 * (1 - 19.7 / re);
+        }
+
+        function getVelocity(x, y) {
+            // Translate to cylinder origin in meters
+            let mx = (x - cx) / pixelsPerMeter;
+            let my = (y - cy) / pixelsPerMeter;
+            
+            let u = params.v; // Freestream
+            let v = 0;
+            let R = params.d / 2;
+            let r2 = mx*mx + my*my;
+            
+            // Potential flow around cylinder (Doublet + Freestream)
+            if (r2 > 0.000001) {
+                let r4 = r2 * r2;
+                u += params.v * R*R * (my*my - mx*mx) / r4;
+                v += params.v * R*R * (-2*mx*my) / r4;
+            }
+
+            // Enforce no-slip rough approximation inside/near cylinder
+            if (r2 <= R*R) return {u:0, v:0};
+
+            // Add vortices
+            const coreRadius = 0.01; // m
+            for (let i = 0; i < vortices.length; i++) {
+                let vx = vortices[i].x;
+                let vy = vortices[i].y;
+                let gamma = vortices[i].gamma;
+                
+                let dx = mx - vx;
+                let dy = my - vy;
+                let d2 = dx*dx + dy*dy;
+                
+                // Rankine vortex profile
+                let factor = gamma / (2 * Math.PI);
+                if (d2 < coreRadius * coreRadius) {
+                    factor *= (d2 / (coreRadius * coreRadius));
+                }
+                
+                u += -factor * dy / (d2 + 0.00001);
+                v +=  factor * dx / (d2 + 0.00001);
+            }
+            
+            // Add a bit of turbulence if Re is high
+            if (params.re > 300) {
+                let turb = (params.re - 300) / 200;
+                let wakeMask = (mx > 0 && Math.abs(my) < params.d*2) ? 1 : 0;
+                u += (Math.random() - 0.5) * turb * wakeMask * 0.5;
+                v += (Math.random() - 0.5) * turb * wakeMask * 0.5;
+            }
+
+            return {u, v};
+        }
+
+        function spawnParticle() {
+            // Spawn upstream
+            let yOffset = (Math.random() - 0.5) * height * 0.8;
+            return {
+                x: 0,
+                y: cy + yOffset,
+                life: 0,
+                maxLife: 200 + Math.random() * 100,
+                history: []
+            };
+        }
+
+        function spawnDyeParticle() {
+            // Spawn just behind the cylinder
+            let angle = (Math.random() > 0.5 ? 1 : -1) * (Math.PI/4 + Math.random()*0.2);
+            let R = params.d / 2;
+            let px = cx + Math.cos(angle) * (R * 1.1) * pixelsPerMeter;
+            let py = cy + Math.sin(angle) * (R * 1.1) * pixelsPerMeter;
+            return {
+                x: px,
+                y: py,
+                life: 0,
+                maxLife: 150 + Math.random() * 50,
+                history: []
+            };
+        }
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < MAX_PARTICLES; i++) {
+                particles.push(params.viz === 'particles' ? spawnDyeParticle() : spawnParticle());
+                particles[i].x = Math.random() * width; // scatter initially
+            }
+        }
+
+        let shedToggle = 1;
+
+        function updatePhysics(dt) {
+            simTime += dt;
+            
+            // Vortex shedding logic
+            let st = getStrouhal(params.re);
+            let f = st > 0 ? st * params.v / params.d : 0;
+            
+            if (f > 0 && params.re >= 47) {
+                let T = 1 / f;
+                if (simTime - lastShedTime > T / 2) {
+                    let R = params.d / 2;
+                    // Gamma magnitude proportional to U * D
+                    let gammaMag = 1.5 * params.v * params.d; 
+                    
+                    // Shed alternating vortex
+                    vortices.push({
+                        x: R * 1.5, // just downstream
+                        y: shedToggle * R * 1.2,
+                        gamma: -shedToggle * gammaMag,
+                        age: 0
+                    });
+                    
+                    shedToggle *= -1;
+                    lastShedTime = simTime;
+                }
+            } else if (params.re >= 10 && params.re < 47) {
+                // Attached eddies (Foppl vortices)
+                // Remove advecting ones, keep two stationary
+                vortices = [
+                    { x: params.d, y: params.d*0.5, gamma: -0.5 * params.v * params.d, age: 0, static: true },
+                    { x: params.d, y: -params.d*0.5, gamma: 0.5 * params.v * params.d, age: 0, static: true }
+                ];
+            } else {
+                vortices = []; // Creeping flow
+            }
+
+            // Update vortices
+            let convectionU = 0.8 * params.v; // Avg wake convection speed
+            for (let i = vortices.length - 1; i >= 0; i--) {
+                let v = vortices[i];
+                if (!v.static) {
+                    v.x += convectionU * dt;
+                    v.age += dt;
+                    // Decay vorticity over time and with higher viscosity (lower Re)
+                    v.gamma *= (1 - dt * (100 / params.re)); 
+                    
+                    // Add turbulent jitter
+                    if(params.re > 300) {
+                        v.y += (Math.random()-0.5) * 0.01;
+                    }
+                }
+                // Remove if far downstream or decayed
+                if (v.x * pixelsPerMeter > width || Math.abs(v.gamma) < 0.01) {
+                    vortices.splice(i, 1);
+                }
+            }
+
+            // Update particles
+            let activeMax = params.viz === 'vorticity' ? 0 : MAX_PARTICLES;
+            while(particles.length < activeMax) {
+                particles.push(params.viz === 'particles' ? spawnDyeParticle() : spawnParticle());
+            }
+
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                let vel = getVelocity(p.x, p.y);
+                
+                if(params.viz === 'streaklines') {
+                    p.history.push({x: p.x, y: p.y});
+                    if(p.history.length > 15) p.history.shift();
+                }
+
+                p.x += vel.u * pixelsPerMeter * dt;
+                p.y += vel.v * pixelsPerMeter * dt;
+                p.life++;
+
+                if (p.x > width || p.x < 0 || p.y > height || p.y < 0 || p.life > p.maxLife) {
+                    particles[i] = params.viz === 'particles' ? spawnDyeParticle() : spawnParticle();
+                }
+            }
+
+            // --- Audio Update ---
+            if (audioEnabled && actx) {
+                let t = actx.currentTime;
+                if (params.re < 47) {
+                    // Laminar hiss
+                    oscGain.gain.setTargetAtTime(0, t, 0.1);
+                    noiseFilter.frequency.setTargetAtTime(200 + params.v * 100, t, 0.1);
+                    noiseFilter.Q.setTargetAtTime(1, t, 0.1);
+                    noiseGain.gain.setTargetAtTime(0.2 * (params.v/5), t, 0.1);
+                } else if (params.re >= 47 && params.re <= 300) {
+                    // Singing tone
+                    let pitch = f * 15; // Shift up to audible range (e.g. 100-800Hz)
+                    osc.frequency.setTargetAtTime(Math.max(80, Math.min(pitch, 1500)), t, 0.1);
+                    oscGain.gain.setTargetAtTime(0.3 * Math.min(1, params.v/2), t, 0.1);
+                    
+                    noiseFilter.frequency.setTargetAtTime(pitch, t, 0.1);
+                    noiseFilter.Q.setTargetAtTime(10, t, 0.1);
+                    noiseGain.gain.setTargetAtTime(0.1, t, 0.1);
+                } else {
+                    // Turbulent rumble
+                    oscGain.gain.setTargetAtTime(0, t, 0.2);
+                    noiseFilter.frequency.setTargetAtTime(150 + params.v * 50, t, 0.2);
+                    noiseFilter.Q.setTargetAtTime(0.5, t, 0.2);
+                    noiseGain.gain.setTargetAtTime(0.4, t, 0.2);
+                }
+            }
+
+            // --- UI Telemetry Update ---
+            ui.outRe.textContent = params.re.toFixed(0);
+            ui.outV.textContent = params.v.toFixed(1);
+            ui.outD.textContent = params.d.toFixed(3);
+            ui.outSt.textContent = st.toFixed(3);
+            ui.outF.textContent = f.toFixed(1);
+
+            let regime = "Creeping";
+            let rColor = "text-emerald-400";
+            if(params.re >= 10 && params.re < 47) { regime = "Attached Eddies"; rColor = "text-sky-400"; }
+            else if(params.re >= 47 && params.re <= 300) { regime = "Vortex Street"; rColor = "text-rose-400"; }
+            else if(params.re > 300) { regime = "Turbulent"; rColor = "text-amber-500"; }
+            
+            ui.outRegime.textContent = regime;
+            ui.outRegime.className = `font-bold text-lg mt-1 ${rColor}`;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw Vorticity Heatmap Mode
+            if (params.viz === 'vorticity') {
+                ctx.globalCompositeOperation = 'screen';
+                for(let v of vortices) {
+                    let px = cx + v.x * pixelsPerMeter;
+                    let py = cy + v.y * pixelsPerMeter;
+                    let rad = Math.abs(v.gamma) * pixelsPerMeter * 2;
+                    rad = Math.max(20, Math.min(rad, 150));
+                    
+                    let grad = ctx.createRadialGradient(px, py, 0, px, py, rad);
+                    if (v.gamma < 0) {
+                        grad.addColorStop(0, 'rgba(0, 212, 224, 0.6)'); // sky
+                        grad.addColorStop(1, 'rgba(0, 212, 224, 0)');
+                    } else {
+                        grad.addColorStop(0, 'rgba(230, 0, 76, 0.6)'); // rose
+                        grad.addColorStop(1, 'rgba(230, 0, 76, 0)');
+                    }
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(px - rad, py - rad, rad*2, rad*2);
+                }
+                ctx.globalCompositeOperation = 'source-over';
+            }
+
+            // Draw Particles
+            if (params.viz === 'particles') {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                for (let p of particles) {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 1.5, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            } else if (params.viz === 'streaklines') {
+                ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                for (let p of particles) {
+                    if(p.history.length < 2) continue;
+                    ctx.moveTo(p.history[0].x, p.history[0].y);
+                    for(let i=1; i<p.history.length; i++) {
+                        ctx.lineTo(p.history[i].x, p.history[i].y);
+                    }
+                }
+                ctx.stroke();
+            }
+
+            // Draw Cylinder
+            let pR = (params.d / 2) * pixelsPerMeter;
+            
+            // Glow
+            ctx.shadowColor = 'rgba(0,0,0,0.8)';
+            ctx.shadowBlur = 15;
+            
+            ctx.beginPath();
+            ctx.arc(cx, cy, pR, 0, Math.PI*2);
+            ctx.fillStyle = '#1d2b38'; // slate-800
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#cbd5e1'; // slate-300
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // --- Main Loop ---
+        let lastTime = performance.now();
+        function loop(time) {
+            let dt = (time - lastTime) / 1000;
+            lastTime = time;
+            
+            if(dt > 0.1) dt = 0.1; // clamp dt
+
+            if (params.playing) {
+                // Update 3 times per frame for stability
+                let subDt = dt / 3;
+                updatePhysics(subDt);
+                updatePhysics(subDt);
+                updatePhysics(subDt);
+            }
+            
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        initParticles();
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>

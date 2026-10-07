@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Total Internal Reflection & Fiber Optics Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { margin: 0; font-family: system-ui, -apple-system, sans-serif; overflow-x: hidden; touch-action: none; }
+        canvas { display: block; width: 100%; height: 100%; }
+        .hud-font { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        input[type="range"] { accent-color: #00f0ff; }
+        
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #111a22; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/80 backdrop-blur-md sticky top-0 z-10 shadow-md">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-sky-500/20 flex items-center justify-center border border-sky-500/50">
+                <div class="w-3 h-3 bg-sky-400 rounded-full shadow-[0_0_10px_#00f0ff]"></div>
+            </div>
+            <h1 class="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-emerald-400">
+                TIR & Fiber Optics Simulator
+            </h1>
+        </div>
+        <button id="audio-toggle" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="audio-icon-off"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>
+            <svg class="w-4 h-4 hidden text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="audio-icon-on"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+            <span id="audio-text">Enable Audio</span>
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 p-4 lg:p-6 lg:max-h-[calc(100vh-250px)]">
+        <!-- Sidebar Controls & HUD -->
+        <div class="lg:col-span-1 flex flex-col gap-4 overflow-y-auto pr-1">
+            <!-- HUD Readouts -->
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-500 to-emerald-500"></div>
+                <h2 class="text-sm font-bold tracking-widest text-slate-400 uppercase mb-4">Telemetry</h2>
+                <div class="grid grid-cols-2 gap-y-3 gap-x-2 text-sm hud-font" id="hud-readouts">
+                    <div class="text-slate-500">θ Incident:</div><div id="readout-theta1" class="text-right font-medium text-sky-300">0.0°</div>
+                    <div class="text-slate-500">θ Critical:</div><div id="readout-thetac" class="text-right font-medium text-rose-300">0.0°</div>
+                    <div class="text-slate-500">θ Refracted:</div><div id="readout-theta2" class="text-right font-medium text-sky-300">0.0°</div>
+                    <div class="text-slate-500">Reflectance:</div><div id="readout-R" class="text-right font-medium text-amber-400">0%</div>
+                    <div class="text-slate-500">Transmittance:</div><div id="readout-T" class="text-right font-medium text-emerald-400">100%</div>
+                </div>
+                <div id="state-alert" class="mt-5 p-2 rounded-lg font-bold text-sm tracking-wider text-center transition-all duration-300 bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                    PARTIAL REFRACTION
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl flex-1">
+                <h2 class="text-sm font-bold tracking-widest text-slate-400 uppercase mb-4">Parameters</h2>
+                
+                <div class="space-y-5">
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <label class="text-sm text-slate-300 font-medium">Incident Angle</label>
+                            <span class="text-xs text-slate-500 hud-font" id="slider-val-readout">30.0°</span>
+                        </div>
+                        <input type="range" id="angle-slider" min="0" max="89.9" step="0.1" value="30" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Medium 1 (n₁)</label>
+                            <select id="n1-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-slate-200">
+                                <option value="1.33">Water (1.33)</option>
+                                <option value="1.46">Fiber Core (1.46)</option>
+                                <option value="1.50" selected>Glass (1.50)</option>
+                                <option value="2.42">Diamond (2.42)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Medium 2 (n₂)</label>
+                            <select id="n2-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-slate-200">
+                                <option value="1.00" selected>Air (1.00)</option>
+                                <option value="1.33">Water (1.33)</option>
+                                <option value="1.44">Cladding (1.44)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="index-warning" class="hidden text-xs text-rose-400 p-2 bg-rose-500/10 border border-rose-500/20 rounded-md">
+                        Warning: n₁ ≤ n₂. Total Internal Reflection requires n₁ > n₂. Light will never fully reflect.
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-slate-300 font-medium mb-2">View Mode</label>
+                        <div class="grid grid-cols-1 gap-2" id="view-mode-container">
+                            <button class="view-btn bg-sky-600 hover:bg-sky-500 text-white p-2 rounded-lg text-sm font-medium transition-colors shadow-[0_0_10px_rgba(2,132,199,0.3)]" data-mode="boundary">Boundary Interface</button>
+                            <button class="view-btn bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 rounded-lg text-sm transition-colors" data-mode="fiber">Optical Fiber</button>
+                            <button class="view-btn bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 rounded-lg text-sm transition-colors" data-mode="prism">Prism Dispersion</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-slate-300 font-medium mb-2">Scenarios</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button class="preset-btn bg-slate-800/80 hover:bg-slate-700 border border-slate-700 p-2 rounded-lg text-xs transition-colors" data-preset="glass-air">Glass to Air</button>
+                            <button class="preset-btn bg-slate-800/80 hover:bg-slate-700 border border-slate-700 p-2 rounded-lg text-xs transition-colors" data-preset="diamond">Diamond Sparkle</button>
+                            <button class="preset-btn bg-slate-800/80 hover:bg-slate-700 border border-slate-700 p-2 rounded-lg text-xs transition-colors" data-preset="fiber">Telecom Fiber</button>
+                            <button class="preset-btn bg-slate-800/80 hover:bg-slate-700 border border-slate-700 p-2 rounded-lg text-xs transition-colors" data-preset="snell">Snell's Window</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas Area -->
+        <div class="lg:col-span-3 bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl relative overflow-hidden flex flex-col min-h-[400px]">
+            <canvas id="sim-canvas" class="flex-1 w-full h-full cursor-crosshair"></canvas>
+            
+            <!-- Canvas Overlay UI -->
+            <div class="absolute top-4 right-4 flex gap-2">
+                <div class="bg-slate-900/80 backdrop-blur border border-slate-700 rounded p-1.5 flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-sky-400"></div><span class="text-xs text-slate-300">Incident</span>
+                </div>
+                <div class="bg-slate-900/80 backdrop-blur border border-slate-700 rounded p-1.5 flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-emerald-400"></div><span class="text-xs text-slate-300">Refracted</span>
+                </div>
+                <div class="bg-slate-900/80 backdrop-blur border border-slate-700 rounded p-1.5 flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-amber-400"></div><span class="text-xs text-slate-300">Reflected</span>
+                </div>
+            </div>
+            
+            <div id="overlay-instructions" class="absolute bottom-4 left-0 w-full text-center text-slate-400/80 text-sm pointer-events-none tracking-wide">
+                Drag horizontally to adjust incident angle
+            </div>
+        </div>
+    </main>
+
+    <!-- Explainer Cards -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 border-t border-slate-800 bg-slate-950/80 mt-auto">
+        <div class="bg-slate-900/80 hover:bg-slate-900 transition-colors p-6 rounded-2xl border border-slate-800 shadow-lg relative overflow-hidden group">
+            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <svg class="w-16 h-16 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </div>
+            <h3 class="text-sky-400 font-bold mb-3 flex items-center gap-2 text-lg">
+                Snell's Law & TIR
+            </h3>
+            <p class="text-slate-400 text-sm leading-relaxed mb-4 relative z-10">
+                When light enters a lower-index medium (n₁ > n₂), it bends <em>away</em> from the normal. Because of this, the refracted angle reaches 90° before the incident angle does. The incident angle where this happens is the <strong>Critical Angle</strong>. Beyond this, 100% of the light reflects internally.
+            </p>
+            <div class="bg-slate-950 p-3 rounded-lg font-mono text-xs text-sky-300 border border-slate-800 shadow-inner">
+                <div class="mb-1">n₁·sin(θ₁) = n₂·sin(θ₂)</div>
+                <div class="text-rose-300">θ_crit = arcsin(n₂ / n₁)</div>
+            </div>
+        </div>
+        
+        <div class="bg-slate-900/80 hover:bg-slate-900 transition-colors p-6 rounded-2xl border border-slate-800 shadow-lg relative overflow-hidden group">
+             <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <svg class="w-16 h-16 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+            </div>
+            <h3 class="text-emerald-400 font-bold mb-3 flex items-center gap-2 text-lg">
+                Fiber Optics
+            </h3>
+            <p class="text-slate-400 text-sm leading-relaxed relative z-10">
+                Optical fibers consist of a pure glass <strong>core</strong> surrounded by a <strong>cladding</strong> with a slightly lower refractive index. By injecting light at a shallow angle, it undergoes repeated Total Internal Reflection. This traps the light, allowing data pulses to travel thousands of kilometers under oceans with virtually no loss, carrying 99% of internet traffic.
+            </p>
+        </div>
+
+        <div class="bg-slate-900/80 hover:bg-slate-900 transition-colors p-6 rounded-2xl border border-slate-800 shadow-lg relative overflow-hidden group">
+            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <svg class="w-16 h-16 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </div>
+            <h3 class="text-rose-400 font-bold mb-3 flex items-center gap-2 text-lg">
+                Evanescent Waves & Diamonds
+            </h3>
+            <p class="text-slate-400 text-sm leading-relaxed relative z-10">
+                During TIR, light doesn't just bounce off the boundary hard—an <strong>evanescent wave</strong> slightly penetrates the second medium and decays exponentially. <br><br>
+                Also, why do diamonds sparkle? With a high index (n=2.42), the critical angle is tiny (~24°). Light entering a diamond gets trapped, bouncing around multiple internal facets before exiting, creating brilliant sparkles!
+            </p>
+        </div>
+    </section>
+
+    <script>
+        // --- State ---
+        const state = {
+            n1: 1.50,
+            n2: 1.00,
+            theta1_deg: 30.0,
+            viewMode: 'boundary', // boundary, fiber, prism
+            isAudioEnabled: false
+        };
+
+        // --- Physics Variables ---
+        let theta_c_deg = 0;
+        let theta2_deg = 0;
+        let reflectance = 0; // 0 to 1
+        let transmittance = 1; // 0 to 1
+        let isTIR = false;
+
+        // --- DOM Elements ---
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        const slider = document.getElementById('angle-slider');
+        const sliderReadout = document.getElementById('slider-val-readout');
+        const n1Select = document.getElementById('n1-select');
+        const n2Select = document.getElementById('n2-select');
+        const indexWarning = document.getElementById('index-warning');
+        
+        const readouts = {
+            theta1: document.getElementById('readout-theta1'),
+            thetac: document.getElementById('readout-thetac'),
+            theta2: document.getElementById('readout-theta2'),
+            R: document.getElementById('readout-R'),
+            T: document.getElementById('readout-T'),
+            alert: document.getElementById('state-alert')
+        };
+
+        // --- Audio System ---
+        let audioCtx;
+        let masterGain;
+        let oscPulse;
+        let pulseGain;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = audioCtx.createGain();
+                masterGain.gain.value = 0.3;
+                masterGain.connect(audioCtx.destination);
+                
+                // Fiber pulse oscillator
+                oscPulse = audioCtx.createOscillator();
+                oscPulse.type = 'square';
+                oscPulse.frequency.value = 800;
+                
+                pulseGain = audioCtx.createGain();
+                pulseGain.gain.value = 0;
+                
+                oscPulse.connect(pulseGain);
+                pulseGain.connect(masterGain);
+                oscPulse.start();
+                
+                state.isAudioEnabled = true;
+                
+                const btn = document.getElementById('audio-toggle');
+                btn.classList.replace('bg-slate-800', 'bg-emerald-900/50');
+                btn.classList.replace('border-slate-700', 'border-emerald-500/50');
+                btn.classList.replace('text-slate-200', 'text-emerald-400');
+                document.getElementById('audio-icon-off').classList.add('hidden');
+                document.getElementById('audio-icon-on').classList.remove('hidden');
+                document.getElementById('audio-text').textContent = 'Audio Active';
+            }
+        }
+
+        document.getElementById('audio-toggle').addEventListener('click', () => {
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            } else if (!audioCtx) {
+                initAudio();
+                playClick(); // Test sound
+            }
+        });
+
+        let lastClickTime = 0;
+        function playClick() {
+            if (!state.isAudioEnabled || !audioCtx) return;
+            const now = audioCtx.currentTime;
+            if (now - lastClickTime < 0.05) return; // limit rate
+            lastClickTime = now;
+            
+            const osc = audioCtx.createOscillator();
+            const env = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.exponentialRampToValueAtTime(400, now + 0.05);
+            
+            env.gain.setValueAtTime(0, now);
+            env.gain.linearRampToValueAtTime(0.5, now + 0.01);
+            env.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            
+            osc.connect(env);
+            env.connect(masterGain);
+            osc.start(now);
+            osc.stop(now + 0.06);
+        }
+
+        let hasPlayedTIRSound = false;
+        function playTIRPing() {
+            if (!state.isAudioEnabled || !audioCtx) return;
+            const now = audioCtx.currentTime;
+            
+            const osc = audioCtx.createOscillator();
+            const env = audioCtx.createGain();
+            osc.type = 'sine';
+            
+            // Crystal harmonic frequencies
+            osc.frequency.setValueAtTime(1200, now);
+            osc.frequency.linearRampToValueAtTime(2400, now + 0.1);
+            
+            env.gain.setValueAtTime(0, now);
+            env.gain.linearRampToValueAtTime(0.8, now + 0.02);
+            env.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+            
+            osc.connect(env);
+            env.connect(masterGain);
+            osc.start(now);
+            osc.stop(now + 1.1);
+        }
+
+        function updateAudioLoop() {
+            if (!state.isAudioEnabled || !audioCtx) return;
+            
+            if (state.viewMode === 'fiber') {
+                // Modulate pulse gain based on angle (representing data throughput / acceptance angle)
+                const now = audioCtx.currentTime;
+                // Create a pulsing effect
+                const isPulseOn = (Date.now() % 200) < 100;
+                pulseGain.gain.setTargetAtTime(isPulseOn ? 0.2 : 0, now, 0.01);
+                oscPulse.frequency.setTargetAtTime(800 + state.theta1_deg * 5, now, 0.1);
+            } else {
+                pulseGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+            }
+        }
+
+        // --- Physics Calculations ---
+        function updatePhysics() {
+            const n1 = state.n1;
+            const n2 = state.n2;
+            const theta1 = state.theta1_deg * Math.PI / 180;
+
+            // Critical angle
+            if (n1 > n2) {
+                theta_c_deg = Math.asin(n2 / n1) * 180 / Math.PI;
+                indexWarning.classList.add('hidden');
+            } else {
+                theta_c_deg = NaN;
+                indexWarning.classList.remove('hidden');
+            }
+
+            // Refraction & TIR Check
+            if (n1 > n2 && state.theta1_deg >= theta_c_deg) {
+                isTIR = true;
+                theta2_deg = 90;
+                reflectance = 1;
+                transmittance = 0;
+            } else {
+                isTIR = false;
+                // Snell's Law
+                const sin_theta2 = (n1 / n2) * Math.sin(theta1);
+                theta2_deg = Math.asin(sin_theta2) * 180 / Math.PI;
+
+                // Fresnel Equations (unpolarized light)
+                const theta2 = theta2_deg * Math.PI / 180;
+                
+                if (theta1 === 0) {
+                    const R = Math.pow((n1 - n2) / (n1 + n2), 2);
+                    reflectance = R;
+                } else {
+                    const cos1 = Math.cos(theta1);
+                    const cos2 = Math.cos(theta2);
+                    
+                    const Rs = Math.pow((n1 * cos1 - n2 * cos2) / (n1 * cos1 + n2 * cos2), 2);
+                    const Rp = Math.pow((n1 * cos2 - n2 * cos1) / (n1 * cos2 + n2 * cos1), 2);
+                    
+                    reflectance = (Rs + Rp) / 2;
+                }
+                transmittance = 1 - reflectance;
+            }
+
+            // Audio triggers
+            if (isTIR && !hasPlayedTIRSound) {
+                playTIRPing();
+                hasPlayedTIRSound = true;
+            } else if (!isTIR) {
+                hasPlayedTIRSound = false;
+            }
+
+            updateHUD();
+        }
+
+        function updateHUD() {
+            readouts.theta1.textContent = state.theta1_deg.toFixed(1) + '°';
+            readouts.thetac.textContent = isNaN(theta_c_deg) ? 'N/A' : theta_c_deg.toFixed(1) + '°';
+            readouts.theta2.textContent = isTIR ? 'None (TIR)' : theta2_deg.toFixed(1) + '°';
+            
+            readouts.R.textContent = (reflectance * 100).toFixed(1) + '%';
+            readouts.T.textContent = (transmittance * 100).toFixed(1) + '%';
+
+            // Visual intensity for bars (we don't have bars but we can style the alert)
+            if (isTIR) {
+                readouts.alert.textContent = 'TOTAL INTERNAL REFLECTION';
+                readouts.alert.className = 'mt-5 p-2 rounded-lg font-bold text-sm tracking-wider text-center transition-all duration-300 bg-rose-500/20 text-rose-400 border border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.3)]';
+            } else if (isNaN(theta_c_deg)) {
+                readouts.alert.textContent = 'NORMAL REFRACTION (n₁ ≤ n₂)';
+                readouts.alert.className = 'mt-5 p-2 rounded-lg font-bold text-sm tracking-wider text-center transition-all duration-300 bg-slate-800 text-slate-400 border border-slate-700';
+            } else {
+                readouts.alert.textContent = 'PARTIAL REFRACTION';
+                readouts.alert.className = 'mt-5 p-2 rounded-lg font-bold text-sm tracking-wider text-center transition-all duration-300 bg-sky-500/10 text-sky-400 border border-sky-500/20';
+            }
+        }
+
+        // --- Canvas Rendering ---
+        function resize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            // Handle high-DPI displays
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
+        }
+
+        window.addEventListener('resize', () => {
+            resize();
+            draw();
+        });
+
+        function drawLaserRay(x1, y1, x2, y2, color, width, alpha = 1) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.globalAlpha = alpha;
+            ctx.stroke();
+            
+            // Glow
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width * 3;
+            ctx.globalAlpha = alpha * 0.3;
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        }
+
+        function drawNormalLine(x, y, length) {
+            ctx.beginPath();
+            ctx.moveTo(x, y - length);
+            ctx.lineTo(x, y + length);
+            ctx.strokeStyle = '#475569';
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function draw() {
+            const w = canvas.width / (window.devicePixelRatio || 1);
+            const h = canvas.height / (window.devicePixelRatio || 1);
+            
+            ctx.clearRect(0, 0, w, h);
+
+            if (state.viewMode === 'boundary') {
+                drawBoundaryMode(w, h);
+            } else if (state.viewMode === 'fiber') {
+                drawFiberMode(w, h);
+            } else if (state.viewMode === 'prism') {
+                drawPrismMode(w, h);
+            }
+            
+            updateAudioLoop();
+            requestAnimationFrame(draw);
+        }
+
+        function drawBoundaryMode(w, h) {
+            const cx = w / 2;
+            const cy = h / 2;
+
+            // Draw mediums
+            ctx.fillStyle = '#111a22'; // Top medium n2
+            ctx.fillRect(0, 0, w, cy);
+            
+            ctx.fillStyle = '#1d2b38'; // Bottom medium n1
+            ctx.fillRect(0, cy, w, h - cy);
+            
+            // Interface line
+            ctx.beginPath();
+            ctx.moveTo(0, cy);
+            ctx.lineTo(w, cy);
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '14px sans-serif';
+            ctx.fillText(`Medium 2 (n₂ = ${state.n2.toFixed(2)})`, 20, 30);
+            ctx.fillText(`Medium 1 (n₁ = ${state.n1.toFixed(2)})`, 20, h - 20);
+
+            drawNormalLine(cx, cy, h/2 - 20);
+
+            // Ray calculations
+            const rayLen = Math.min(w, h) * 0.8;
+            const t1 = state.theta1_deg * Math.PI / 180;
+            
+            // Incident Ray (from bottom left)
+            // Theta is angle with normal. Normal is vertical. 
+            // So angle with horizontal is 90 - theta.
+            // Since it's from bottom left going to center:
+            const ix = cx - rayLen * Math.sin(t1);
+            const iy = cy + rayLen * Math.cos(t1);
+            
+            drawLaserRay(ix, iy, cx, cy, '#00f0ff', 3); // Sky blue
+            
+            // Reflected Ray (to bottom right)
+            const rx = cx + rayLen * Math.sin(t1);
+            const ry = cy + rayLen * Math.cos(t1);
+            drawLaserRay(cx, cy, rx, ry, '#fbbf24', 2, Math.max(0.1, reflectance)); // Amber
+            
+            if (!isTIR) {
+                // Refracted Ray (to top right)
+                const t2 = theta2_deg * Math.PI / 180;
+                const tx = cx + rayLen * Math.sin(t2);
+                const ty = cy - rayLen * Math.cos(t2);
+                drawLaserRay(cx, cy, tx, ty, '#ccff00', 3, Math.max(0.1, transmittance)); // Emerald
+            } else {
+                // Evanescent Wave glow
+                const gradient = ctx.createLinearGradient(cx, cy, cx, cy - 50);
+                gradient.addColorStop(0, 'rgba(0, 240, 255, 0.4)');
+                gradient.addColorStop(1, 'rgba(0, 240, 255, 0)');
+                
+                ctx.beginPath();
+                ctx.arc(cx, cy, 60, Math.PI, 0);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+            }
+
+            // Angles arcs
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 40, Math.PI/2, Math.PI/2 + t1);
+            ctx.stroke();
+            
+            if (!isTIR) {
+                const t2 = theta2_deg * Math.PI / 180;
+                ctx.beginPath();
+                ctx.arc(cx, cy, 40, -Math.PI/2, -Math.PI/2 + t2);
+                ctx.stroke();
+            }
+        }
+
+        function drawFiberMode(w, h) {
+            const cy = h / 2;
+            const coreRadius = h * 0.15;
+            const cladRadius = coreRadius * 1.5;
+
+            // Background
+            ctx.fillStyle = '#0b1217';
+            ctx.fillRect(0, 0, w, h);
+
+            // Cladding
+            ctx.fillStyle = '#1d2b38';
+            ctx.fillRect(0, cy - cladRadius, w, cladRadius * 2);
+
+            // Core
+            ctx.fillStyle = '#111a22';
+            ctx.fillRect(0, cy - coreRadius, w, coreRadius * 2);
+            
+            // Labels
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '12px sans-serif';
+            ctx.fillText(`Core n=${state.n1.toFixed(2)}`, w/2, cy + 4);
+            ctx.fillText(`Cladding n=${state.n2.toFixed(2)}`, w/2, cy - coreRadius - 10);
+
+            // Ray setup
+            // In fiber, light enters the face. We'll simplify and say it's already inside 
+            // the core, striking the wall at angle theta1 relative to the NORMAL of the wall.
+            // Wall is horizontal. Normal is vertical.
+            const t1 = state.theta1_deg * Math.PI / 180;
+            
+            let x = 0;
+            let y = cy;
+            // Angle of propagation relative to horizontal is 90 - theta1
+            let propAngle = Math.PI / 2 - t1;
+            
+            // Limit to avoid infinite loops at 90deg
+            if (t1 > Math.PI/2 - 0.01) propAngle = 0.01;
+            
+            let bounceCount = 0;
+            const maxBounces = 20;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+
+            let intensity = 1.0;
+
+            while (x < w && bounceCount < maxBounces) {
+                // Calculate next intersection with core boundary
+                const dy = (propAngle > 0) ? (cy + coreRadius - y) : (cy - coreRadius - y);
+                const dx = dy / Math.tan(propAngle);
+                
+                const nextX = x + dx;
+                const nextY = y + dy;
+                
+                // Draw line segment
+                drawLaserRay(x, y, nextX, nextY, '#00f0ff', 3, intensity);
+                
+                x = nextX;
+                y = nextY;
+                
+                if (isTIR) {
+                    // Perfect bounce
+                    propAngle = -propAngle;
+                    
+                    // Evanescent glow at bounce
+                    ctx.beginPath();
+                    ctx.arc(x, y, 15, 0, Math.PI*2);
+                    ctx.fillStyle = 'rgba(0, 240, 255, 0.3)';
+                    ctx.fill();
+                } else {
+                    // Refraction leakage
+                    const t2 = theta2_deg * Math.PI / 180;
+                    // Exit ray angle relative to wall normal
+                    const exitAngleRelativeToNormal = t2;
+                    // Convert to drawing angle
+                    let exitDrawingAngle = (propAngle > 0) ? 
+                        (Math.PI/2 - exitAngleRelativeToNormal) : 
+                        -(Math.PI/2 - exitAngleRelativeToNormal);
+                        
+                    const exX = x + 100 * Math.cos(exitDrawingAngle);
+                    const exY = y + 100 * Math.sin(exitDrawingAngle);
+                    
+                    drawLaserRay(x, y, exX, exY, '#ccff00', 2, intensity * (1-reflectance));
+                    
+                    intensity *= reflectance;
+                    propAngle = -propAngle;
+                    
+                    if (intensity < 0.01) break; // Light lost
+                }
+                bounceCount++;
+            }
+        }
+
+        function drawPrismMode(w, h) {
+             // Draw a right angle prism for a periscope effect
+             const cx = w / 2;
+             const cy = h / 2;
+             const size = Math.min(w, h) * 0.4;
+             
+             // Background
+             ctx.fillStyle = '#111a22';
+             ctx.fillRect(0, 0, w, h);
+             
+             // Prism (Right triangle, hypotenuse at 45 deg)
+             // Vertices: (cx-size/2, cy-size/2), (cx+size/2, cy+size/2), (cx-size/2, cy+size/2)
+             const p1 = {x: cx - size/2, y: cy - size/2};
+             const p2 = {x: cx + size/2, y: cy + size/2};
+             const p3 = {x: cx - size/2, y: cy + size/2};
+             
+             ctx.beginPath();
+             ctx.moveTo(p1.x, p1.y);
+             ctx.lineTo(p2.x, p2.y);
+             ctx.lineTo(p3.x, p3.y);
+             ctx.closePath();
+             
+             ctx.fillStyle = '#1d2b38';
+             ctx.fill();
+             ctx.strokeStyle = '#334155';
+             ctx.lineWidth = 2;
+             ctx.stroke();
+
+             ctx.fillStyle = '#94a3b8';
+             ctx.font = '14px sans-serif';
+             ctx.fillText(`n₁ = ${state.n1.toFixed(2)}`, p3.x + 20, p3.y - 20);
+
+             // Ray enters vertically from top, hits hypotenuse
+             // Note: In this specific geometry, the ray hits the hypotenuse at exactly 45 degrees.
+             // We will override state.theta1_deg for visual purpose to 45 IF we wanted a static view,
+             // BUT user controls angle! So we'll rotate the incoming ray.
+             
+             const t1 = state.theta1_deg * Math.PI / 180;
+             // Let's make the hypotenuse horizontal for easier math, and ray hits it from inside.
+             // Actually, let's keep it simple: draw a boundary like boundary mode, but shaped as a prism.
+             // To utilize user angle, let's just make a flat surface at an angle.
+             // Or better, let's just make the hypotenuse the boundary. 
+             
+             // Hypotenuse normal is 135 degrees.
+             const hitX = cx;
+             const hitY = cy;
+             
+             // Normal vector
+             const nx = -Math.cos(Math.PI/4);
+             const ny = -Math.sin(Math.PI/4);
+             
+             drawNormalLine(hitX, hitY, 100); // approximate visual normal
+             // Real normal is diagonal.
+             ctx.beginPath();
+             ctx.moveTo(hitX - nx*100, hitY - ny*100);
+             ctx.lineTo(hitX + nx*100, hitY + ny*100);
+             ctx.strokeStyle = '#475569';
+             ctx.setLineDash([5, 5]);
+             ctx.stroke();
+             ctx.setLineDash([]);
+
+             // Incident ray
+             // Angle t1 relative to normal
+             const incAngle = Math.PI/4 * 5 + t1; // math adjusted for visual
+             const startX = hitX - size * Math.cos(incAngle);
+             const startY = hitY - size * Math.sin(incAngle);
+             
+             drawLaserRay(startX, startY, hitX, hitY, '#00f0ff', 3);
+             
+             // Reflected
+             const refAngle = Math.PI/4 * 5 - t1;
+             const rX = hitX + size * Math.cos(refAngle);
+             const rY = hitY + size * Math.sin(refAngle);
+             drawLaserRay(hitX, hitY, rX, rY, '#fbbf24', 2, Math.max(0.1, reflectance));
+             
+             if (!isTIR) {
+                 const t2 = theta2_deg * Math.PI / 180;
+                 const transAngle = Math.PI/4 + t2;
+                 const tX = hitX + size * Math.cos(transAngle);
+                 const tY = hitY + size * Math.sin(transAngle);
+                 drawLaserRay(hitX, hitY, tX, tY, '#ccff00', 3, Math.max(0.1, transmittance));
+             }
+        }
+
+        // --- Event Listeners ---
+        slider.addEventListener('input', (e) => {
+            state.theta1_deg = parseFloat(e.target.value);
+            sliderReadout.textContent = state.theta1_deg.toFixed(1) + '°';
+            updatePhysics();
+            playClick();
+        });
+
+        n1Select.addEventListener('change', (e) => {
+            state.n1 = parseFloat(e.target.value);
+            updatePhysics();
+            playClick();
+        });
+
+        n2Select.addEventListener('change', (e) => {
+            state.n2 = parseFloat(e.target.value);
+            updatePhysics();
+            playClick();
+        });
+
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // reset styling
+                document.querySelectorAll('.view-btn').forEach(b => {
+                    b.className = 'view-btn bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 rounded-lg text-sm transition-colors';
+                });
+                // active style
+                e.target.className = 'view-btn bg-sky-600 hover:bg-sky-500 text-white p-2 rounded-lg text-sm font-medium transition-colors shadow-[0_0_10px_rgba(2,132,199,0.3)]';
+                
+                state.viewMode = e.target.dataset.mode;
+                playClick();
+            });
+        });
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const preset = e.target.dataset.preset;
+                switch(preset) {
+                    case 'glass-air':
+                        n1Select.value = "1.50";
+                        n2Select.value = "1.00";
+                        slider.value = 45; // TIR
+                        break;
+                    case 'diamond':
+                        n1Select.value = "2.42";
+                        n2Select.value = "1.00";
+                        slider.value = 25; // Just past TIR
+                        break;
+                    case 'fiber':
+                        n1Select.value = "1.46";
+                        n2Select.value = "1.44";
+                        slider.value = 85; // Grazing angle TIR inside fiber
+                        document.querySelector('[data-mode="fiber"]').click();
+                        break;
+                    case 'snell':
+                        n1Select.value = "1.33";
+                        n2Select.value = "1.00";
+                        slider.value = 48.6; // Critical angle
+                        break;
+                }
+                
+                state.n1 = parseFloat(n1Select.value);
+                state.n2 = parseFloat(n2Select.value);
+                state.theta1_deg = parseFloat(slider.value);
+                sliderReadout.textContent = state.theta1_deg.toFixed(1) + '°';
+                
+                updatePhysics();
+                playClick();
+            });
+        });
+
+        // Mouse Drag on Canvas
+        let isDragging = false;
+        canvas.addEventListener('mousedown', () => isDragging = true);
+        window.addEventListener('mouseup', () => isDragging = false);
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const rect = canvas.getBoundingClientRect();
+            // Map x position to 0-89.9 degrees
+            const x = e.clientX - rect.left;
+            let val = (x / rect.width) * 90;
+            if (val < 0) val = 0;
+            if (val > 89.9) val = 89.9;
+            
+            slider.value = val;
+            state.theta1_deg = val;
+            sliderReadout.textContent = state.theta1_deg.toFixed(1) + '°';
+            updatePhysics();
+            
+            // throttle sound
+            if (Date.now() % 3 === 0) playClick();
+        });
+
+        // Touch support
+        canvas.addEventListener('touchstart', (e) => {
+            isDragging = true;
+        }, {passive: true});
+        window.addEventListener('touchend', () => isDragging = false);
+        canvas.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault(); // prevent scrolling
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const x = touch.clientX - rect.left;
+            let val = (x / rect.width) * 90;
+            if (val < 0) val = 0;
+            if (val > 89.9) val = 89.9;
+            
+            slider.value = val;
+            state.theta1_deg = val;
+            sliderReadout.textContent = state.theta1_deg.toFixed(1) + '°';
+            updatePhysics();
+        }, {passive: false});
+
+        // Init
+        resize();
+        updatePhysics();
+        requestAnimationFrame(draw);
+
+    </script>
+</body>
+</html>

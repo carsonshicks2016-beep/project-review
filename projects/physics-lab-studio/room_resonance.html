@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room Resonance Explorer</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: { 800: '#1d2b38', 900: '#111a22', 950: '#0b1217' },
+                        sky: { 400: '#00f0ff', 500: '#00d4e0' },
+                        emerald: { 400: '#ccff00', 500: '#b3e600' },
+                        rose: { 400: '#ff0055', 500: '#e6004c' },
+                        amber: { 400: '#fbbf24', 500: '#f59e0b' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+        canvas { touch-action: none; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen p-4 flex flex-col gap-4">
+    <header class="flex justify-between items-center bg-slate-900 p-4 rounded-2xl border border-slate-800">
+        <div>
+            <h1 class="text-2xl font-bold text-sky-400">Room Resonance Explorer</h1>
+            <p class="text-sm text-slate-400">Interactive simulation of acoustic standing waves</p>
+        </div>
+        <button id="audio-toggle" class="px-6 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-full transition-colors shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+            Start Audio
+        </button>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 flex-grow">
+        <!-- Controls Sidebar -->
+        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-col gap-6">
+            <h2 class="text-lg font-semibold text-slate-100 border-b border-slate-800 pb-2">Room Parameters</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-sm font-medium">Width (Lx)</label>
+                        <span id="width-val" class="mono text-sky-400">4.0 m</span>
+                    </div>
+                    <input type="range" id="width-slider" min="2" max="20" step="0.1" value="4" class="w-full accent-sky-500">
+                </div>
+                
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-sm font-medium">Length (Ly)</label>
+                        <span id="length-val" class="mono text-sky-400">5.0 m</span>
+                    </div>
+                    <input type="range" id="length-slider" min="2" max="30" step="0.1" value="5" class="w-full accent-sky-500">
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-sm font-medium">Height (Lz)</label>
+                        <span id="height-val" class="mono text-sky-400">3.0 m</span>
+                    </div>
+                    <input type="range" id="height-slider" min="2" max="10" step="0.1" value="3" class="w-full accent-sky-500">
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <h3 class="text-sm font-semibold text-slate-400">Presets</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded transition-colors" data-w="2.5" data-l="3" data-h="2.5">Bathroom</button>
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded transition-colors" data-w="4" data-l="5" data-h="3">Bedroom</button>
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded transition-colors" data-w="6" data-l="8" data-h="3.5">Living Room</button>
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded transition-colors" data-w="20" data-l="30" data-h="10">Concert Hall</button>
+                </div>
+            </div>
+
+            <div class="space-y-4 pt-4 border-t border-slate-800">
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-sm font-medium text-rose-400">Frequency</label>
+                        <span id="freq-val" class="mono text-rose-400 font-bold">100.0 Hz</span>
+                    </div>
+                    <input type="range" id="freq-slider" min="20" max="500" step="0.1" value="100" class="w-full accent-rose-500">
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="sweep-toggle" class="w-4 h-4 accent-amber-500">
+                    <label for="sweep-toggle" class="text-sm font-medium text-amber-400">Auto Sweep Frequency</label>
+                </div>
+            </div>
+
+            <div class="mt-auto pt-4 border-t border-slate-800 text-xs text-slate-500 space-y-1">
+                <p>Sound Speed (c): <span class="mono">343 m/s</span></p>
+                <p>Click canvas to move listener.</p>
+            </div>
+        </div>
+
+        <!-- Main Visualization -->
+        <div class="col-span-1 lg:col-span-2 bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-col items-center justify-center relative overflow-hidden min-h-[400px]">
+            <h2 class="absolute top-4 left-4 text-sm font-semibold text-slate-400 z-10">Room Top-Down View (Pressure Heatmap)</h2>
+            <div id="canvas-container" class="w-full h-full flex items-center justify-center relative mt-8">
+                <canvas id="room-canvas" class="rounded border-2 border-slate-700 cursor-crosshair shadow-lg"></canvas>
+            </div>
+        </div>
+
+        <!-- Data & Analysis -->
+        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-col gap-4">
+            <h2 class="text-lg font-semibold text-slate-100 border-b border-slate-800 pb-2">Analysis</h2>
+            
+            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+                <h3 class="text-xs text-slate-400 mb-1 uppercase tracking-wider">Listener Status</h3>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                    <div class="text-slate-400">Position (x,y):</div>
+                    <div class="mono text-right" id="pos-readout">0.00, 0.00 m</div>
+                    <div class="text-slate-400">Pressure Amp:</div>
+                    <div class="mono text-right text-emerald-400" id="pressure-readout">1.00</div>
+                </div>
+            </div>
+
+            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+                <h3 class="text-xs text-slate-400 mb-1 uppercase tracking-wider">Resonance Status</h3>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                    <div class="text-slate-400">Nearest Mode:</div>
+                    <div class="mono text-right text-sky-400" id="nearest-mode-readout">(1, 0, 0)</div>
+                    <div class="text-slate-400">Mode Freq:</div>
+                    <div class="mono text-right text-sky-400" id="nearest-freq-readout">42.9 Hz</div>
+                </div>
+            </div>
+
+            <div class="flex-grow flex flex-col">
+                <h3 class="text-xs text-slate-400 mb-2 uppercase tracking-wider">First 10 Room Modes</h3>
+                <div class="overflow-y-auto flex-grow pr-2 text-sm mono">
+                    <table class="w-full text-right">
+                        <thead>
+                            <tr class="text-slate-500 border-b border-slate-800">
+                                <th class="pb-1 font-normal text-left">Mode</th>
+                                <th class="pb-1 font-normal">Freq (Hz)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modes-table-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="h-32 mt-2 relative">
+                <h3 class="text-xs text-slate-400 mb-1 absolute top-0 left-0 z-10 bg-slate-900/80 pr-2">Frequency Response (0-500Hz)</h3>
+                <canvas id="freq-canvas" class="w-full h-full rounded border border-slate-800"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Explainer Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+            <h3 class="text-sky-400 font-bold mb-2 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                What Are Standing Waves?
+            </h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+                When a sound wave hits a wall, it reflects. If the distance between walls matches a multiple of half the wavelength, the reflected wave perfectly overlaps the original. This creates a "standing wave" that doesn't seem to move. The room itself becomes a resonant instrument, boosting some frequencies (antinodes) and killing others (nodes).
+            </p>
+        </div>
+        
+        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+            <h3 class="text-rose-400 font-bold mb-2 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                The Low Frequency Problem
+            </h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+                Bass wavelengths are huge (e.g., 50Hz = ~6.8 meters long). Small rooms only support a few resonant modes at these low frequencies, leaving huge gaps between resonant peaks. This causes a very "lumpy" frequency response where some bass notes boom uncontrollably while others completely vanish depending on where you sit.
+            </p>
+        </div>
+
+        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+            <h3 class="text-emerald-400 font-bold mb-2 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                Why Corners Are Loudest
+            </h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+                Because walls are rigid boundaries, air particles can't move through them. This means velocity is zero at the walls, which physically forces the pressure to be maximum! Since corners are the intersection of three walls, they contain the maximum pressure for *every single room mode*. This is why bass traps are always placed in corners.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Physics Constants
+        const c = 343; // Speed of sound in m/s
+
+        // State
+        let room = { w: 4, l: 5, h: 3 };
+        let frequency = 100;
+        let listener = { x: 0.5, y: 0.5 }; // normalized 0-1
+        let isSweeping = false;
+        let modes = [];
+        let time = 0;
+
+        // Audio State
+        let audioCtx = null;
+        let masterGain = null;
+        let osc = null;
+        let filter = null;
+        let isAudioPlaying = false;
+
+        // DOM Elements
+        const canvas = document.getElementById('room-canvas');
+        const ctx = canvas.getContext('2d');
+        const freqCanvas = document.getElementById('freq-canvas');
+        const freqCtx = freqCanvas.getContext('2d');
+        const audioBtn = document.getElementById('audio-toggle');
+        
+        // Input elements
+        const els = {
+            w: document.getElementById('width-slider'),
+            l: document.getElementById('length-slider'),
+            h: document.getElementById('height-slider'),
+            f: document.getElementById('freq-slider'),
+            wv: document.getElementById('width-val'),
+            lv: document.getElementById('length-val'),
+            hv: document.getElementById('height-val'),
+            fv: document.getElementById('freq-val'),
+            sweep: document.getElementById('sweep-toggle'),
+            pos: document.getElementById('pos-readout'),
+            pres: document.getElementById('pressure-readout'),
+            nMode: document.getElementById('nearest-mode-readout'),
+            nFreq: document.getElementById('nearest-freq-readout'),
+            tbody: document.getElementById('modes-table-body')
+        };
+
+        // Initialize Audio
+        audioBtn.addEventListener('click', () => {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                masterGain = audioCtx.createGain();
+                masterGain.gain.value = 0; // start silent
+                
+                // Add soft clipping to prevent harsh distortion
+                const waveShaper = audioCtx.createWaveShaper();
+                waveShaper.curve = makeDistortionCurve(400);
+                waveShaper.oversample = '4x';
+                
+                // Add lowpass filter to make it less annoying
+                filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 1000;
+                
+                osc = audioCtx.createOscillator();
+                osc.type = 'sine';
+                
+                osc.connect(filter);
+                filter.connect(masterGain);
+                masterGain.connect(waveShaper);
+                waveShaper.connect(audioCtx.destination);
+                
+                osc.start();
+                audioBtn.textContent = "Mute Audio";
+                audioBtn.classList.replace('bg-emerald-500', 'bg-rose-500');
+                audioBtn.classList.replace('hover:bg-emerald-400', 'hover:bg-rose-400');
+                audioBtn.classList.replace('shadow-[0_0_15px_rgba(16,185,129,0.3)]', 'shadow-[0_0_15px_rgba(244,63,94,0.3)]');
+                isAudioPlaying = true;
+            } else {
+                if (isAudioPlaying) {
+                    masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+                    audioBtn.textContent = "Start Audio";
+                    audioBtn.classList.replace('bg-rose-500', 'bg-emerald-500');
+                    audioBtn.classList.replace('hover:bg-rose-400', 'hover:bg-emerald-400');
+                    audioBtn.classList.replace('shadow-[0_0_15px_rgba(244,63,94,0.3)]', 'shadow-[0_0_15px_rgba(16,185,129,0.3)]');
+                    isAudioPlaying = false;
+                } else {
+                    masterGain.gain.setTargetAtTime(0.5, audioCtx.currentTime, 0.1);
+                    audioBtn.textContent = "Mute Audio";
+                    audioBtn.classList.replace('bg-emerald-500', 'bg-rose-500');
+                    audioBtn.classList.replace('hover:bg-emerald-400', 'hover:bg-rose-400');
+                    audioBtn.classList.replace('shadow-[0_0_15px_rgba(16,185,129,0.3)]', 'shadow-[0_0_15px_rgba(244,63,94,0.3)]');
+                    isAudioPlaying = true;
+                }
+            }
+        });
+
+        // Soft clipping curve
+        function makeDistortionCurve(amount) {
+            let k = typeof amount === 'number' ? amount : 50,
+                n_samples = 44100,
+                curve = new Float32Array(n_samples),
+                deg = Math.PI / 180,
+                i = 0,
+                x;
+            for ( ; i < n_samples; ++i ) {
+                x = i * 2 / n_samples - 1;
+                curve[i] = ( 3 + k ) * x * 20 * deg / ( Math.PI + k * Math.abs(x) );
+            }
+            return curve;
+        }
+
+        // Calculate modes
+        function calculateModes() {
+            modes = [];
+            const maxOrder = 5;
+            for (let nx = 0; nx <= maxOrder; nx++) {
+                for (let ny = 0; ny <= maxOrder; ny++) {
+                    for (let nz = 0; nz <= maxOrder; nz++) {
+                        if (nx === 0 && ny === 0 && nz === 0) continue;
+                        
+                        const f = (c / 2) * Math.sqrt(
+                            Math.pow(nx / room.w, 2) + 
+                            Math.pow(ny / room.l, 2) + 
+                            Math.pow(nz / room.h, 2)
+                        );
+                        
+                        if (f <= 1000) { // keep array manageable
+                            modes.push({ nx, ny, nz, f });
+                        }
+                    }
+                }
+            }
+            modes.sort((a, b) => a.f - b.f);
+            updateModesUI();
+        }
+
+        function updateModesUI() {
+            els.tbody.innerHTML = '';
+            for (let i = 0; i < Math.min(10, modes.length); i++) {
+                const m = modes[i];
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-left py-0.5">(${m.nx},${m.ny},${m.nz})</td>
+                    <td class="py-0.5 ${Math.abs(m.f - frequency) < 2 ? 'text-rose-400 font-bold' : ''}">${m.f.toFixed(1)}</td>
+                `;
+                els.tbody.appendChild(tr);
+            }
+        }
+
+        // Calculate pressure at a specific point for a given frequency
+        // We sum the contributions of all modes, weighted by how close the frequency is to the mode frequency
+        function calculatePressure(x, y, z, f) {
+            let p = 0;
+            const q = 30; // Quality factor of resonances
+            
+            for (const m of modes) {
+                // Resonance curve (Lorentzian-like response)
+                const resonanceWeight = 1 / Math.sqrt(1 + Math.pow(q * (f / m.f - m.f / f), 2));
+                
+                // Spatial shape function
+                const shape = Math.cos(m.nx * Math.PI * x) * 
+                              Math.cos(m.ny * Math.PI * y) * 
+                              Math.cos(m.nz * Math.PI * z);
+                
+                p += resonanceWeight * shape;
+            }
+            
+            return p;
+        }
+
+        // Event Listeners
+        function updateState() {
+            room.w = parseFloat(els.w.value);
+            room.l = parseFloat(els.l.value);
+            room.h = parseFloat(els.h.value);
+            frequency = parseFloat(els.f.value);
+            
+            els.wv.textContent = room.w.toFixed(1) + ' m';
+            els.lv.textContent = room.l.toFixed(1) + ' m';
+            els.hv.textContent = room.h.toFixed(1) + ' m';
+            els.fv.textContent = frequency.toFixed(1) + ' Hz';
+            
+            calculateModes();
+            resizeCanvas(); // keep aspect ratio updated
+        }
+
+        els.w.addEventListener('input', updateState);
+        els.l.addEventListener('input', updateState);
+        els.h.addEventListener('input', updateState);
+        els.f.addEventListener('input', () => {
+            isSweeping = false;
+            els.sweep.checked = false;
+            updateState();
+        });
+        
+        els.sweep.addEventListener('change', (e) => {
+            isSweeping = e.target.checked;
+        });
+
+        // Presets
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                els.w.value = e.target.dataset.w;
+                els.l.value = e.target.dataset.l;
+                els.h.value = e.target.dataset.h;
+                updateState();
+            });
+        });
+
+        // Canvas Interaction
+        function handleCanvasClick(e) {
+            const rect = canvas.getBoundingClientRect();
+            // Map click to 0-1 coordinates
+            listener.x = (e.clientX - rect.left) / rect.width;
+            listener.y = (e.clientY - rect.top) / rect.height;
+        }
+        
+        canvas.addEventListener('mousedown', (e) => {
+            handleCanvasClick(e);
+            canvas.addEventListener('mousemove', handleCanvasClick);
+        });
+        window.addEventListener('mouseup', () => {
+            canvas.removeEventListener('mousemove', handleCanvasClick);
+        });
+
+        // Resize handling
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            const cw = container.clientWidth - 32; // padding
+            const ch = container.clientHeight - 32;
+            
+            // Maintain room aspect ratio
+            const roomAspect = room.w / room.l;
+            const containerAspect = cw / ch;
+            
+            let finalW, finalH;
+            
+            if (roomAspect > containerAspect) {
+                finalW = cw;
+                finalH = cw / roomAspect;
+            } else {
+                finalH = ch;
+                finalW = ch * roomAspect;
+            }
+            
+            // Adjust for device pixel ratio
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = finalW * dpr;
+            canvas.height = finalH * dpr;
+            canvas.style.width = finalW + 'px';
+            canvas.style.height = finalH + 'px';
+            ctx.scale(dpr, dpr);
+            
+            // Freq canvas
+            const fRect = freqCanvas.parentElement.getBoundingClientRect();
+            freqCanvas.width = fRect.width * dpr;
+            freqCanvas.height = fRect.height * dpr;
+            freqCtx.scale(dpr, dpr);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Drawing
+        function drawRoom() {
+            const w = parseFloat(canvas.style.width);
+            const h = parseFloat(canvas.style.height);
+            
+            // Draw Heatmap
+            const res = 40; // Resolution of heatmap
+            const cellW = w / res;
+            const cellH = h / res;
+            
+            // Time-dependent oscillation
+            const oscVal = Math.sin(time * Math.PI * 2 * frequency);
+            
+            for (let i = 0; i < res; i++) {
+                for (let j = 0; j < res; j++) {
+                    const nx = (i + 0.5) / res;
+                    const ny = (j + 0.5) / res;
+                    
+                    // calculate pressure at z=0.5 (middle height)
+                    let p = calculatePressure(nx, ny, 0.5, frequency);
+                    p = p * oscVal; // animate
+                    
+                    // Map pressure to color
+                    // Red = positive pressure, Blue = negative pressure, Black = 0
+                    const intensity = Math.min(1, Math.abs(p) * 2);
+                    
+                    if (p > 0) {
+                        ctx.fillStyle = `rgba(230, 0, 76, ${intensity})`; // rose
+                    } else {
+                        ctx.fillStyle = `rgba(0, 240, 255, ${intensity})`; // sky
+                    }
+                    
+                    ctx.fillRect(i * cellW, j * cellH, Math.ceil(cellW), Math.ceil(cellH));
+                }
+            }
+            
+            // Draw Listener
+            ctx.fillStyle = '#b3e600'; // emerald
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(listener.x * w, listener.y * h, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Draw listener ripples
+            ctx.strokeStyle = `rgba(179, 230, 0, ${0.5 - (time*2)%0.5})`;
+            ctx.beginPath();
+            ctx.arc(listener.x * w, listener.y * h, 10 + ((time*20)%20), 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        function drawFreqResponse() {
+            const w = freqCanvas.width / (window.devicePixelRatio || 1);
+            const h = freqCanvas.height / (window.devicePixelRatio || 1);
+            
+            freqCtx.clearRect(0, 0, w, h);
+            
+            // Background
+            freqCtx.fillStyle = '#111a22';
+            freqCtx.fillRect(0, 0, w, h);
+            
+            // Draw response curve
+            freqCtx.beginPath();
+            freqCtx.strokeStyle = '#00f0ff';
+            freqCtx.lineWidth = 2;
+            
+            const minF = 20;
+            const maxF = 500;
+            
+            for (let x = 0; x < w; x++) {
+                const f = minF + (x / w) * (maxF - minF);
+                // Calculate pressure magnitude at listener position
+                const p = Math.abs(calculatePressure(listener.x, listener.y, 0.5, f));
+                // Logarithmic mapping for display
+                const y = h - Math.min(h, (p * 50)); 
+                
+                if (x === 0) freqCtx.moveTo(x, y);
+                else freqCtx.lineTo(x, y);
+            }
+            freqCtx.stroke();
+            
+            // Draw current frequency marker
+            const curX = ((frequency - minF) / (maxF - minF)) * w;
+            freqCtx.beginPath();
+            freqCtx.strokeStyle = '#e6004c'; // rose
+            freqCtx.lineWidth = 1;
+            freqCtx.moveTo(curX, 0);
+            freqCtx.lineTo(curX, h);
+            freqCtx.stroke();
+            
+            // Highlight nearest mode
+            if (modes.length > 0) {
+                let nearest = modes[0];
+                let minDist = Math.abs(nearest.f - frequency);
+                for (const m of modes) {
+                    const dist = Math.abs(m.f - frequency);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        nearest = m;
+                    }
+                }
+                
+                if (nearest.f >= minF && nearest.f <= maxF) {
+                    const nx = ((nearest.f - minF) / (maxF - minF)) * w;
+                    freqCtx.fillStyle = 'rgba(251, 191, 36, 0.2)'; // amber
+                    freqCtx.fillRect(nx - 2, 0, 4, h);
+                }
+            }
+        }
+
+        // Animation Loop
+        let lastTime = 0;
+        function animate(timestamp) {
+            const dt = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+            time += dt;
+            
+            if (isSweeping) {
+                frequency += 10 * dt; // sweep 10Hz per second
+                if (frequency > 500) frequency = 20;
+                els.f.value = frequency;
+                els.fv.textContent = frequency.toFixed(1) + ' Hz';
+                updateModesUI(); // highlight table
+            }
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawRoom();
+            drawFreqResponse();
+            
+            // Update Analysis Readouts
+            els.pos.textContent = `${(listener.x * room.w).toFixed(2)}, ${(listener.y * room.l).toFixed(2)} m`;
+            
+            const rawPressure = calculatePressure(listener.x, listener.y, 0.5, frequency);
+            const pMag = Math.abs(rawPressure);
+            els.pres.textContent = pMag.toFixed(3);
+            
+            if (modes.length > 0) {
+                let nearest = modes[0];
+                let minDist = Math.abs(nearest.f - frequency);
+                for (const m of modes) {
+                    const dist = Math.abs(m.f - frequency);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        nearest = m;
+                    }
+                }
+                els.nMode.textContent = `(${nearest.nx}, ${nearest.ny}, ${nearest.nz})`;
+                els.nFreq.textContent = nearest.f.toFixed(1) + ' Hz';
+            }
+
+            // Update Audio
+            if (isAudioPlaying && audioCtx && osc) {
+                osc.frequency.setTargetAtTime(frequency, audioCtx.currentTime, 0.05);
+                
+                // Map pressure to volume
+                // A strong resonance could have pressure > 1. Map carefully.
+                const vol = Math.min(1.0, 0.1 + pMag * 0.4); 
+                masterGain.gain.setTargetAtTime(vol, audioCtx.currentTime, 0.05);
+            }
+            
+            requestAnimationFrame(animate);
+        }
+
+        // Init
+        calculateModes();
+        setTimeout(resizeCanvas, 100); // ensure DOM is ready
+        requestAnimationFrame(animate);
+
+    </script>
+</body>
+</html>

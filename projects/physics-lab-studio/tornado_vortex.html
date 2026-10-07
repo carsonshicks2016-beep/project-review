@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tornado Vortex & Wind Shear Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0b1217; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+        canvas { display: block; }
+        .hud-panel { background: rgba(17, 26, 34, 0.8); backdrop-filter: blur(8px); border: 1px solid #1d2b38; }
+        input[type=range] { width: 100%; accent-color: #00f0ff; }
+        .preset-btn { background: #1d2b38; border: 1px solid #334155; transition: all 0.2s; }
+        .preset-btn:hover { background: #334155; border-color: #475569; }
+        .preset-btn.active { background: #00d4e0; border-color: #00f0ff; }
+        .readout { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        
+        /* Custom scrollbar for explainer container */
+        .explainer-scroll::-webkit-scrollbar { height: 8px; }
+        .explainer-scroll::-webkit-scrollbar-track { background: #111a22; border-radius: 4px; }
+        .explainer-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    </style>
+</head>
+<body class="w-full h-screen flex flex-col relative">
+    <!-- Main Canvas -->
+    <canvas id="simCanvas" class="absolute inset-0 w-full h-full z-0"></canvas>
+
+    <!-- UI Overlay -->
+    <div class="relative z-10 w-full h-full flex flex-col pointer-events-none p-4">
+        
+        <!-- Top Bar -->
+        <div class="flex justify-between items-start w-full">
+            <div class="hud-panel rounded-2xl p-4 shadow-lg pointer-events-auto max-w-sm">
+                <h1 class="text-xl font-bold text-sky-400 mb-1">Tornado Vortex Simulator</h1>
+                <p class="text-xs text-slate-400 mb-4">Atmospheric Dynamics & Sonification</p>
+                
+                <div class="flex justify-between items-center mb-3">
+                    <button id="audioBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded text-sm font-semibold transition-colors">
+                        Start Audio
+                    </button>
+                    <button id="viewBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded text-sm font-semibold transition-colors">
+                        View: 3D Oblique
+                    </button>
+                </div>
+
+                <div class="space-y-4 mt-4">
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>Updraft Speed</span>
+                            <span id="updraftVal" class="text-sky-300">40 m/s</span>
+                        </div>
+                        <input type="range" id="updraftSlider" min="10" max="80" value="40" step="1">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>Wind Shear</span>
+                            <span id="shearVal" class="text-sky-300">25 m/s</span>
+                        </div>
+                        <input type="range" id="shearSlider" min="5" max="50" value="25" step="1">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>Core Radius</span>
+                            <span id="radiusVal" class="text-sky-300">50 m</span>
+                        </div>
+                        <input type="range" id="radiusSlider" min="10" max="200" value="50" step="1">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>Relative Humidity</span>
+                            <span id="humidityVal" class="text-sky-300">80%</span>
+                        </div>
+                        <input type="range" id="humiditySlider" min="40" max="100" value="80" step="1">
+                    </div>
+                </div>
+
+                <div class="mt-5">
+                    <p class="text-xs text-slate-400 mb-2">Presets</p>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <button class="preset-btn py-1.5 rounded" data-preset="dustdevil">Dust Devil</button>
+                        <button class="preset-btn py-1.5 rounded" data-preset="rope">Rope (EF1)</button>
+                        <button class="preset-btn py-1.5 rounded active" data-preset="wedge">Wedge (EF3)</button>
+                        <button class="preset-btn py-1.5 rounded" data-preset="monster">Monster (EF5)</button>
+                        <button class="preset-btn py-1.5 rounded col-span-2" data-preset="meso">Mesocyclone Aloft</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HUD Data Readouts -->
+            <div class="hud-panel rounded-2xl p-4 shadow-lg pointer-events-auto min-w-[200px]">
+                <h2 class="text-sm font-bold text-slate-300 mb-3 border-b border-slate-700 pb-1">Telemetry</h2>
+                <div class="space-y-3 readout text-sm">
+                    <div>
+                        <div class="text-xs text-slate-400">Max Wind Speed</div>
+                        <div id="outSpeed" class="text-xl text-rose-400 font-bold">0 km/h</div>
+                        <div id="outMph" class="text-xs text-slate-500">0 mph</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400">EF Rating</div>
+                        <div id="outEf" class="text-lg text-amber-400">EF0</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400">Central Pressure Drop (ΔP)</div>
+                        <div id="outPressure" class="text-lg text-sky-400">0 hPa</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400">Funnel Diameter</div>
+                        <div id="outDiameter" class="text-lg text-emerald-400">0 m</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Explainer Cards at Bottom -->
+        <div class="mt-auto pointer-events-auto w-full max-w-5xl mx-auto">
+            <div class="flex gap-4 overflow-x-auto explainer-scroll pb-2">
+                <!-- Card 1 -->
+                <div class="hud-panel rounded-2xl p-4 min-w-[300px] flex-1 shrink-0">
+                    <h3 class="text-sm font-bold text-sky-400 mb-2">1. Tilting Horizontal Roll</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Wind shear (different wind speeds at different altitudes) creates invisible horizontal rolling tubes of air. A strong convective updraft catches this roll and tilts it vertically into a rotating mesocyclone.
+                    </p>
+                </div>
+                <!-- Card 2 -->
+                <div class="hud-panel rounded-2xl p-4 min-w-[300px] flex-1 shrink-0">
+                    <h3 class="text-sm font-bold text-emerald-400 mb-2">2. Conservation of Angular Momentum</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        As the updraft stretches the vortex tube vertically, its radius shrinks. Like an ice skater pulling in their arms, <span class="font-mono text-sky-300">v × r = constant</span> forces the rotational wind speeds (<span class="font-mono text-sky-300">v_θ</span>) to increase dramatically.
+                    </p>
+                </div>
+                <!-- Card 3 -->
+                <div class="hud-panel rounded-2xl p-4 min-w-[300px] flex-1 shrink-0">
+                    <h3 class="text-sm font-bold text-amber-400 mb-2">3. The Condensation Funnel</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Cyclostrophic balance causes a massive pressure drop in the core. This expands and cools the air adiabatically. If it cools below the dew point, water vapor condenses, forming the visible funnel cloud.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Setup & State ---
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let dpr = window.devicePixelRatio || 1;
+
+        // Physics State
+        let updraft = 40; // m/s
+        let shear = 25; // m/s
+        let R_core = 50; // m
+        let humidity = 80; // %
+        
+        let viewMode = '3d'; // '3d' or 'radar'
+        let time = 0;
+
+        // Audio State
+        let audioCtx = null;
+        let rumbleOsc = null;
+        let rumbleGain = null;
+        let whistleOsc = null;
+        let whistleGain = null;
+        let noiseNode = null;
+        let noiseFilter = null;
+        let noiseGain = null;
+
+        // Particles
+        const NUM_PARTICLES = 2000;
+        let particles = [];
+
+        // DOM Elements
+        const ui = {
+            updraft: document.getElementById('updraftSlider'),
+            shear: document.getElementById('shearSlider'),
+            radius: document.getElementById('radiusSlider'),
+            humidity: document.getElementById('humiditySlider'),
+            updraftVal: document.getElementById('updraftVal'),
+            shearVal: document.getElementById('shearVal'),
+            radiusVal: document.getElementById('radiusVal'),
+            humidityVal: document.getElementById('humidityVal'),
+            outSpeed: document.getElementById('outSpeed'),
+            outMph: document.getElementById('outMph'),
+            outEf: document.getElementById('outEf'),
+            outPressure: document.getElementById('outPressure'),
+            outDiameter: document.getElementById('outDiameter'),
+            audioBtn: document.getElementById('audioBtn'),
+            viewBtn: document.getElementById('viewBtn'),
+            presets: document.querySelectorAll('.preset-btn')
+        };
+
+        // --- Physics Math ---
+        const RHO = 1.225; // kg/m^3 (air density)
+        
+        // Calculate max tangential velocity based on updraft stretching and shear
+        // Simplified physical proxy for demo
+        function calcMaxVelocity() {
+            // Base vorticity from shear
+            let baseVorticity = shear / 1000; 
+            // Stretching factor proportional to updraft / R_core
+            let stretchFactor = updraft / Math.max(5, R_core);
+            
+            // Resulting max wind in m/s
+            let v_max = (shear * 1.5) + (updraft * 0.8) + (2000 / R_core);
+            return Math.min(v_max, 150); // Cap at realistic physics limits
+        }
+
+        // Rankine Vortex velocity at radius r
+        function getVTheta(r, v_max, r_core) {
+            if (r === 0) return 0;
+            if (r < r_core) {
+                // Solid body
+                return v_max * (r / r_core);
+            } else {
+                // Irrotational
+                return v_max * (r_core / r);
+            }
+        }
+
+        // Central pressure drop: dp = rho * v^2
+        function calcPressureDrop(v_max) {
+            // Integrated from infinity to 0: delta P = rho * v_max^2
+            return RHO * (v_max * v_max) / 100; // in hPa (mb)
+        }
+
+        // EF Scale rating
+        function getEFScale(v_max_kmh) {
+            if (v_max_kmh < 137) return { rating: 'EF0', color: 'text-emerald-400' };
+            if (v_max_kmh < 177) return { rating: 'EF1', color: 'text-lime-400' };
+            if (v_max_kmh < 217) return { rating: 'EF2', color: 'text-yellow-400' };
+            if (v_max_kmh < 266) return { rating: 'EF3', color: 'text-amber-400' };
+            if (v_max_kmh < 322) return { rating: 'EF4', color: 'text-orange-500' };
+            return { rating: 'EF5', color: 'text-rose-500' };
+        }
+
+        // LCL / Condensation level proxy based on humidity and pressure drop
+        function getCondensationRadius(r, v_max, pressureDrop) {
+            // Simplified: higher humidity means wider funnel
+            // Higher pressure drop means lower funnel base
+            let criticalPressure = 20 + (100 - humidity); // proxy threshold
+            
+            // Pressure drop at r
+            let dp_r = 0;
+            if (r < R_core) {
+                dp_r = pressureDrop * (1 - 0.5 * Math.pow(r / R_core, 2));
+            } else {
+                dp_r = pressureDrop * 0.5 * Math.pow(R_core / r, 2);
+            }
+            
+            return dp_r > criticalPressure;
+        }
+
+        // --- Initialization ---
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < NUM_PARTICLES; i++) {
+                particles.push({
+                    r: Math.random() * 800,
+                    theta: Math.random() * Math.PI * 2,
+                    z: Math.random() * 1000,
+                    size: Math.random() * 2 + 1,
+                    type: Math.random() > 0.8 ? 'debris' : 'cloud'
+                });
+            }
+        }
+        initParticles();
+
+        // --- Audio System ---
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Rumble
+            rumbleOsc = audioCtx.createOscillator();
+            rumbleOsc.type = 'sawtooth';
+            rumbleOsc.frequency.value = 40;
+            
+            let rumbleFilter = audioCtx.createBiquadFilter();
+            rumbleFilter.type = 'lowpass';
+            rumbleFilter.frequency.value = 80;
+            
+            rumbleGain = audioCtx.createGain();
+            rumbleGain.gain.value = 0;
+            
+            rumbleOsc.connect(rumbleFilter);
+            rumbleFilter.connect(rumbleGain);
+            rumbleGain.connect(audioCtx.destination);
+            rumbleOsc.start();
+
+            // Whistle
+            whistleOsc = audioCtx.createOscillator();
+            whistleOsc.type = 'sine';
+            
+            whistleGain = audioCtx.createGain();
+            whistleGain.gain.value = 0;
+            
+            whistleOsc.connect(whistleGain);
+            whistleGain.connect(audioCtx.destination);
+            whistleOsc.start();
+
+            // Noise (Wind)
+            const bufferSize = audioCtx.sampleRate * 2; 
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            
+            noiseNode = audioCtx.createBufferSource();
+            noiseNode.buffer = buffer;
+            noiseNode.loop = true;
+            
+            noiseFilter = audioCtx.createBiquadFilter();
+            noiseFilter.type = 'lowpass';
+            
+            noiseGain = audioCtx.createGain();
+            noiseGain.gain.value = 0;
+            
+            noiseNode.connect(noiseFilter);
+            noiseFilter.connect(noiseGain);
+            noiseGain.connect(audioCtx.destination);
+            noiseNode.start();
+
+            ui.audioBtn.textContent = 'Audio Active';
+            ui.audioBtn.classList.replace('bg-emerald-600', 'bg-slate-600');
+            ui.audioBtn.classList.remove('hover:bg-emerald-500');
+        }
+
+        function updateAudio(v_max) {
+            if (!audioCtx) return;
+            
+            // Rumble intensity based on updraft and pressure drop
+            let intensity = Math.min(1, v_max / 100);
+            
+            // Smooth transitions
+            const now = audioCtx.currentTime;
+            
+            rumbleGain.gain.setTargetAtTime(intensity * 0.4, now, 0.1);
+            rumbleOsc.frequency.setTargetAtTime(30 + intensity * 20, now, 0.1);
+            
+            // Whistle pitch tracks max wind speed
+            whistleOsc.frequency.setTargetAtTime(300 + v_max * 4, now, 0.1);
+            whistleGain.gain.setTargetAtTime(intensity * 0.15, now, 0.1);
+            
+            // Wind noise
+            noiseFilter.frequency.setTargetAtTime(400 + intensity * 1500, now, 0.1);
+            noiseGain.gain.setTargetAtTime(intensity * 0.3, now, 0.1);
+        }
+
+        ui.audioBtn.addEventListener('click', initAudio);
+
+        // --- Interaction ---
+        function updateStateFromUI() {
+            updraft = parseFloat(ui.updraft.value);
+            shear = parseFloat(ui.shear.value);
+            R_core = parseFloat(ui.radius.value);
+            humidity = parseFloat(ui.humidity.value);
+
+            ui.updraftVal.textContent = updraft + ' m/s';
+            ui.shearVal.textContent = shear + ' m/s';
+            ui.radiusVal.textContent = R_core + ' m';
+            ui.humidityVal.textContent = humidity + '%';
+        }
+
+        [ui.updraft, ui.shear, ui.radius, ui.humidity].forEach(el => {
+            el.addEventListener('input', () => {
+                updateStateFromUI();
+                ui.presets.forEach(btn => btn.classList.remove('active'));
+            });
+        });
+
+        ui.viewBtn.addEventListener('click', () => {
+            if (viewMode === '3d') {
+                viewMode = 'radar';
+                ui.viewBtn.textContent = 'View: Top-Down Radar';
+                ui.viewBtn.classList.replace('bg-slate-700', 'bg-indigo-600');
+                ui.viewBtn.classList.replace('hover:bg-slate-600', 'hover:bg-indigo-500');
+            } else {
+                viewMode = '3d';
+                ui.viewBtn.textContent = 'View: 3D Oblique';
+                ui.viewBtn.classList.replace('bg-indigo-600', 'bg-slate-700');
+                ui.viewBtn.classList.replace('hover:bg-indigo-500', 'hover:bg-slate-600');
+            }
+        });
+
+        const presets = {
+            dustdevil: { u: 15, s: 10, r: 15, h: 40 },
+            rope: { u: 30, s: 20, r: 25, h: 85 },
+            wedge: { u: 60, s: 35, r: 120, h: 90 },
+            monster: { u: 80, s: 50, r: 200, h: 95 },
+            meso: { u: 40, s: 40, r: 150, h: 50 } // Weak surface rotation, wide aloft
+        };
+
+        ui.presets.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                ui.presets.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const p = presets[btn.dataset.preset];
+                
+                ui.updraft.value = p.u;
+                ui.shear.value = p.s;
+                ui.radius.value = p.r;
+                ui.humidity.value = p.h;
+                updateStateFromUI();
+            });
+        });
+
+        // Initialize with default preset (Wedge)
+        const initP = presets.wedge;
+        ui.updraft.value = initP.u;
+        ui.shear.value = initP.s;
+        ui.radius.value = initP.r;
+        ui.humidity.value = initP.h;
+        updateStateFromUI();
+
+        // --- Render Loop ---
+        function draw3D(v_max, pressureDrop) {
+            ctx.fillStyle = '#0b1217';
+            ctx.fillRect(0, 0, width, height);
+
+            const cx = width / 2;
+            const cy = height * 0.75;
+            
+            // Ground
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, width * 0.8, height * 0.2, 0, 0, Math.PI * 2);
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, width * 0.8);
+            grad.addColorStop(0, '#1d2b38');
+            grad.addColorStop(1, '#0b1217');
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            // Cloud Base
+            ctx.beginPath();
+            ctx.ellipse(cx, 100, width * 0.9, height * 0.15, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#111a22';
+            ctx.fill();
+
+            // Draw Particles
+            // Sort by depth (z in 3D mapped to y)
+            particles.sort((a, b) => {
+                let yA = Math.sin(a.theta) * a.r;
+                let yB = Math.sin(b.theta) * b.r;
+                return yA - yB;
+            });
+
+            ctx.globalCompositeOperation = 'lighter';
+
+            let visibleFunnelR = 0;
+
+            for (let p of particles) {
+                // Update position
+                let v_theta = getVTheta(p.r, v_max, R_core);
+                
+                // Angular velocity
+                let omega = v_theta / Math.max(1, p.r);
+                p.theta += omega * 0.016; // 60fps
+                
+                // Radial inflow (towards core)
+                let inflow = (updraft / 10) * (p.r > R_core ? 1 : -0.5);
+                p.r -= inflow * 0.016;
+                
+                // Vertical motion (updraft)
+                let w = updraft * Math.exp(-Math.pow(p.r / R_core, 2));
+                p.z += w * 0.1;
+
+                // Reset particles
+                if (p.r < 5) p.r = 5;
+                if (p.z > 800 || p.r > 800) {
+                    p.z = 0;
+                    p.r = 200 + Math.random() * 600;
+                    p.theta = Math.random() * Math.PI * 2;
+                }
+
+                // Project 3D to 2D
+                // Perspective skew
+                let scale = 1;
+                let px = cx + Math.cos(p.theta) * p.r * scale;
+                // Add vertical stretch based on updraft, map z to vertical position
+                let py = cy + Math.sin(p.theta) * p.r * 0.25 - p.z; 
+
+                // Is inside condensation funnel?
+                let isCondensed = getCondensationRadius(p.r, v_max, pressureDrop) && p.type === 'cloud';
+                
+                if (isCondensed && p.r > visibleFunnelR) visibleFunnelR = p.r;
+
+                // Draw
+                ctx.beginPath();
+                ctx.arc(px, py, p.size * (isCondensed ? 2 : 1), 0, Math.PI * 2);
+                
+                if (isCondensed) {
+                    ctx.fillStyle = `rgba(148, 163, 184, ${0.1 + (p.z/800) * 0.3})`;
+                } else if (p.type === 'debris' && p.z < 200 && p.r < R_core * 2) {
+                    ctx.fillStyle = `rgba(120, 113, 108, ${0.5 - (p.z/200)*0.5})`;
+                } else {
+                    ctx.fillStyle = `rgba(0, 240, 255, 0.02)`; // faint wind vectors
+                }
+                ctx.fill();
+            }
+            ctx.globalCompositeOperation = 'source-over';
+
+            return visibleFunnelR * 2;
+        }
+
+        function drawRadar(v_max) {
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, width, height);
+
+            const cx = width / 2;
+            const cy = height / 2;
+            
+            // Draw radar rings
+            ctx.strokeStyle = '#1d2b38';
+            for(let r=100; r<=400; r+=100) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI*2);
+                ctx.stroke();
+            }
+
+            // Crosshair
+            ctx.beginPath();
+            ctx.moveTo(cx - 20, cy); ctx.lineTo(cx + 20, cy);
+            ctx.moveTo(cx, cy - 20); ctx.lineTo(cx, cy + 20);
+            ctx.strokeStyle = '#334155';
+            ctx.stroke();
+
+            // Draw Velocity Field
+            ctx.globalCompositeOperation = 'screen';
+            for (let p of particles) {
+                let v_theta = getVTheta(p.r, v_max, R_core);
+                
+                // Update simpler 2D mechanics
+                let omega = v_theta / Math.max(1, p.r);
+                p.theta += omega * 0.016;
+                p.r += (Math.random() - 0.5) * 5;
+                if(p.r < 5) p.r = 5;
+                if(p.r > 500) p.r = Math.random() * 500;
+
+                let px = cx + Math.cos(p.theta) * p.r;
+                let py = cy + Math.sin(p.theta) * p.r;
+
+                // Radial velocity (component towards/away from radar at bottom of screen)
+                // Radar is at (cx, cy + 1000)
+                // Simplify: left side is towards (green), right is away (red)
+                let vx = -Math.sin(p.theta) * v_theta; 
+                
+                ctx.beginPath();
+                ctx.arc(px, py, p.size * 1.5, 0, Math.PI * 2);
+                
+                if (vx > 5) {
+                    // Away: Red
+                    let intensity = Math.min(1, vx / 80);
+                    ctx.fillStyle = `rgba(225, 29, 72, ${intensity})`;
+                } else if (vx < -5) {
+                    // Towards: Green
+                    let intensity = Math.min(1, Math.abs(vx) / 80);
+                    ctx.fillStyle = `rgba(179, 230, 0, ${intensity})`;
+                } else {
+                    ctx.fillStyle = 'rgba(71, 85, 105, 0.1)';
+                }
+                ctx.fill();
+            }
+            ctx.globalCompositeOperation = 'source-over';
+            
+            return R_core * 2; // Funnel diameter approx core diameter in radar
+        }
+
+        function loop() {
+            time += 0.016;
+            
+            // Physics Calculations
+            let v_max = calcMaxVelocity();
+            let v_max_kmh = v_max * 3.6;
+            let v_max_mph = v_max * 2.237;
+            let pressureDrop = calcPressureDrop(v_max);
+            
+            let funnelDiameter = 0;
+
+            if (viewMode === '3d') {
+                funnelDiameter = draw3D(v_max, pressureDrop);
+            } else {
+                funnelDiameter = drawRadar(v_max);
+            }
+
+            // Update UI
+            ui.outSpeed.textContent = Math.round(v_max_kmh) + ' km/h';
+            ui.outMph.textContent = Math.round(v_max_mph) + ' mph';
+            
+            let ef = getEFScale(v_max_kmh);
+            ui.outEf.textContent = ef.rating;
+            ui.outEf.className = `text-lg font-bold ${ef.color}`;
+            
+            ui.outPressure.textContent = Math.round(pressureDrop) + ' hPa';
+            ui.outDiameter.textContent = Math.round(funnelDiameter) + ' m';
+
+            // Audio update
+            updateAudio(v_max);
+
+            requestAnimationFrame(loop);
+        }
+
+        loop();
+
+    </script>
+</body>
+</html>

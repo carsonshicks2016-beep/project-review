@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stellar Lifecycle & H-R Diagram</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0b1217; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; overflow-x: hidden; }
+        canvas { display: block; width: 100%; height: 100%; }
+        .hud-value { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        
+        /* Custom range slider styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px; width: 16px;
+            border-radius: 50%;
+            background: #00f0ff;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+    </style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-slate-900/80 backdrop-blur border-b border-slate-800 p-4 flex justify-between items-center z-10 sticky top-0">
+        <div>
+            <h1 class="text-2xl font-bold text-sky-400">Stellar Destiny Simulator</h1>
+            <p class="text-slate-400 text-sm">Lifecycle & Hertzsprung–Russell Diagram</p>
+        </div>
+        <button id="audioToggle" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-sky-400 border border-sky-500/30 rounded-lg transition-colors flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5 10v4a2 2 0 002 2h2.586l3.707 3.707a1 1 0 001.707-.707V4.992a1 1 0 00-1.707-.707L9.586 8H7a2 2 0 00-2 2z"></path></svg>
+            Enable Audio
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+        
+        <!-- Controls & HUD Sidebar -->
+        <div class="lg:col-span-3 flex flex-col gap-4">
+            
+            <!-- Controls -->
+            <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-xl">
+                <h2 class="text-lg font-semibold mb-4 text-slate-200">Simulation Controls</h2>
+                
+                <div class="mb-5">
+                    <div class="flex justify-between mb-1">
+                        <label class="text-sm text-slate-400">Initial Mass (M<sub>☉</sub>)</label>
+                        <span id="massDisplay" class="text-sky-400 font-mono">1.00</span>
+                    </div>
+                    <input type="range" id="massSlider" min="-1" max="2" step="0.01" value="0">
+                    <div class="flex justify-between text-xs text-slate-500 mt-1">
+                        <span>0.1</span>
+                        <span>10</span>
+                        <span>100</span>
+                    </div>
+                </div>
+
+                <div class="mb-5">
+                    <div class="flex justify-between mb-1">
+                        <label class="text-sm text-slate-400">Time (Years)</label>
+                        <span id="timeDisplay" class="text-amber-400 font-mono">0</span>
+                    </div>
+                    <input type="range" id="timeSlider" min="0" max="1" step="0.001" value="0">
+                    <div class="text-xs text-slate-500 mt-1 text-right" id="maxLifeDisplay">10B yrs</div>
+                </div>
+
+                <div>
+                    <h3 class="text-sm text-slate-400 mb-2">Presets</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 transition" data-mass="0.12">Proxima Centauri (0.12)</button>
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 transition" data-mass="1.0">Our Sun (1.0)</button>
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 transition" data-mass="1.44">M<sub>Ch</sub> Limit (1.44)</button>
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 transition" data-mass="16.0">Betelgeuse (16.0)</button>
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 transition" data-mass="100.0">Eta Carinae (100.0)</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HUD Readouts -->
+            <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-xl flex-grow">
+                <h2 class="text-lg font-semibold mb-4 text-slate-200">Telemetry</h2>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <span class="text-sm text-slate-400">Phase</span>
+                        <span id="phaseOut" class="font-bold text-emerald-400 text-right">Main Sequence</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <span class="text-sm text-slate-400">Luminosity (L<sub>☉</sub>)</span>
+                        <span id="lumOut" class="hud-value text-slate-200">1.00</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <span class="text-sm text-slate-400">Radius (R<sub>☉</sub>)</span>
+                        <span id="radOut" class="hud-value text-slate-200">1.00</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <span class="text-sm text-slate-400">Surface Temp (K)</span>
+                        <span id="tempOut" class="hud-value text-rose-400">5778</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <span class="text-sm text-slate-400">Core Fuel</span>
+                        <span id="fuelOut" class="font-bold text-sky-400 text-right">Hydrogen</span>
+                    </div>
+                    <div class="flex justify-between items-center pb-2">
+                        <span class="text-sm text-slate-400">Total Lifespan</span>
+                        <span id="lifeOut" class="hud-value text-slate-200 text-right">1.00e10 yr</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvases -->
+        <div class="lg:col-span-9 grid grid-rows-2 gap-4">
+            
+            <!-- Star Cross-section / Visual -->
+            <div class="bg-black rounded-2xl border border-slate-800 shadow-xl overflow-hidden relative" style="height: 400px;">
+                <canvas id="starCanvas"></canvas>
+                <div class="absolute top-4 left-4 bg-slate-900/80 px-3 py-1 rounded-full text-xs text-slate-300 border border-slate-700 backdrop-blur">
+                    Physical View (Auto-scaled)
+                </div>
+            </div>
+
+            <!-- H-R Diagram -->
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden relative" style="height: 400px;">
+                <canvas id="hrCanvas"></canvas>
+                <div class="absolute top-4 left-4 bg-slate-900/80 px-3 py-1 rounded-full text-xs text-slate-300 border border-slate-700 backdrop-blur">
+                    Hertzsprung–Russell Diagram
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Explainer Cards -->
+    <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="bg-slate-900 rounded-xl p-5 border border-slate-800">
+            <h3 class="text-sky-400 font-bold mb-2 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+                1. Mass is Destiny
+            </h3>
+            <p class="text-sm text-slate-300">
+                A star's life is a constant battle between <strong>gravity</strong> (pulling in) and <strong>fusion pressure</strong> (pushing out) — a state called <em>hydrostatic equilibrium</em>. The initial mass dictates core temperature, which determines fusion rate. Massive stars burn their fuel furiously fast ($L \propto M^{3.5}$) and die young, while low-mass red dwarfs can live for trillions of years!
+            </p>
+        </div>
+        
+        <div class="bg-slate-900 rounded-xl p-5 border border-slate-800">
+            <h3 class="text-rose-400 font-bold mb-2 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                2. The Iron Catastrophe
+            </h3>
+            <p class="text-sm text-slate-300">
+                Massive stars fuse heavier and heavier elements in "onion shells" (H $\rightarrow$ He $\rightarrow$ C $\rightarrow$ O $\rightarrow$ Si) until they reach Iron-56. Iron has the highest nuclear binding energy; fusing it <em>absorbs</em> energy rather than releasing it. The core loses outward pressure and collapses in milliseconds, rebounding as a catastrophic Type II Supernova.
+            </p>
+        </div>
+
+        <div class="bg-slate-900 rounded-xl p-5 border border-slate-800">
+            <h3 class="text-emerald-400 font-bold mb-2 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
+                3. Quantum Degeneracy Limits
+            </h3>
+            <p class="text-sm text-slate-300">
+                When fusion stops, what holds gravity back? Quantum physics! <em>Electron degeneracy pressure</em> supports White Dwarfs up to the <strong>Chandrasekhar limit</strong> (1.44 $M_\odot$). <em>Neutron degeneracy pressure</em> supports Neutron Stars up to the <strong>TOV limit</strong> (~2.2 $M_\odot$). Beyond this, nothing stops gravity, forming a Black Hole.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Physics Constants & Globals
+        const M_SUN = 1.0;
+        const L_SUN = 1.0;
+        const R_SUN = 1.0;
+        const T_SUN = 5778; // Kelvin
+        
+        let state = {
+            mass: 1.0,      // Solar masses
+            timeFrac: 0,    // 0 to 1 life progression
+            
+            // Computed physical state
+            phase: 'Main Sequence',
+            totalLifetime: 1e10, // years
+            currentTime: 0,
+            luminosity: 1.0,
+            temperature: 5778,
+            radius: 1.0,
+            coreFuel: 'Hydrogen',
+            isAlive: true,
+            remnantType: null
+        };
+
+        // Audio Context
+        let audioCtx = null;
+        let oscillators = [];
+        let gainNode = null;
+        let filterNode = null;
+        let isAudioEnabled = false;
+        let lastPhase = '';
+
+        // UI Elements
+        const massSlider = document.getElementById('massSlider');
+        const massDisplay = document.getElementById('massDisplay');
+        const timeSlider = document.getElementById('timeSlider');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const maxLifeDisplay = document.getElementById('maxLifeDisplay');
+        
+        const phaseOut = document.getElementById('phaseOut');
+        const lumOut = document.getElementById('lumOut');
+        const radOut = document.getElementById('radOut');
+        const tempOut = document.getElementById('tempOut');
+        const fuelOut = document.getElementById('fuelOut');
+        const lifeOut = document.getElementById('lifeOut');
+        
+        // Canvas Elements
+        const starCanvas = document.getElementById('starCanvas');
+        const hrCanvas = document.getElementById('hrCanvas');
+        const starCtx = starCanvas.getContext('2d');
+        const hrCtx = hrCanvas.getContext('2d');
+        
+        function resizeCanvases() {
+            const dpr = window.devicePixelRatio || 1;
+            
+            starCanvas.width = starCanvas.clientWidth * dpr;
+            starCanvas.height = starCanvas.clientHeight * dpr;
+            starCtx.scale(dpr, dpr);
+            
+            hrCanvas.width = hrCanvas.clientWidth * dpr;
+            hrCanvas.height = hrCanvas.clientHeight * dpr;
+            hrCtx.scale(dpr, dpr);
+            
+            draw();
+        }
+        window.addEventListener('resize', resizeCanvases);
+
+        // Map slider (-1 to 2) to mass (0.1 to 100) using log scale
+        function getMassFromSlider(val) {
+            return Math.pow(10, val);
+        }
+        function getSliderFromMass(mass) {
+            return Math.log10(mass);
+        }
+
+        // Format numbers
+        function formatNumber(num) {
+            if (num < 0.01 || num > 9999) return num.toExponential(2);
+            return num.toFixed(2);
+        }
+        function formatTime(years) {
+            if (years >= 1e9) return (years/1e9).toFixed(2) + " Billion";
+            if (years >= 1e6) return (years/1e6).toFixed(2) + " Million";
+            return years.toFixed(0);
+        }
+
+        // Color temperature to RGB approximation
+        function tempToColor(t) {
+            // Simplified star color scale
+            if (t > 30000) return '#9bb0ff'; // O type
+            if (t > 10000) return '#aabfff'; // B type
+            if (t > 7500) return '#cad7ff';  // A type
+            if (t > 6000) return '#f8f7ff';  // F type
+            if (t > 5200) return '#fff4ea';  // G type
+            if (t > 3700) return '#ffd2a1';  // K type
+            return '#ffcc6f';                // M type
+        }
+
+        // Physics Engine
+        function updatePhysics() {
+            const m = state.mass;
+            const tFrac = state.timeFrac;
+            
+            // Total MS lifetime: t ~ 10^10 * M^-2.5
+            const msLifetime = 1e10 * Math.pow(m, -2.5);
+            state.totalLifetime = msLifetime * 1.1; // Add 10% for post-MS phases
+            
+            state.currentTime = tFrac * state.totalLifetime;
+            
+            // Initial ZAMS (Zero Age Main Sequence) params
+            let l_ms, r_ms, t_ms;
+            
+            if (m < 0.43) {
+                l_ms = 0.23 * Math.pow(m, 2.3);
+            } else {
+                l_ms = Math.pow(m, 3.5);
+            }
+            
+            if (m < 1) {
+                r_ms = Math.pow(m, 0.8);
+            } else {
+                r_ms = Math.pow(m, 0.57);
+            }
+            
+            // L = 4pi R^2 sigma T^4 => T = (L / R^2)^0.25 * T_SUN
+            t_ms = Math.pow(l_ms / (r_ms * r_ms), 0.25) * T_SUN;
+
+            const isDead = state.currentTime > state.totalLifetime;
+            state.isAlive = !isDead;
+            
+            if (isDead) {
+                // Remnant Phase
+                if (m < 8) {
+                    state.phase = 'White Dwarf';
+                    state.remnantType = 'WD';
+                    state.luminosity = 0.01; // fading
+                    state.radius = 0.01; // Earth size
+                    state.temperature = 100000 * Math.exp(-(state.currentTime - state.totalLifetime)/1e8);
+                    state.coreFuel = 'None (Degenerate C/O)';
+                } else if (m < 25) {
+                    state.phase = 'Neutron Star / Pulsar';
+                    state.remnantType = 'NS';
+                    state.luminosity = 1e-5;
+                    state.radius = 0.00001; // ~10km
+                    state.temperature = 1e6;
+                    state.coreFuel = 'None (Neutron Degeneracy)';
+                } else {
+                    state.phase = 'Black Hole';
+                    state.remnantType = 'BH';
+                    state.luminosity = 0;
+                    state.radius = 0; // Singularity / Event horizon very small
+                    state.temperature = 0;
+                    state.coreFuel = 'Singularity';
+                }
+            } else {
+                // Alive Phase
+                const lifeProgress = state.currentTime / msLifetime; // 0 to >1
+                
+                if (lifeProgress < 1.0) {
+                    // Main Sequence
+                    state.phase = m > 8 ? 'Blue Supergiant (MS)' : (m < 0.5 ? 'Red Dwarf' : 'Main Sequence');
+                    state.luminosity = l_ms * (1 + 0.5 * lifeProgress); // Gradual brightening
+                    state.radius = r_ms * (1 + 0.2 * lifeProgress);
+                    state.temperature = Math.pow(state.luminosity / (state.radius * state.radius), 0.25) * T_SUN;
+                    state.coreFuel = 'Hydrogen -> Helium';
+                } else {
+                    // Post-MS Evolution
+                    const postMsFrac = (state.currentTime - msLifetime) / (state.totalLifetime - msLifetime);
+                    
+                    if (m < 0.5) {
+                        // Very low mass just fade
+                        state.phase = 'Blue Dwarf';
+                        state.luminosity = l_ms;
+                        state.radius = r_ms;
+                        state.coreFuel = 'Helium (Fading)';
+                    } else if (m < 8) {
+                        // Red Giant Phase
+                        if (postMsFrac < 0.8) {
+                            state.phase = 'Red Giant';
+                            state.luminosity = l_ms * 100;
+                            state.radius = r_ms * 100 * postMsFrac;
+                            state.coreFuel = 'Helium shell burning';
+                        } else {
+                            state.phase = 'Planetary Nebula (AGB)';
+                            state.luminosity = l_ms * 3000;
+                            state.radius = r_ms * 400;
+                            state.coreFuel = 'C/O Core';
+                        }
+                    } else {
+                        // Supergiant / Supernova
+                        if (postMsFrac < 0.95) {
+                            state.phase = 'Red Supergiant';
+                            state.luminosity = l_ms * 10;
+                            state.radius = r_ms * 500;
+                            state.coreFuel = 'Helium -> Carbon';
+                        } else if (postMsFrac < 0.99) {
+                            state.phase = 'Late Heavy Burning';
+                            state.luminosity = l_ms * 15;
+                            state.radius = r_ms * 600;
+                            state.coreFuel = 'Carbon, Oxygen, Neon, Silicon';
+                        } else {
+                            state.phase = 'Supernova (Type II)';
+                            state.luminosity = 1e9; // 1 billion L_sun
+                            state.radius = r_ms * 2000; // Shockwave expanding
+                            state.coreFuel = 'Iron Core Collapse!';
+                        }
+                    }
+                    
+                    // Recompute temp from L and R
+                    if (state.radius > 0) {
+                        state.temperature = Math.pow(state.luminosity / (state.radius * state.radius), 0.25) * T_SUN;
+                    }
+                }
+            }
+
+            updateUI();
+            updateAudio();
+            draw();
+        }
+
+        function updateUI() {
+            massDisplay.textContent = state.mass.toFixed(2);
+            timeDisplay.textContent = formatTime(state.currentTime);
+            maxLifeDisplay.textContent = formatTime(state.totalLifetime) + " max";
+            
+            phaseOut.textContent = state.phase;
+            
+            // Color phase
+            phaseOut.className = 'font-bold text-right ' + (
+                state.phase.includes('Supernova') ? 'text-rose-500 animate-pulse' :
+                state.phase.includes('Black Hole') ? 'text-purple-500' :
+                !state.isAlive ? 'text-slate-400' : 'text-emerald-400'
+            );
+
+            lumOut.textContent = formatNumber(state.luminosity);
+            radOut.textContent = formatNumber(state.radius);
+            tempOut.textContent = state.temperature > 0 ? Math.round(state.temperature) : 0;
+            fuelOut.textContent = state.coreFuel;
+            lifeOut.textContent = formatNumber(state.totalLifetime) + " yr";
+        }
+
+        // Draw H-R Diagram
+        function drawHR() {
+            const w = hrCanvas.clientWidth;
+            const h = hrCanvas.clientHeight;
+            
+            hrCtx.clearRect(0, 0, w, h);
+            
+            // Draw Grid
+            hrCtx.strokeStyle = '#1d2b38';
+            hrCtx.lineWidth = 1;
+            hrCtx.beginPath();
+            for(let i=1; i<10; i++) {
+                hrCtx.moveTo(0, h*i/10); hrCtx.lineTo(w, h*i/10);
+                hrCtx.moveTo(w*i/10, 0); hrCtx.lineTo(w*i/10, h);
+            }
+            hrCtx.stroke();
+
+            // Axes labels
+            hrCtx.fillStyle = '#64748b';
+            hrCtx.font = '12px sans-serif';
+            hrCtx.textAlign = 'left';
+            hrCtx.fillText('← Temp (K)', 10, h - 10);
+            hrCtx.save();
+            hrCtx.translate(15, h - 20);
+            hrCtx.rotate(-Math.PI/2);
+            hrCtx.fillText('Luminosity (L☉) →', 0, 0);
+            hrCtx.restore();
+            
+            // Map Temp (40000 to 2000, log scale, reversed)
+            // Map Lum (1e-5 to 1e6, log scale)
+            function getX(temp) {
+                if(temp <= 0) return w-10;
+                const logT = Math.log10(temp);
+                const minT = Math.log10(2000);
+                const maxT = Math.log10(40000);
+                return w * (1 - (logT - minT) / (maxT - minT));
+            }
+            function getY(lum) {
+                if(lum <= 0) return h-10;
+                const logL = Math.log10(lum);
+                const minL = -5;
+                const maxL = 6;
+                return h * (1 - (logL - minL) / (maxL - minL));
+            }
+
+            // Draw current star
+            if (state.temperature > 0 && state.luminosity > 0 && !state.phase.includes('Black Hole')) {
+                const x = getX(state.temperature);
+                const y = getY(state.luminosity);
+                
+                // Trail (approximate track based on mass)
+                hrCtx.beginPath();
+                hrCtx.strokeStyle = '#00f0ff55';
+                hrCtx.lineWidth = 2;
+                // Just draw ZAMS to current
+                let l_ms = state.mass < 0.43 ? 0.23*Math.pow(state.mass,2.3) : Math.pow(state.mass, 3.5);
+                let r_ms = state.mass < 1 ? Math.pow(state.mass,0.8) : Math.pow(state.mass,0.57);
+                let t_ms = Math.pow(l_ms/(r_ms*r_ms), 0.25) * T_SUN;
+                hrCtx.moveTo(getX(t_ms), getY(l_ms));
+                hrCtx.lineTo(x, y);
+                hrCtx.stroke();
+
+                // Star dot
+                const r = Math.max(3, Math.min(15, Math.log10(state.radius*10 + 1) * 3));
+                hrCtx.beginPath();
+                hrCtx.arc(x, y, r, 0, Math.PI*2);
+                hrCtx.fillStyle = tempToColor(state.temperature);
+                hrCtx.shadowColor = hrCtx.fillStyle;
+                hrCtx.shadowBlur = 10;
+                hrCtx.fill();
+                hrCtx.shadowBlur = 0;
+                
+                hrCtx.strokeStyle = '#fff';
+                hrCtx.lineWidth = 1;
+                hrCtx.stroke();
+            }
+        }
+
+        // Draw Star Visual
+        function drawStar() {
+            const w = starCanvas.clientWidth;
+            const h = starCanvas.clientHeight;
+            const cx = w/2;
+            const cy = h/2;
+            
+            starCtx.clearRect(0, 0, w, h);
+            
+            if (state.phase.includes('Black Hole')) {
+                // Draw Black hole
+                starCtx.beginPath();
+                starCtx.arc(cx, cy, 20, 0, Math.PI*2);
+                starCtx.fillStyle = '#000';
+                starCtx.shadowColor = '#8b5cf6';
+                starCtx.shadowBlur = 20;
+                starCtx.fill();
+                
+                // Accretion disk hint
+                starCtx.beginPath();
+                starCtx.ellipse(cx, cy, 60, 15, 0, 0, Math.PI*2);
+                starCtx.strokeStyle = '#8b5cf6';
+                starCtx.lineWidth = 2;
+                starCtx.stroke();
+                starCtx.shadowBlur = 0;
+                return;
+            }
+            
+            // Normalize radius for display
+            // Radius ranges from 0.00001 (NS) to 2000 (SN)
+            let displayRadius;
+            if (state.radius < 0.01) displayRadius = 5; // NS
+            else if (state.radius < 0.1) displayRadius = 10; // WD
+            else if (state.radius < 10) displayRadius = 40 + Math.log10(state.radius)*15; // MS
+            else if (state.radius < 1000) displayRadius = 80 + Math.log10(state.radius)*20; // Giant
+            else displayRadius = 150 + Math.random()*20; // SN (shaking)
+            
+            const color = tempToColor(state.temperature);
+            
+            // Draw Glow
+            const glow = starCtx.createRadialGradient(cx, cy, displayRadius*0.8, cx, cy, displayRadius*2);
+            glow.addColorStop(0, color + 'aa');
+            glow.addColorStop(1, 'transparent');
+            starCtx.fillStyle = glow;
+            starCtx.fillRect(0,0,w,h);
+            
+            // Draw Core / Layers (cutaway view)
+            if (state.radius > 0.1 && state.isAlive) {
+                // Main body
+                starCtx.beginPath();
+                starCtx.arc(cx, cy, displayRadius, Math.PI/2, Math.PI*1.5); // left half
+                starCtx.fillStyle = color;
+                starCtx.fill();
+                
+                // Cutaway right half
+                const layers = state.phase.includes('Giant') ? 4 : 2;
+                for(let i=0; i<layers; i++) {
+                    const r = displayRadius * (1 - i/layers);
+                    starCtx.beginPath();
+                    starCtx.arc(cx, cy, r, -Math.PI/2, Math.PI/2);
+                    starCtx.fillStyle = `hsl(${Math.max(0, 60 - i*20)}, 100%, ${30 + i*15}%)`;
+                    starCtx.fill();
+                    starCtx.strokeStyle = '#00000055';
+                    starCtx.stroke();
+                }
+            } else {
+                // Just sphere
+                starCtx.beginPath();
+                starCtx.arc(cx, cy, displayRadius, 0, Math.PI*2);
+                starCtx.fillStyle = color;
+                starCtx.fill();
+            }
+
+            // SN flash
+            if (state.phase.includes('Supernova')) {
+                starCtx.fillStyle = '#ffffff';
+                starCtx.globalAlpha = Math.random() * 0.5 + 0.2;
+                starCtx.fillRect(0,0,w,h);
+                starCtx.globalAlpha = 1.0;
+            }
+        }
+
+        function draw() {
+            drawHR();
+            drawStar();
+        }
+
+        // Web Audio setup
+        async function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            gainNode = audioCtx.createGain();
+            filterNode = audioCtx.createBiquadFilter();
+            
+            gainNode.connect(filterNode);
+            filterNode.connect(audioCtx.destination);
+            
+            gainNode.gain.value = 0.1;
+            filterNode.type = 'lowpass';
+            
+            // Create a few oscillators for a rich drone
+            for(let i=0; i<3; i++) {
+                let osc = audioCtx.createOscillator();
+                osc.type = i===0 ? 'sine' : (i===1 ? 'triangle' : 'sawtooth');
+                osc.connect(gainNode);
+                osc.start();
+                oscillators.push(osc);
+            }
+            isAudioEnabled = true;
+            document.getElementById('audioToggle').innerHTML = 'Audio Enabled';
+            document.getElementById('audioToggle').classList.add('text-emerald-400', 'border-emerald-500/30');
+            
+            updateAudio();
+        }
+
+        function updateAudio() {
+            if (!isAudioEnabled || !audioCtx) return;
+            
+            const m = state.mass;
+            
+            // Map temp/lum to frequencies
+            if (state.isAlive) {
+                if (state.phase.includes('Supernova')) {
+                    // Explosion noise
+                    oscillators[0].frequency.setTargetAtTime(50, audioCtx.currentTime, 0.1);
+                    oscillators[1].frequency.setTargetAtTime(100 + Math.random()*200, audioCtx.currentTime, 0.05);
+                    oscillators[2].frequency.setTargetAtTime(200 + Math.random()*400, audioCtx.currentTime, 0.05);
+                    filterNode.frequency.setTargetAtTime(2000, audioCtx.currentTime, 0.1);
+                    gainNode.gain.setTargetAtTime(0.3, audioCtx.currentTime, 0.1);
+                } else if (state.phase.includes('Giant')) {
+                    // Low rumble
+                    let baseFreq = 40 + (100 / m);
+                    oscillators[0].frequency.setTargetAtTime(baseFreq, audioCtx.currentTime, 0.5);
+                    oscillators[1].frequency.setTargetAtTime(baseFreq * 1.5, audioCtx.currentTime, 0.5);
+                    oscillators[2].frequency.setTargetAtTime(baseFreq * 2.01, audioCtx.currentTime, 0.5);
+                    filterNode.frequency.setTargetAtTime(300, audioCtx.currentTime, 0.5);
+                    gainNode.gain.setTargetAtTime(0.2, audioCtx.currentTime, 0.5);
+                } else {
+                    // MS Drone
+                    let baseFreq = 100 + (m * 20); // Massive stars hum higher
+                    oscillators[0].frequency.setTargetAtTime(baseFreq, audioCtx.currentTime, 0.1);
+                    oscillators[1].frequency.setTargetAtTime(baseFreq * 1.5, audioCtx.currentTime, 0.1);
+                    oscillators[2].frequency.setTargetAtTime(baseFreq * 2.0, audioCtx.currentTime, 0.1);
+                    filterNode.frequency.setTargetAtTime(800, audioCtx.currentTime, 0.1);
+                    gainNode.gain.setTargetAtTime(0.1, audioCtx.currentTime, 0.1);
+                }
+            } else {
+                // Remnant
+                if (state.phase.includes('White Dwarf')) {
+                    // High, quiet whine
+                    oscillators[0].frequency.setTargetAtTime(800, audioCtx.currentTime, 0.1);
+                    oscillators[1].frequency.setTargetAtTime(1600, audioCtx.currentTime, 0.1);
+                    filterNode.frequency.setTargetAtTime(1000, audioCtx.currentTime, 0.1);
+                    gainNode.gain.setTargetAtTime(0.02, audioCtx.currentTime, 1.0); // Fade
+                } else if (state.phase.includes('Neutron Star')) {
+                    // Pulsar beeps (simulate by rapid frequency modulation or lfo)
+                    let pulseRate = 10; // Hz
+                    let t = audioCtx.currentTime;
+                    // Just simple high pitch if we can't easily LFO here
+                    oscillators[0].frequency.setTargetAtTime(400, t, 0.1);
+                    filterNode.frequency.setTargetAtTime(2000, t, 0.1);
+                    gainNode.gain.value = (Math.sin(t * Math.PI * 2 * pulseRate) > 0.8) ? 0.2 : 0;
+                    
+                    // Request animation frame will keep this updating
+                    requestAnimationFrame(updateAudio);
+                    return; // Skip normal return
+                } else {
+                    // Black hole - silence
+                    gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+                }
+            }
+        }
+
+        // Event Listeners
+        massSlider.addEventListener('input', (e) => {
+            state.mass = getMassFromSlider(parseFloat(e.target.value));
+            updatePhysics();
+        });
+
+        timeSlider.addEventListener('input', (e) => {
+            state.timeFrac = parseFloat(e.target.value);
+            updatePhysics();
+        });
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const mass = parseFloat(e.target.dataset.mass);
+                state.mass = mass;
+                massSlider.value = getSliderFromMass(mass);
+                state.timeFrac = 0;
+                timeSlider.value = 0;
+                updatePhysics();
+            });
+        });
+
+        document.getElementById('audioToggle').addEventListener('click', initAudio);
+
+        // Animation Loop (for visuals like SN shaking and Pulsar audio)
+        function loop() {
+            if (state.phase.includes('Supernova')) {
+                drawStar(); // Redraw for shake/flash
+            }
+            if (state.phase.includes('Neutron Star') && isAudioEnabled) {
+                updateAudio(); // Keep pulsar pulsing
+            }
+            requestAnimationFrame(loop);
+        }
+
+        // Init
+        setTimeout(() => {
+            resizeCanvases();
+            updatePhysics();
+            loop();
+        }, 100);
+
+    </script>
+</body>
+</html>

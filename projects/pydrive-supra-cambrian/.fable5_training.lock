@@ -1,0 +1,1 @@
+{"pid": 36958, "command": ["run.py", "--fable", "50000", "--fable-stage", "auto", "--workers", "10", "--car", "porsche_919evo", "--out", "fable5_919_ring_best.pt"], "out": "fable5_919_ring_best.pt"}

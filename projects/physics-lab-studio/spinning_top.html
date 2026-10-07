@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gyroscopic Precession Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; }
+        canvas { display: block; width: 100%; height: 100%; }
+        .hud-value { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        
+        /* Custom scrollbar for controls */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 h-screen w-screen overflow-hidden flex flex-col select-none">
+    
+    <!-- Top Nav / Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center z-10 shadow-md">
+        <div>
+            <h1 class="text-xl font-bold text-sky-400">Spinning Top & Gyroscope Physics</h1>
+            <p class="text-xs text-slate-400">Interactive simulation of angular momentum, precession, and nutation</p>
+        </div>
+        <div class="flex gap-4">
+            <button id="btn-audio" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-slate-700 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                Enable Audio
+            </button>
+            <button id="btn-vectors" class="bg-slate-800 hover:bg-sky-900 text-slate-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-slate-700">
+                Toggle Vectors
+            </button>
+            <button id="btn-trace" class="bg-slate-800 hover:bg-emerald-900 text-slate-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-slate-700">
+                Toggle Trace
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex overflow-hidden relative">
+        
+        <!-- Controls Sidebar -->
+        <aside class="w-80 bg-slate-900/80 backdrop-blur-md border-r border-slate-800 flex flex-col z-10 overflow-y-auto">
+            
+            <div class="p-5 border-b border-slate-800">
+                <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Physics Controls</h2>
+                
+                <!-- Sliders -->
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <label class="text-slate-300">Spin Rate (RPM)</label>
+                            <span id="val-spin" class="text-sky-400 font-mono">5000</span>
+                        </div>
+                        <input type="range" id="slider-spin" min="0" max="10000" step="100" value="5000" class="w-full accent-sky-500">
+                        <button id="btn-apply-spin" class="mt-1 w-full bg-slate-800 hover:bg-sky-900 text-xs py-1 rounded border border-slate-700 transition">Apply New Spin</button>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <label class="text-slate-300">Tilt Angle (&theta;&deg;)</label>
+                            <span id="val-tilt" class="text-sky-400 font-mono">30</span>
+                        </div>
+                        <input type="range" id="slider-tilt" min="0" max="85" step="1" value="30" class="w-full accent-sky-500">
+                        <button id="btn-apply-tilt" class="mt-1 w-full bg-slate-800 hover:bg-sky-900 text-xs py-1 rounded border border-slate-700 transition">Apply New Tilt</button>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <label class="text-slate-300">Top Mass (kg)</label>
+                            <span id="val-mass" class="text-slate-400 font-mono">0.2</span>
+                        </div>
+                        <input type="range" id="slider-mass" min="0.05" max="1.0" step="0.05" value="0.2" class="w-full accent-slate-500">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <label class="text-slate-300">Top Radius (m)</label>
+                            <span id="val-radius" class="text-slate-400 font-mono">0.05</span>
+                        </div>
+                        <input type="range" id="slider-radius" min="0.02" max="0.15" step="0.01" value="0.05" class="w-full accent-slate-500">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <label class="text-slate-300">Friction / Decay</label>
+                            <span id="val-friction" class="text-amber-400 font-mono">Medium</span>
+                        </div>
+                        <input type="range" id="slider-friction" min="0" max="0.05" step="0.005" value="0.01" class="w-full accent-amber-500">
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-5">
+                <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Presets</h2>
+                <div class="grid grid-cols-1 gap-2">
+                    <button id="preset-sleeping" class="text-left px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm border border-slate-700 transition">
+                        <div class="font-medium text-emerald-400">The Sleeping Top</div>
+                        <div class="text-xs text-slate-500">High speed, perfectly vertical</div>
+                    </button>
+                    <button id="preset-steady" class="text-left px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm border border-slate-700 transition">
+                        <div class="font-medium text-sky-400">Steady Precession</div>
+                        <div class="text-xs text-slate-500">Slow circular sweep without nutation</div>
+                    </button>
+                    <button id="preset-nutation" class="text-left px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm border border-slate-700 transition">
+                        <div class="font-medium text-purple-400">Looping Nutation</div>
+                        <div class="text-xs text-slate-500">Nodding flower petal path</div>
+                    </button>
+                    <button id="preset-topple" class="text-left px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm border border-slate-700 transition">
+                        <div class="font-medium text-rose-400">Toppling Wobble</div>
+                        <div class="text-xs text-slate-500">Slow spin below critical threshold</div>
+                    </button>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Canvas Area -->
+        <main class="flex-1 relative bg-slate-950">
+            <canvas id="sim-canvas"></canvas>
+            
+            <!-- Live HUD Overlay -->
+            <div class="absolute top-4 right-4 w-64 bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-xl p-4 shadow-lg pointer-events-none">
+                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Live Telemetry</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Spin (&omega;<sub>s</sub>)</span>
+                        <span id="hud-spin" class="hud-value text-sky-400">0 RPM</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Precession (&Omega;<sub>p</sub>)</span>
+                        <span id="hud-precession" class="hud-value text-purple-400">0 RPM</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Tilt Angle (&theta;)</span>
+                        <span id="hud-theta" class="hud-value text-emerald-400">0&deg;</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Angular Mom. |L|</span>
+                        <span id="hud-L" class="hud-value text-amber-400">0</span>
+                    </div>
+                    <div class="flex justify-between border-t border-slate-700 pt-2 mt-2">
+                        <span class="text-slate-400">Stability</span>
+                        <span id="hud-stability" class="hud-value text-slate-300">Stable</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Instructions Overlay -->
+            <div class="absolute top-4 left-4 pointer-events-none text-slate-500 text-xs">
+                Click and drag to rotate camera view.<br>
+                Scroll to zoom.
+            </div>
+        </main>
+    </div>
+
+    <!-- Explainer Cards Bottom -->
+    <footer class="bg-slate-900 border-t border-slate-800 p-4 shrink-0 z-10 relative">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
+            <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+                <h4 class="text-sm font-bold text-sky-400 mb-2">1. Why doesn't it fall?</h4>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    Gravity exerts a downward force on the top's center of mass, creating a <strong>Torque (&tau;)</strong> about the tip. Instead of pulling the top down, torque changes the <em>direction</em> of the angular momentum <strong>L</strong>. Since &tau; is perpendicular to L, the top sweeps out a horizontal circle (dL/dt = &tau;).
+                </p>
+            </div>
+            <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+                <h4 class="text-sm font-bold text-purple-400 mb-2">2. Inverse Relationship</h4>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    Precession speed &Omega;<sub>p</sub> = (m&middot;g&middot;d) / (I&middot;&omega;<sub>s</sub>). Notice that spin speed &omega;<sub>s</sub> is in the denominator! <strong>Spinning the top FASTER makes it precess SLOWER.</strong> As friction slows the top down, precession speeds up until it becomes unstable and topples.
+                </p>
+            </div>
+            <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+                <h4 class="text-sm font-bold text-emerald-400 mb-2">3. The Sleeping Top</h4>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    If spun fast enough perfectly vertically (&theta;=0), frictional torques pull the top perfectly upright. It requires a critical spin speed &omega;<sub>crit</sub> to maintain this state. This gyroscopic stability is used in spacecraft navigation, airplanes, and smartphones.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        /**
+         * Physics & Rendering Engine for Gyroscopic Precession
+         */
+        
+        // --- Constants & State ---
+        const G = 9.81; // Gravity
+        
+        let state = {
+            m: 0.2,       // Mass (kg)
+            R: 0.05,      // Radius (m)
+            d: 0.06,      // Distance from tip to CM (m)
+            
+            theta: 30 * Math.PI/180, // Tilt angle from vertical
+            psi: 0,                  // Precession angle
+            phi: 0,                  // Spin angle
+            
+            theta_dot: 0,
+            psi_dot: 0,
+            omega_3: 5000 * Math.PI / 30, // Spin rate in rad/s
+            
+            friction: 0.01,
+            
+            // Simulation flags
+            isToppled: false
+        };
+
+        // UI State
+        let settings = {
+            showVectors: true,
+            showTrace: true,
+            audioEnabled: false
+        };
+
+        const traceLimit = 300;
+        let tipTrace = [];
+
+        // Camera / View
+        let cam = {
+            angle: Math.PI / 4,
+            elevation: Math.PI / 6,
+            distance: 0.4,
+            zoom: 1
+        };
+
+        // --- Audio System ---
+        let audioCtx, spinOsc, precOsc, masterGain, toppleNoise, toppleFilter;
+        let isAudioInit = false;
+
+        function initAudio() {
+            if (isAudioInit) return;
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.2;
+            masterGain.connect(audioCtx.destination);
+            
+            // Spin whine
+            spinOsc = audioCtx.createOscillator();
+            spinOsc.type = 'triangle';
+            spinOsc.frequency.value = 0;
+            let spinGain = audioCtx.createGain();
+            spinGain.gain.value = 0.3;
+            spinOsc.connect(spinGain);
+            spinGain.connect(masterGain);
+            spinOsc.start();
+            
+            // Precession hum
+            precOsc = audioCtx.createOscillator();
+            precOsc.type = 'sine';
+            precOsc.frequency.value = 0;
+            let precGain = audioCtx.createGain();
+            precGain.gain.value = 0.5;
+            precOsc.connect(precGain);
+            precGain.connect(masterGain);
+            precOsc.start();
+
+            isAudioInit = true;
+            settings.audioEnabled = true;
+            document.getElementById('btn-audio').classList.replace('text-slate-300', 'text-sky-400');
+            document.getElementById('btn-audio').classList.replace('bg-slate-800', 'bg-slate-900');
+            document.getElementById('btn-audio').innerHTML = 'Audio Active';
+        }
+
+        function updateAudio() {
+            if (!isAudioInit || !settings.audioEnabled) return;
+            
+            if (state.isToppled) {
+                spinOsc.frequency.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+                precOsc.frequency.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+                return;
+            }
+
+            // Spin frequency maps to roughly 100Hz - 1000Hz based on omega_3
+            const rpm = Math.abs(state.omega_3 * 30 / Math.PI);
+            const freq = Math.max(50, rpm / 5);
+            spinOsc.frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.05);
+            
+            // Precession modulation
+            const precRpm = Math.abs(state.psi_dot * 30 / Math.PI);
+            precOsc.frequency.setTargetAtTime(30 + precRpm * 2, audioCtx.currentTime, 0.05);
+        }
+
+        // --- Physics Engine ---
+        let lastTime = 0;
+        
+        function getMomentsOfInertia() {
+            // Simplified as a cylinder/disk at distance d
+            const I3 = 0.5 * state.m * state.R * state.R; // Spin axis
+            const I1 = 0.25 * state.m * state.R * state.R + state.m * state.d * state.d; // Transverse
+            return { I1, I3 };
+        }
+
+        function resetState(rpm, tiltDeg) {
+            state.omega_3 = rpm * Math.PI / 30;
+            state.theta = tiltDeg * Math.PI / 180;
+            state.theta_dot = 0;
+            
+            // Calculate steady precession rate to start smoothly
+            const { I1, I3 } = getMomentsOfInertia();
+            // mgd = psi_dot * I3 * omega_3 (approx for fast spin)
+            // Quadratic exact: I1 cos(theta) psi_dot^2 - I3 omega_3 psi_dot + mgd = 0
+            const a = I1 * Math.cos(state.theta);
+            const b = -I3 * state.omega_3;
+            const c = state.m * G * state.d;
+            
+            let psi_dot_init = 0;
+            if (Math.abs(a) > 1e-6) {
+                const disc = b*b - 4*a*c;
+                if (disc >= 0) {
+                    // Slower precession root
+                    psi_dot_init = (-b - Math.sqrt(disc)) / (2*a);
+                } else {
+                    psi_dot_init = c / -b; // fallback
+                }
+            } else {
+                psi_dot_init = c / -b;
+            }
+            
+            state.psi_dot = isNaN(psi_dot_init) ? 0 : psi_dot_init;
+            state.isToppled = false;
+            tipTrace = [];
+        }
+
+        function stepPhysics(dt) {
+            if (dt > 0.1) dt = 0.1; // clamp dt
+            const substeps = 10;
+            const h = dt / substeps;
+            
+            const { I1, I3 } = getMomentsOfInertia();
+            
+            for (let i=0; i<substeps; i++) {
+                if (state.isToppled) break;
+
+                // Spin decay
+                state.omega_3 -= state.omega_3 * state.friction * h;
+                
+                // If spin is very low, it falls
+                if (Math.abs(state.omega_3) < 1) {
+                    state.isToppled = true;
+                }
+
+                // Prevent singularity at theta = 0
+                let t = state.theta;
+                if (t < 0.001) t = 0.001;
+                if (t > Math.PI/2 - 0.01) {
+                    state.isToppled = true;
+                    t = Math.PI/2;
+                }
+
+                const sinT = Math.sin(t);
+                const cosT = Math.cos(t);
+
+                // Equations of motion
+                const theta_ddot = sinT * (state.psi_dot * state.psi_dot * cosT - (I3/I1) * state.omega_3 * state.psi_dot + (state.m * G * state.d)/I1) - 0.5 * state.theta_dot;
+                
+                let psi_ddot = 0;
+                if (sinT > 0.001) {
+                    psi_ddot = (1/sinT) * ((I3/I1) * state.omega_3 * state.theta_dot - 2 * state.psi_dot * state.theta_dot * cosT) - 0.5 * state.psi_dot;
+                }
+
+                // Integrate
+                state.theta_dot += theta_ddot * h;
+                state.psi_dot += psi_ddot * h;
+                
+                state.theta += state.theta_dot * h;
+                state.psi += state.psi_dot * h;
+                
+                // Spin angle for visuals
+                state.phi += (state.omega_3 - state.psi_dot * cosT) * h;
+            }
+        }
+
+        // --- Rendering ---
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resize() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
+        }
+        window.addEventListener('resize', resize);
+        
+        // 3D Projection utilities
+        function project(x, y, z) {
+            // Apply camera rotations
+            // Rotate around Z (elevation) and Y (azimuth)
+            
+            // 1. Rotate around Y (cam.angle)
+            let x1 = x * Math.cos(cam.angle) - z * Math.sin(cam.angle);
+            let z1 = x * Math.sin(cam.angle) + z * Math.cos(cam.angle);
+            
+            // 2. Rotate around X (cam.elevation)
+            let y2 = y * Math.cos(cam.elevation) - z1 * Math.sin(cam.elevation);
+            let z2 = y * Math.sin(cam.elevation) + z1 * Math.cos(cam.elevation);
+            
+            // Perspective projection
+            const fov = 800 * cam.zoom;
+            const distance = cam.distance * 1000;
+            const scale = fov / (distance + z2);
+            
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const cx = rect.width / 2;
+            const cy = rect.height / 2 + 100; // offset center down
+            
+            return {
+                x: cx + x1 * scale,
+                y: cy - y2 * scale, // screen Y is inverted
+                scale: scale
+            };
+        }
+
+        function drawLine3D(x1, y1, z1, x2, y2, z2, color, width) {
+            const p1 = project(x1, y1, z1);
+            const p2 = project(x2, y2, z2);
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width * p1.scale;
+            ctx.stroke();
+        }
+
+        function drawTop() {
+            if (state.isToppled) {
+                state.theta = Math.PI / 2;
+                state.theta_dot = 0;
+                state.psi_dot = 0;
+            }
+
+            // Tip is at origin (0,0,0)
+            // Center of mass
+            const cm_x = state.d * Math.sin(state.theta) * Math.cos(state.psi);
+            const cm_z = state.d * Math.sin(state.theta) * Math.sin(state.psi);
+            const cm_y = state.d * Math.cos(state.theta);
+
+            // Vector along symmetry axis
+            const ux = Math.sin(state.theta) * Math.cos(state.psi);
+            const uz = Math.sin(state.theta) * Math.sin(state.psi);
+            const uy = Math.cos(state.theta);
+
+            // Draw trace
+            if (!state.isToppled) {
+                const top_point = {x: ux * state.d * 2, y: uy * state.d * 2, z: uz * state.d * 2};
+                tipTrace.push(top_point);
+                if (tipTrace.length > traceLimit) tipTrace.shift();
+            }
+
+            if (settings.showTrace && tipTrace.length > 1) {
+                ctx.beginPath();
+                const start = project(tipTrace[0].x, tipTrace[0].y, tipTrace[0].z);
+                ctx.moveTo(start.x, start.y);
+                for(let i=1; i<tipTrace.length; i++) {
+                    const p = project(tipTrace[i].x, tipTrace[i].y, tipTrace[i].z);
+                    ctx.lineTo(p.x, p.y);
+                }
+                ctx.strokeStyle = 'rgba(167, 139, 250, 0.4)'; // purple
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            // Draw Table/Grid
+            ctx.beginPath();
+            for(let i=-2; i<=2; i+=0.5) {
+                let p1 = project(i*0.2, 0, -0.4);
+                let p2 = project(i*0.2, 0, 0.4);
+                ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+                p1 = project(-0.4, 0, i*0.2);
+                p2 = project(0.4, 0, i*0.2);
+                ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+            }
+            ctx.strokeStyle = 'rgba(51, 65, 85, 0.5)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Draw Axis/Stem
+            drawLine3D(0, 0, 0, ux * state.d * 1.5, uy * state.d * 1.5, uz * state.d * 1.5, '#94a3b8', 2);
+
+            // Draw Disk of the top
+            const segments = 24;
+            // Two perpendicular vectors to u
+            // Assuming u is not perfectly vertical to avoid cross product 0, though we handle it
+            let v1x, v1y, v1z;
+            if (Math.abs(uy) > 0.999) {
+                v1x = 1; v1y = 0; v1z = 0;
+            } else {
+                // cross(u, Y_axis)
+                const len = Math.sqrt(uz*uz + ux*ux);
+                v1x = uz / len;
+                v1y = 0;
+                v1z = -ux / len;
+            }
+            // v2 = u cross v1
+            const v2x = uy * v1z - uz * v1y;
+            const v2y = uz * v1x - ux * v1z;
+            const v2z = ux * v1y - uy * v1x;
+
+            ctx.beginPath();
+            for(let i=0; i<=segments; i++) {
+                const angle = (i / segments) * Math.PI * 2 + state.phi;
+                const r = state.R;
+                const px = cm_x + r * (Math.cos(angle)*v1x + Math.sin(angle)*v2x);
+                const py = cm_y + r * (Math.cos(angle)*v1y + Math.sin(angle)*v2y);
+                const pz = cm_z + r * (Math.cos(angle)*v1z + Math.sin(angle)*v2z);
+                const proj = project(px, py, pz);
+                
+                if (i===0) ctx.moveTo(proj.x, proj.y);
+                else ctx.lineTo(proj.x, proj.y);
+            }
+            ctx.fillStyle = 'rgba(0, 212, 224, 0.2)'; // sky-500
+            ctx.fill();
+            ctx.strokeStyle = '#00f0ff'; // sky-400
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw a dot to show spin
+            const px = cm_x + state.R * (Math.cos(state.phi)*v1x + Math.sin(state.phi)*v2x);
+            const py = cm_y + state.R * (Math.cos(state.phi)*v1y + Math.sin(state.phi)*v2y);
+            const pz = cm_z + state.R * (Math.cos(state.phi)*v1z + Math.sin(state.phi)*v2z);
+            const dot = project(px, py, pz);
+            ctx.beginPath();
+            ctx.arc(dot.x, dot.y, 4, 0, Math.PI*2);
+            ctx.fillStyle = '#f87171'; // red dot for tracking
+            ctx.fill();
+
+            // Vectors
+            if (settings.showVectors && !state.isToppled) {
+                const scale = 0.05;
+                // Angular Momentum L (along symmetry axis approx)
+                const {I3} = getMomentsOfInertia();
+                const L_mag = I3 * state.omega_3 * scale;
+                drawLine3D(cm_x, cm_y, cm_z, cm_x + ux*L_mag, cm_y + uy*L_mag, cm_z + uz*L_mag, '#f59e0b', 3); // amber
+                
+                // Gravity
+                drawLine3D(cm_x, cm_y, cm_z, cm_x, cm_y - 0.1, cm_z, '#b3e600', 2); // emerald
+
+                // Torque = r x F
+                // r = cm_x, cm_y, cm_z
+                // F = 0, -mg, 0
+                // tau = cm_z*(-mg) - cm_y*0 , ...
+                const tx = -cm_z * state.m * G * 0.005;
+                const ty = 0;
+                const tz = cm_x * state.m * G * 0.005;
+                drawLine3D(0, 0, 0, tx, ty, tz, '#e6004c', 2); // rose
+            }
+        }
+
+        function updateHUD() {
+            const rpm = Math.abs(state.omega_3 * 30 / Math.PI).toFixed(0);
+            document.getElementById('hud-spin').innerText = `${rpm} RPM`;
+            
+            const precRpm = Math.abs(state.psi_dot * 30 / Math.PI).toFixed(1);
+            document.getElementById('hud-precession').innerText = `${precRpm} RPM`;
+            
+            const thetaDeg = (state.theta * 180 / Math.PI).toFixed(1);
+            document.getElementById('hud-theta').innerText = `${thetaDeg}°`;
+
+            const {I3, I1} = getMomentsOfInertia();
+            const L = (I3 * state.omega_3).toFixed(4);
+            document.getElementById('hud-L').innerText = L;
+
+            // Stability Condition for sleeping top: omega^2 > 4mgd I1 / I3^2
+            const critical_omega2 = (4 * state.m * G * state.d * I1) / (I3 * I3);
+            const critical_rpm = Math.sqrt(critical_omega2) * 30 / Math.PI;
+            
+            let stabText = state.isToppled ? "Toppled" : 
+                           (Math.abs(rpm) > critical_rpm ? "Stable (Sleeping)" : "Unstable (Wobbling)");
+            
+            const elStab = document.getElementById('hud-stability');
+            elStab.innerText = stabText;
+            if (state.isToppled) elStab.className = "hud-value text-rose-500 font-bold";
+            else if (Math.abs(rpm) > critical_rpm) elStab.className = "hud-value text-emerald-400";
+            else elStab.className = "hud-value text-amber-400";
+        }
+
+        function loop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const dt = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+
+            const rect = canvas.parentElement.getBoundingClientRect();
+            ctx.clearRect(0, 0, rect.width, rect.height);
+
+            stepPhysics(dt);
+            drawTop();
+            updateHUD();
+            updateAudio();
+
+            requestAnimationFrame(loop);
+        }
+
+        // --- Interaction ---
+        let isDragging = false;
+        let lastMouse = {x:0, y:0};
+
+        canvas.addEventListener('mousedown', e => {
+            isDragging = true;
+            lastMouse = {x: e.clientX, y: e.clientY};
+        });
+        window.addEventListener('mouseup', () => isDragging = false);
+        window.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+            const dx = e.clientX - lastMouse.x;
+            const dy = e.clientY - lastMouse.y;
+            cam.angle -= dx * 0.01;
+            cam.elevation -= dy * 0.01;
+            // Clamp elevation
+            if (cam.elevation < 0) cam.elevation = 0;
+            if (cam.elevation > Math.PI/2) cam.elevation = Math.PI/2;
+            lastMouse = {x: e.clientX, y: e.clientY};
+        });
+        canvas.addEventListener('wheel', e => {
+            cam.zoom += e.deltaY * -0.001;
+            if (cam.zoom < 0.2) cam.zoom = 0.2;
+            if (cam.zoom > 3) cam.zoom = 3;
+        });
+
+        // --- UI Bindings ---
+        document.getElementById('btn-audio').onclick = initAudio;
+        
+        document.getElementById('btn-vectors').onclick = () => {
+            settings.showVectors = !settings.showVectors;
+        };
+        
+        document.getElementById('btn-trace').onclick = () => {
+            settings.showTrace = !settings.showTrace;
+        };
+
+        // Inputs
+        const bindSlider = (id, valId, callback) => {
+            const el = document.getElementById(id);
+            const valEl = document.getElementById(valId);
+            el.addEventListener('input', e => {
+                valEl.innerText = e.target.value;
+                if(callback) callback(parseFloat(e.target.value));
+            });
+        };
+
+        bindSlider('slider-mass', 'val-mass', v => state.m = v);
+        bindSlider('slider-radius', 'val-radius', v => state.R = v);
+        bindSlider('slider-friction', 'val-friction', v => {
+            state.friction = v;
+            let txt = "Low";
+            if(v > 0.01) txt = "Medium";
+            if(v > 0.03) txt = "High";
+            document.getElementById('val-friction').innerText = txt;
+        });
+        bindSlider('slider-spin', 'val-spin');
+        bindSlider('slider-tilt', 'val-tilt');
+
+        document.getElementById('btn-apply-spin').onclick = () => {
+            const rpm = parseFloat(document.getElementById('slider-spin').value);
+            const tilt = parseFloat(document.getElementById('slider-tilt').value);
+            resetState(rpm, tilt);
+        };
+        
+        document.getElementById('btn-apply-tilt').onclick = () => {
+            const rpm = parseFloat(document.getElementById('slider-spin').value);
+            const tilt = parseFloat(document.getElementById('slider-tilt').value);
+            resetState(rpm, tilt);
+        };
+
+        // Presets
+        document.getElementById('preset-sleeping').onclick = () => {
+            document.getElementById('slider-spin').value = 9000;
+            document.getElementById('slider-tilt').value = 1; // nearly 0
+            document.getElementById('val-spin').innerText = 9000;
+            document.getElementById('val-tilt').innerText = 1;
+            resetState(9000, 1);
+        };
+        
+        document.getElementById('preset-steady').onclick = () => {
+            document.getElementById('slider-spin').value = 4000;
+            document.getElementById('slider-tilt').value = 45;
+            document.getElementById('val-spin').innerText = 4000;
+            document.getElementById('val-tilt').innerText = 45;
+            resetState(4000, 45);
+        };
+
+        document.getElementById('preset-nutation').onclick = () => {
+            document.getElementById('slider-spin').value = 3500;
+            document.getElementById('slider-tilt').value = 40;
+            document.getElementById('val-spin').innerText = 3500;
+            document.getElementById('val-tilt').innerText = 40;
+            resetState(3500, 40);
+            // Manually perturb theta dot to induce strong nutation
+            state.theta_dot = -5;
+        };
+
+        document.getElementById('preset-topple').onclick = () => {
+            document.getElementById('slider-spin').value = 500; // very slow
+            document.getElementById('slider-tilt').value = 60;
+            document.getElementById('val-spin').innerText = 500;
+            document.getElementById('val-tilt').innerText = 60;
+            resetState(500, 60);
+        };
+
+        // Init
+        setTimeout(() => {
+            resize();
+            resetState(5000, 30);
+            requestAnimationFrame(loop);
+        }, 100);
+
+    </script>
+</body>
+</html>

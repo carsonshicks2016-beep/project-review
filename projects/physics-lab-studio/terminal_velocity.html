@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Velocity & Skydiver Physics</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { background-color: #0b1217; color: #f8fafc; overflow: hidden; }
+        canvas { display: block; width: 100%; height: 100%; }
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #00f0ff; cursor: pointer; margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: #334155; border-radius: 2px;
+        }
+        .hud-value { font-family: monospace; font-size: 1.125rem; font-weight: bold; color: #00f0ff; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #111a22; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    </style>
+</head>
+<body class="h-screen flex flex-col text-sm">
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-3 flex justify-between items-center z-10 shrink-0">
+        <h1 class="text-xl font-bold text-sky-400">Terminal Velocity & Skydiver Physics</h1>
+        <button id="btnAudio" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-1 rounded-full font-bold transition">Enable Audio</button>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Controls Sidebar -->
+        <aside class="w-80 bg-slate-900 border-r border-slate-800 p-4 flex flex-col gap-4 overflow-y-auto custom-scrollbar shrink-0 z-10">
+            
+            <div class="space-y-2">
+                <h2 class="text-sky-400 font-bold uppercase tracking-wider text-xs">Simulation Controls</h2>
+                <div class="flex gap-2">
+                    <button id="btnPlay" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2 rounded font-bold text-white transition">Jump!</button>
+                    <button id="btnReset" class="flex-1 bg-slate-700 hover:bg-slate-600 py-2 rounded font-bold text-white transition">Reset</button>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <h3 class="text-xs text-slate-400 uppercase">Presets</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 py-1 px-2 rounded text-xs text-left" data-preset="standard">Standard (4km)</button>
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 py-1 px-2 rounded text-xs text-left" data-preset="speed">Speed Dive</button>
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 py-1 px-2 rounded text-xs text-left" data-preset="stratos">Stratos (39km)</button>
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 py-1 px-2 rounded text-xs text-left" data-preset="base">BASE (1km)</button>
+                </div>
+            </div>
+
+            <div class="space-y-4 pt-2 border-t border-slate-800">
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <label class="text-slate-300">Jump Altitude</label>
+                        <span id="lblAltitude">4000 m</span>
+                    </div>
+                    <input type="range" id="sliderAltitude" min="500" max="40000" step="500" value="4000">
+                </div>
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <label class="text-slate-300">Skydiver Mass</label>
+                        <span id="lblMass">80 kg</span>
+                    </div>
+                    <input type="range" id="sliderMass" min="50" max="120" step="1" value="80">
+                </div>
+            </div>
+
+            <div class="space-y-2 pt-2 border-t border-slate-800">
+                <h3 class="text-xs text-slate-400 uppercase">Body Posture</h3>
+                <div class="flex flex-col gap-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="posture" value="belly" class="form-radio" checked>
+                        <span>Belly-to-Earth (Large Area)</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="posture" value="head" class="form-radio">
+                        <span>Head-Down Dive (Low Area)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="mt-auto pt-4">
+                <button id="btnDeploy" class="w-full bg-rose-600 hover:bg-rose-500 py-3 rounded-xl font-bold text-white text-lg shadow-[0_0_15px_rgba(225,29,72,0.5)] transition disabled:opacity-50 disabled:shadow-none" disabled>
+                    PULL RIPCORD!
+                </button>
+            </div>
+        </aside>
+
+        <!-- Canvas Area -->
+        <main class="flex-1 relative flex flex-col">
+            <div class="absolute inset-0 pointer-events-none z-0">
+                <canvas id="simCanvas"></canvas>
+            </div>
+            
+            <!-- Live HUD Overlay -->
+            <div class="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl p-4 w-64 shadow-xl z-10">
+                <h3 class="text-sky-400 font-bold uppercase tracking-wider text-xs mb-3 border-b border-slate-800 pb-1">Telemetry</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-baseline">
+                        <span class="text-slate-400">Velocity</span>
+                        <span class="hud-value" id="hudVel">0 <span class="text-xs text-slate-500">km/h</span></span>
+                    </div>
+                    <div class="flex justify-between items-baseline">
+                        <span class="text-slate-400">Altitude</span>
+                        <span class="hud-value" id="hudAlt">4000 <span class="text-xs text-slate-500">m</span></span>
+                    </div>
+                    <div class="flex justify-between items-baseline">
+                        <span class="text-slate-400">G-Force</span>
+                        <span class="hud-value" id="hudG">1.00 <span class="text-xs text-slate-500">G</span></span>
+                    </div>
+                    <div class="flex justify-between items-baseline">
+                        <span class="text-slate-400">Air Density</span>
+                        <span class="hud-value" id="hudRho">1.22 <span class="text-xs text-slate-500">kg/m³</span></span>
+                    </div>
+                    <div class="flex justify-between items-baseline">
+                        <span class="text-slate-400">Drag Force</span>
+                        <span class="hud-value" id="hudDrag">0 <span class="text-xs text-slate-500">N</span></span>
+                    </div>
+                    <div class="flex justify-between items-baseline">
+                        <span class="text-slate-400">Time</span>
+                        <span class="hud-value" id="hudTime">0.0 <span class="text-xs text-slate-500">s</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sonic Boom Indicator -->
+            <div id="sonicBoom" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-rose-500 font-black text-6xl opacity-0 pointer-events-none transition-opacity duration-300 z-20" style="text-shadow: 0 0 20px rgba(244,63,94,0.8);">
+                MACH 1!
+            </div>
+        </main>
+    </div>
+
+    <!-- Explainer Cards -->
+    <footer class="bg-slate-900 border-t border-slate-800 p-4 shrink-0 z-10 grid grid-cols-3 gap-4">
+        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <h4 class="text-sky-400 font-bold mb-1">1. Terminal Velocity</h4>
+            <p class="text-slate-400 text-xs">As you fall, gravity accelerates you downward. But air drag pushes up, growing with the square of your speed ($v^2$). When Drag = Weight, acceleration hits zero. You continue falling at a constant <em>terminal velocity</em>.</p>
+        </div>
+        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <h4 class="text-sky-400 font-bold mb-1">2. Altitude & Air Density</h4>
+            <p class="text-slate-400 text-xs">Air gets thinner at high altitudes ($\rho = \rho_0 e^{-z/8500}$). With less air density, there's less drag. In a Stratos jump from 39km, the air is so thin you can break the sound barrier before reaching terminal velocity!</p>
+        </div>
+        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <h4 class="text-sky-400 font-bold mb-1">3. Parachute Deployment Shock</h4>
+            <p class="text-slate-400 text-xs">Deploying a parachute suddenly increases your aerodynamic area by 50x. Drag vastly exceeds your weight, causing a massive upward net force. This violent deceleration (up to 5 Gs) slows you to a safe landing speed.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- PHYSICS CONSTANTS ---
+        const G = 9.80665; // Gravity m/s^2
+        const RHO_0 = 1.225; // Sea level air density kg/m^3
+        const SCALE_HEIGHT = 8500; // Earth atmosphere scale height in meters
+        const MACH_SPEED = 343; // Speed of sound at standard temp (approximate for demo)
+
+        // Posture Area * Drag Coefficient (A * Cd)
+        const AERODYNAMICS = {
+            belly: { area: 0.7, cd: 1.0 },   // roughly 0.7 m^2 effective
+            head: { area: 0.2, cd: 0.7 },    // roughly 0.14 m^2 effective
+            chute: { area: 40.0, cd: 1.5 }   // roughly 60 m^2 effective
+        };
+
+        // --- STATE ---
+        let state = {
+            running: false,
+            time: 0,
+            mass: 80,
+            altitude: 4000,
+            initialAltitude: 4000,
+            velocity: 0,
+            acceleration: G,
+            posture: 'belly', // belly, head, chute
+            chuteDeployed: false,
+            sonicBoomTriggered: false,
+            landed: false,
+            history: [] // for graphing {t, v, a, z}
+        };
+
+        // --- AUDIO SYSTEM ---
+        let audioCtx;
+        let windNoise, windFilter, windGain;
+        let chuteOscillator, chuteGain;
+        let audioEnabled = false;
+
+        async function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Wind noise generator
+            const bufferSize = audioCtx.sampleRate * 2;
+            const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+            
+            windNoise = audioCtx.createBufferSource();
+            windNoise.buffer = noiseBuffer;
+            windNoise.loop = true;
+            
+            windFilter = audioCtx.createBiquadFilter();
+            windFilter.type = 'lowpass';
+            windFilter.frequency.value = 100;
+            
+            windGain = audioCtx.createGain();
+            windGain.gain.value = 0;
+            
+            windNoise.connect(windFilter);
+            windFilter.connect(windGain);
+            windGain.connect(audioCtx.destination);
+            windNoise.start();
+
+            audioEnabled = true;
+            document.getElementById('btnAudio').classList.replace('bg-rose-600', 'bg-emerald-600');
+            document.getElementById('btnAudio').classList.replace('hover:bg-rose-500', 'hover:bg-emerald-500');
+            document.getElementById('btnAudio').textContent = 'Audio Active';
+        }
+
+        function playSonicBoom() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(50, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.5);
+            gain.gain.setValueAtTime(1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        function playChuteSnap() {
+            if (!audioCtx) return;
+            // Pop
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.2);
+            gain.gain.setValueAtTime(1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.4);
+        }
+
+        function updateAudio() {
+            if (!audioEnabled || !audioCtx) return;
+            
+            if (state.landed) {
+                windGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+                return;
+            }
+
+            // Map velocity to wind sound
+            // velocity max around 400 m/s for stratos
+            const v = Math.abs(state.velocity);
+            
+            // Frequency mapping (pitch of wind)
+            const minFreq = 100;
+            const maxFreq = 3000;
+            const freq = minFreq + (v / MACH_SPEED) * maxFreq;
+            windFilter.frequency.setTargetAtTime(Math.min(freq, 20000), audioCtx.currentTime, 0.1);
+            
+            // Volume mapping (energy is v^2, but cap it to avoid blowing ears)
+            let vol = Math.pow(v / 50, 1.5) * 0.1; 
+            if (state.posture === 'chute') {
+                vol = Math.max(0.02, vol * 0.5); // quiet rustle under canopy
+            }
+            vol = Math.min(vol, 0.5); // cap volume
+            windGain.gain.setTargetAtTime(vol, audioCtx.currentTime, 0.1);
+        }
+
+        // --- DOM ELEMENTS ---
+        const btnPlay = document.getElementById('btnPlay');
+        const btnReset = document.getElementById('btnReset');
+        const btnDeploy = document.getElementById('btnDeploy');
+        const btnAudio = document.getElementById('btnAudio');
+        const sliderAltitude = document.getElementById('sliderAltitude');
+        const sliderMass = document.getElementById('sliderMass');
+        const lblAltitude = document.getElementById('lblAltitude');
+        const lblMass = document.getElementById('lblMass');
+        const radiosPosture = document.getElementsByName('posture');
+        
+        const hudVel = document.getElementById('hudVel');
+        const hudAlt = document.getElementById('hudAlt');
+        const hudG = document.getElementById('hudG');
+        const hudRho = document.getElementById('hudRho');
+        const hudDrag = document.getElementById('hudDrag');
+        const hudTime = document.getElementById('hudTime');
+        const sonicBoomUI = document.getElementById('sonicBoom');
+        
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- EVENT LISTENERS ---
+        btnAudio.addEventListener('click', initAudio);
+
+        sliderAltitude.addEventListener('input', (e) => {
+            if(!state.running && !state.landed && state.time === 0) {
+                state.altitude = parseFloat(e.target.value);
+                state.initialAltitude = state.altitude;
+            }
+            lblAltitude.textContent = e.target.value + ' m';
+        });
+
+        sliderMass.addEventListener('input', (e) => {
+            state.mass = parseFloat(e.target.value);
+            lblMass.textContent = e.target.value + ' kg';
+        });
+
+        Array.from(radiosPosture).forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if(!state.chuteDeployed) {
+                    state.posture = e.target.value;
+                }
+            });
+        });
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const p = e.target.dataset.preset;
+                resetSim();
+                if(p === 'standard') {
+                    sliderAltitude.value = 4000;
+                    document.querySelector('input[value="belly"]').checked = true;
+                } else if(p === 'speed') {
+                    sliderAltitude.value = 4000;
+                    document.querySelector('input[value="head"]').checked = true;
+                } else if(p === 'stratos') {
+                    sliderAltitude.value = 39000;
+                    document.querySelector('input[value="head"]').checked = true;
+                } else if(p === 'base') {
+                    sliderAltitude.value = 1000;
+                    document.querySelector('input[value="belly"]').checked = true;
+                }
+                
+                // Dispatch events to update UI labels and state
+                sliderAltitude.dispatchEvent(new Event('input'));
+                document.querySelector('input[name="posture"]:checked').dispatchEvent(new Event('change'));
+            });
+        });
+
+        btnPlay.addEventListener('click', () => {
+            if(state.landed) resetSim();
+            state.running = !state.running;
+            btnPlay.textContent = state.running ? 'Pause' : 'Resume';
+            btnPlay.classList.toggle('bg-emerald-600', !state.running);
+            btnPlay.classList.toggle('bg-amber-600', state.running);
+            if(state.running) {
+                btnDeploy.disabled = false;
+                lastTime = performance.now();
+                requestAnimationFrame(loop);
+            }
+        });
+
+        btnReset.addEventListener('click', resetSim);
+
+        btnDeploy.addEventListener('click', () => {
+            if(!state.chuteDeployed && !state.landed) {
+                state.chuteDeployed = true;
+                state.posture = 'chute';
+                btnDeploy.disabled = true;
+                btnDeploy.textContent = 'DEPLOYED';
+                playChuteSnap();
+            }
+        });
+
+        function resetSim() {
+            state.running = false;
+            state.time = 0;
+            state.altitude = parseFloat(sliderAltitude.value);
+            state.initialAltitude = state.altitude;
+            state.velocity = 0;
+            state.acceleration = G;
+            state.chuteDeployed = false;
+            state.sonicBoomTriggered = false;
+            state.landed = false;
+            state.history = [];
+            
+            // Restore posture from radio
+            const selectedRadio = document.querySelector('input[name="posture"]:checked');
+            if (selectedRadio) state.posture = selectedRadio.value;
+
+            btnPlay.textContent = 'Jump!';
+            btnPlay.classList.replace('bg-amber-600', 'bg-emerald-600');
+            btnDeploy.disabled = true;
+            btnDeploy.textContent = 'PULL RIPCORD!';
+            
+            sonicBoomUI.style.opacity = 0;
+            
+            updateHUD(0, 0, G);
+            draw();
+            
+            if (audioCtx) updateAudio();
+        }
+
+        // --- SIMULATION LOGIC ---
+        let lastTime = 0;
+        
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function updatePhysics(dt) {
+            // dt in seconds
+            if(state.landed) return;
+
+            // 1. Calculate Air Density at current altitude
+            const rho = RHO_0 * Math.exp(-state.altitude / SCALE_HEIGHT);
+            
+            // 2. Get Aerodynamic properties
+            const aero = AERODYNAMICS[state.posture];
+            
+            // 3. Calculate Drag Force
+            // F_drag = 1/2 * rho * Cd * A * v^2
+            // Direction of drag is opposite to velocity.
+            const dragForce = 0.5 * rho * aero.cd * aero.area * state.velocity * state.velocity;
+            const dragSign = Math.sign(state.velocity); // positive if falling down
+            const dragVector = dragForce * -dragSign;
+
+            // 4. Calculate Weight
+            const weightForce = state.mass * G;
+
+            // 5. Net Force and Acceleration
+            const netForce = weightForce + dragVector;
+            state.acceleration = netForce / state.mass; // positive is downwards
+
+            // 6. Euler Integration for Velocity and Altitude
+            state.velocity += state.acceleration * dt;
+            state.altitude -= state.velocity * dt; // velocity is positive downwards
+
+            // Check Sonic Boom
+            if(state.velocity > MACH_SPEED && !state.sonicBoomTriggered) {
+                state.sonicBoomTriggered = true;
+                playSonicBoom();
+                sonicBoomUI.style.opacity = 1;
+                setTimeout(() => { sonicBoomUI.style.opacity = 0; }, 2000);
+            }
+
+            // Check Ground Collision
+            if(state.altitude <= 0) {
+                state.altitude = 0;
+                state.velocity = 0;
+                state.acceleration = 0;
+                state.landed = true;
+                state.running = false;
+                btnPlay.textContent = 'Landed';
+                btnPlay.disabled = true;
+                setTimeout(() => btnPlay.disabled = false, 1000); // allow reset later
+            }
+
+            state.time += dt;
+
+            // Save history for plotting (downsample slightly)
+            if(state.history.length === 0 || state.time - state.history[state.history.length-1].t > 0.1) {
+                state.history.push({
+                    t: state.time,
+                    v: state.velocity,
+                    a: state.acceleration,
+                    z: state.altitude
+                });
+            }
+
+            updateHUD(dragForce, weightForce, state.acceleration);
+            updateAudio();
+        }
+
+        function updateHUD(drag, weight, accel) {
+            const vKm = state.velocity * 3.6;
+            hudVel.innerHTML = `${Math.abs(vKm).toFixed(1)} <span class="text-xs text-slate-500">km/h</span>`;
+            hudAlt.innerHTML = `${Math.max(0, state.altitude).toFixed(0)} <span class="text-xs text-slate-500">m</span>`;
+            
+            // G-force experienced (1G = resting, 0G = freefall, >1G = decelerating)
+            // Apparent weight = Weight - NetForce = Drag. G = Drag / Weight = Drag / mg.
+            // Wait, G-force = |Drag| / mg
+            const gForce = drag / (state.mass * G);
+            hudG.innerHTML = `${gForce.toFixed(2)} <span class="text-xs text-slate-500">G</span>`;
+            
+            const rho = RHO_0 * Math.exp(-state.altitude / SCALE_HEIGHT);
+            hudRho.innerHTML = `${rho.toFixed(3)} <span class="text-xs text-slate-500">kg/m³</span>`;
+            
+            hudDrag.innerHTML = `${drag.toFixed(0)} <span class="text-xs text-slate-500">N</span>`;
+            hudTime.innerHTML = `${state.time.toFixed(1)} <span class="text-xs text-slate-500">s</span>`;
+        }
+
+        function draw() {
+            const w = canvas.width / window.devicePixelRatio;
+            const h = canvas.height / window.devicePixelRatio;
+            
+            ctx.clearRect(0, 0, w, h);
+
+            // 1. Draw Background Sky Gradient based on altitude
+            const maxAlt = 40000;
+            const altRatio = Math.min(1, state.altitude / maxAlt);
+            
+            // Dark space to blue sky
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+            skyGrad.addColorStop(0, `rgb(2,6,23)`); // slate-950
+            const bR = Math.floor(2 + (14 - 2)*(1-altRatio)); // sky blue r
+            const bG = Math.floor(6 + (165 - 6)*(1-altRatio)); // sky blue g
+            const bB = Math.floor(23 + (233 - 23)*(1-altRatio)); // sky blue b
+            skyGrad.addColorStop(1, `rgb(${bR}, ${bG}, ${bB})`);
+            
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, w, h);
+
+            // Ground
+            ctx.fillStyle = '#064e3b'; // emerald-900
+            const groundY = h - Math.max(0, h * (1 - state.altitude / 500)); // Show ground coming up fast in last 500m
+            if(state.altitude < 500) {
+                ctx.fillRect(0, groundY, w, h-groundY);
+            }
+
+            // 2. Draw Skydiver (Center of screen vertically, unless near ground)
+            const diverX = w / 3;
+            let diverY = h / 2;
+            if (state.altitude < 500) {
+                // Pin diver to correct height relative to ground
+                diverY = groundY - 20; // 20px size
+                if(state.landed) diverY = h - 20;
+            }
+
+            ctx.save();
+            ctx.translate(diverX, diverY);
+            
+            // Draw Parachute
+            if(state.posture === 'chute') {
+                ctx.fillStyle = '#e6004c'; // rose-500
+                ctx.beginPath();
+                ctx.arc(0, -40, 30, Math.PI, 0);
+                ctx.fill();
+                // lines
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(-30, -40); ctx.lineTo(0, 0);
+                ctx.moveTo(-15, -40); ctx.lineTo(0, 0);
+                ctx.moveTo(15, -40); ctx.lineTo(0, 0);
+                ctx.moveTo(30, -40); ctx.lineTo(0, 0);
+                ctx.stroke();
+            }
+
+            // Draw Body
+            ctx.fillStyle = '#00f0ff'; // sky-400
+            if(state.posture === 'belly') {
+                ctx.fillRect(-15, -5, 30, 10);
+                ctx.fillStyle = '#f8fafc'; ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI*2); ctx.fill();
+            } else if(state.posture === 'head') {
+                ctx.fillRect(-5, -15, 10, 30);
+                ctx.fillStyle = '#f8fafc'; ctx.beginPath(); ctx.arc(0, 15, 6, 0, Math.PI*2); ctx.fill();
+            } else if(state.posture === 'chute') {
+                ctx.fillRect(-5, -10, 10, 20); // upright
+            }
+            ctx.restore();
+
+            // 3. Draw Force Vectors
+            const vX = w / 3 - 60;
+            const vY = diverY;
+            const scaleForce = 0.02; // px per Newton
+
+            const dragForce = 0.5 * (RHO_0 * Math.exp(-state.altitude / SCALE_HEIGHT)) * AERODYNAMICS[state.posture].cd * AERODYNAMICS[state.posture].area * state.velocity * state.velocity;
+            const weightForce = state.mass * G;
+
+            // Draw Weight (Down)
+            ctx.strokeStyle = '#b3e600'; // emerald-500
+            ctx.lineWidth = 4;
+            drawArrow(ctx, vX, vY, vX, vY + weightForce * scaleForce);
+            ctx.fillStyle = '#b3e600';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('W = mg', vX + 10, vY + 40);
+
+            // Draw Drag (Up)
+            if(dragForce > 1) {
+                ctx.strokeStyle = '#e6004c'; // rose-500
+                // cap drag vector length to avoid going offscreen
+                const dLen = Math.min(dragForce * scaleForce, h/2);
+                drawArrow(ctx, vX, vY, vX, vY - dLen);
+                ctx.fillStyle = '#e6004c';
+                ctx.fillText('F_drag', vX + 10, vY - dLen/2);
+            }
+
+            // 4. Draw Speed vs Time Plot
+            const plotW = w / 3;
+            const plotH = 150;
+            const plotX = w - plotW - 20;
+            const plotY = h - plotH - 20;
+
+            // Background
+            ctx.fillStyle = 'rgba(17, 26, 34, 0.8)';
+            ctx.fillRect(plotX, plotY, plotW, plotH);
+            ctx.strokeStyle = '#334155';
+            ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+            if(state.history.length > 1) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#00f0ff';
+                ctx.lineWidth = 2;
+                
+                const maxT = Math.max(10, state.history[state.history.length-1].t);
+                // Max speed reference: 350 m/s for stratos, or 100 for normal
+                const maxV = state.initialAltitude > 10000 ? 400 : 100; 
+
+                for(let i=0; i<state.history.length; i++) {
+                    const pt = state.history[i];
+                    const px = plotX + (pt.t / maxT) * plotW;
+                    const py = plotY + plotH - (pt.v / maxV) * plotH;
+                    if(i===0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+                
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '10px sans-serif';
+                ctx.fillText(`Max V: ${maxV} m/s`, plotX + 5, plotY + 12);
+                ctx.fillText(`${maxT.toFixed(0)}s`, plotX + plotW - 20, plotY + plotH - 5);
+            }
+        }
+
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = 10;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        function loop(timestamp) {
+            if(!state.running) return;
+            
+            // Limit dt to avoid blowups on lag
+            let dt = (timestamp - lastTime) / 1000;
+            if(dt > 0.1) dt = 0.1;
+            
+            // To make simulation run at reasonable real-time speed, we might want time warp for very high altitudes.
+            // Let's do a fast-forward if altitude is very high.
+            let timeWarp = 1.0;
+            if(state.altitude > 10000) timeWarp = 5.0; // 5x speed for stratos
+
+            updatePhysics(dt * timeWarp);
+            draw();
+            
+            lastTime = timestamp;
+            requestAnimationFrame(loop);
+        }
+
+        // Init
+        setTimeout(() => {
+            resizeCanvas();
+            resetSim();
+        }, 100);
+
+    </script>
+</body>
+</html>

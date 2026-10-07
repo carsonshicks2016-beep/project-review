@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three-Body Problem & Chaotic Orbits</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0b1217; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+        canvas { display: block; }
+        .panel { background-color: rgba(17, 26, 34, 0.85); backdrop-filter: blur(8px); border: 1px solid #1d2b38; border-radius: 1rem; }
+        input[type="range"] { accent-color: #00f0ff; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+    <!-- Main Content -->
+    <div class="flex-1 relative overflow-hidden flex">
+        <!-- Canvas Container -->
+        <div class="flex-1 relative" id="canvas-container">
+            <canvas id="sim-canvas" class="absolute inset-0 w-full h-full"></canvas>
+            
+            <!-- HUD -->
+            <div class="absolute top-4 left-4 panel p-4 space-y-2 pointer-events-none text-sm font-mono z-10 w-64 shadow-lg shadow-black/50">
+                <div class="text-sky-400 font-bold mb-2 uppercase tracking-wide text-xs">System Telemetry</div>
+                <div class="flex justify-between"><span>Energy (E):</span> <span id="hud-energy" class="text-emerald-400">0.000</span></div>
+                <div class="flex justify-between"><span>Ang. Mom (L):</span> <span id="hud-angmom" class="text-emerald-400">0.000</span></div>
+                <div class="h-px bg-slate-700 my-2"></div>
+                <div class="flex justify-between"><span>v₁ (Red):</span> <span id="hud-v1">0.000</span></div>
+                <div class="flex justify-between"><span>v₂ (Sky):</span> <span id="hud-v2">0.000</span></div>
+                <div class="flex justify-between"><span>v₃ (Amber):</span> <span id="hud-v3">0.000</span></div>
+                <div class="h-px bg-slate-700 my-2"></div>
+                <div class="flex justify-between"><span>Min Dist:</span> <span id="hud-dist" class="text-rose-400">0.000</span></div>
+                <div class="flex justify-between"><span>State:</span> <span id="hud-state" class="text-amber-400">Stable</span></div>
+            </div>
+
+            <!-- Start Audio Overlay -->
+            <div id="audio-overlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center">
+                <div class="text-center panel p-8 max-w-md">
+                    <h1 class="text-3xl font-bold text-sky-400 mb-4">Three-Body Problem</h1>
+                    <p class="text-slate-300 mb-6">Explore the deterministic chaos of Newtonian gravity. Listen to the orbital velocities sonified in real-time.</p>
+                    <button id="start-btn" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-3 px-8 rounded-full transition-colors shadow-lg shadow-sky-500/30">
+                        Initialize Simulation & Audio
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Sidebar Controls -->
+        <div class="w-80 panel m-4 flex flex-col z-20 shadow-xl overflow-y-auto max-h-[calc(100vh-14rem)]">
+            <div class="p-5 border-b border-slate-800">
+                <h2 class="text-xl font-bold text-sky-400">Simulation Controls</h2>
+            </div>
+            
+            <div class="p-5 space-y-6 flex-1">
+                <!-- Presets -->
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wide">Choreographies</label>
+                    <div class="grid grid-cols-1 gap-2">
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 py-2 px-3 rounded text-sm text-left transition-colors" data-preset="figure8">Figure-8 Orbit</button>
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 py-2 px-3 rounded text-sm text-left transition-colors" data-preset="lagrange">Lagrange Equilateral</button>
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 py-2 px-3 rounded text-sm text-left transition-colors" data-preset="pythagorean">Burrau's 3-4-5 (Chaos)</button>
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 py-2 px-3 rounded text-sm text-left transition-colors" data-preset="sunearthmoon">Hierarchical Triple</button>
+                        <button class="preset-btn bg-slate-800 hover:bg-slate-700 py-2 px-3 rounded text-sm text-left transition-colors border border-rose-500/50" data-preset="chaos">Chaos Showcase (Twin)</button>
+                    </div>
+                </div>
+
+                <div class="h-px bg-slate-800"></div>
+
+                <!-- Parameters -->
+                <div class="space-y-4">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wide">Masses</label>
+                    <div>
+                        <div class="flex justify-between text-sm mb-1"><span class="text-rose-400">m₁</span> <span id="val-m1">1.0</span></div>
+                        <input type="range" id="m1" min="0.1" max="10" step="0.1" value="1" class="w-full">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm mb-1"><span class="text-sky-400">m₂</span> <span id="val-m2">1.0</span></div>
+                        <input type="range" id="m2" min="0.1" max="10" step="0.1" value="1" class="w-full">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm mb-1"><span class="text-amber-400">m₃</span> <span id="val-m3">1.0</span></div>
+                        <input type="range" id="m3" min="0.1" max="10" step="0.1" value="1" class="w-full">
+                    </div>
+                </div>
+
+                <div class="h-px bg-slate-800"></div>
+
+                <!-- Sim Settings -->
+                <div class="space-y-4">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wide">Settings</label>
+                    <div>
+                        <div class="flex justify-between text-sm mb-1"><span>Sim Speed</span> <span id="val-speed">1x</span></div>
+                        <input type="range" id="speed" min="0.1" max="5" step="0.1" value="1" class="w-full">
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="show-trails" checked class="rounded border-slate-700 bg-slate-800 text-sky-500 focus:ring-sky-500 focus:ring-offset-slate-900">
+                            <span>Show Orbital Trails</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="show-com" checked class="rounded border-slate-700 bg-slate-800 text-sky-500 focus:ring-sky-500 focus:ring-offset-slate-900">
+                            <span>Show Center of Mass</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="show-vectors" class="rounded border-slate-700 bg-slate-800 text-sky-500 focus:ring-sky-500 focus:ring-offset-slate-900">
+                            <span>Show Velocity Vectors</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Audio Settings -->
+                <div class="space-y-4">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wide">Audio</label>
+                    <div>
+                        <div class="flex justify-between text-sm mb-1"><span>Volume</span> <span id="val-vol">50%</span></div>
+                        <input type="range" id="volume" min="0" max="1" step="0.01" value="0.5" class="w-full">
+                    </div>
+                </div>
+                
+                <div class="text-xs text-slate-500 mt-4 text-center">
+                    Click & drag space to pan.<br>Scroll to zoom.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Explainer Cards -->
+    <div class="h-48 panel m-4 mt-0 shrink-0 flex flex-row overflow-x-auto gap-4 p-4 z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+        <div class="min-w-[300px] flex-1 bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+            <h3 class="text-sky-400 font-bold mb-2 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                The Butterfly Effect
+            </h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Unlike the 2-body problem (Earth & Sun), the 3-body problem has no general analytic solution. In 1890, Henri Poincaré proved that trajectories exhibit <strong>deterministic chaos</strong>. A microscopic 0.0001% change in starting positions leads to exponentially diverging futures—the birth of chaos theory.
+            </p>
+        </div>
+        
+        <div class="min-w-[300px] flex-1 bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+            <h3 class="text-emerald-400 font-bold mb-2 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                Choreographies
+            </h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Despite the chaos, rare <strong>stable periodic solutions</strong> exist. The famous "Figure-8" orbit (discovered in 1993) has three equal masses chasing each other eternally on an infinity curve. Euler and Lagrange also found stable collinear and equilateral triangle configurations in the 18th century.
+            </p>
+        </div>
+
+        <div class="min-w-[300px] flex-1 bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+            <h3 class="text-rose-400 font-bold mb-2 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                Ejections & Slingshots
+            </h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Most random 3-body systems end violently. Through complex energy exchanges, two bodies will form a tight binary pair, acting as a gravitational slingshot that ejects the third body into deep space at high velocity. This is how rogue planets and hypervelocity stars are flung from galaxies!
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // --- PHYSICS CONSTANTS & STATE ---
+        const G = 1; // Gravitational constant
+        let dt = 0.01; // Base time step
+        let timeSpeed = 1;
+        const SOFTENING = 0.01; // Avoid singularities
+        
+        let showChaos = false;
+        
+        // System state
+        let bodies = [];
+        let ghostBodies = []; // For chaos showcase
+        let trails = [[], [], []];
+        let ghostTrails = [[], [], []];
+        let trailMaxLen = 300;
+        
+        // View transform
+        let panX = 0, panY = 0;
+        let scale = 150; // pixels per unit distance
+        
+        // Colors
+        const colors = ['#ff0055', '#00f0ff', '#fbbf24']; // Red, Sky, Amber
+        
+        class Body {
+            constructor(m, x, y, vx, vy) {
+                this.m = m;
+                this.x = x; this.y = y;
+                this.vx = vx; this.vy = vy;
+            }
+        }
+
+        // --- AUDIO SYSTEM ---
+        let audioCtx;
+        let masterGain;
+        let oscillators = [];
+        let panners = [];
+        let gains = [];
+        let isAudioReady = false;
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.5;
+            masterGain.connect(audioCtx.destination);
+
+            for (let i = 0; i < 3; i++) {
+                let osc = audioCtx.createOscillator();
+                let panner = audioCtx.createStereoPanner();
+                let gain = audioCtx.createGain();
+                
+                osc.type = i === 0 ? 'sine' : (i === 1 ? 'triangle' : 'sine');
+                
+                osc.connect(panner);
+                panner.connect(gain);
+                gain.connect(masterGain);
+                
+                osc.start();
+                
+                oscillators.push(osc);
+                panners.push(panner);
+                gains.push(gain);
+            }
+            isAudioReady = true;
+        }
+
+        function updateAudio() {
+            if (!isAudioReady) return;
+            
+            // Map velocities to frequencies and positions to panning
+            let maxV = 0;
+            let vels = [];
+            for (let i = 0; i < 3; i++) {
+                let v = Math.sqrt(bodies[i].vx**2 + bodies[i].vy**2);
+                vels.push(v);
+                if (v > maxV) maxV = v;
+            }
+            
+            for (let i = 0; i < 3; i++) {
+                let b = bodies[i];
+                let v = vels[i];
+                
+                // Frequency mapping: base freq + velocity modulation
+                // Using harmonic series bases: 220Hz (A3), 330Hz (E4), 440Hz (A4)
+                let baseFreq = 220 * (i + 1);
+                // Pitch spikes nicely at high velocity
+                let targetFreq = baseFreq + v * 150; 
+                oscillators[i].frequency.setTargetAtTime(targetFreq, audioCtx.currentTime, 0.05);
+                
+                // Volume mapping: higher mass = louder, higher velocity = slightly louder
+                let targetVol = (b.m / 5) * 0.3 + (v / 10) * 0.2;
+                targetVol = Math.min(targetVol, 0.5); // Cap individual vol
+                gains[i].gain.setTargetAtTime(targetVol, audioCtx.currentTime, 0.05);
+                
+                // Panning based on x position relative to CoM
+                let screenX = b.x * scale;
+                // Normalize roughly to [-1, 1]
+                let panVal = Math.max(-1, Math.min(1, screenX / (window.innerWidth/2)));
+                panners[i].pan.setTargetAtTime(panVal, audioCtx.currentTime, 0.05);
+            }
+        }
+
+        // --- PHYSICS ENGINE (RK4) ---
+        function getAccelerations(state) {
+            let accs = [];
+            for (let i = 0; i < state.length; i++) {
+                let ax = 0, ay = 0;
+                for (let j = 0; j < state.length; j++) {
+                    if (i === j) continue;
+                    let dx = state[j].x - state[i].x;
+                    let dy = state[j].y - state[i].y;
+                    let r2 = dx*dx + dy*dy;
+                    let r3 = Math.pow(r2 + SOFTENING*SOFTENING, 1.5);
+                    
+                    ax += G * state[j].m * dx / r3;
+                    ay += G * state[j].m * dy / r3;
+                }
+                accs.push({ax: ax, ay: ay});
+            }
+            return accs;
+        }
+
+        function stepRK4(state, dt_step) {
+            let k1 = [], k2 = [], k3 = [], k4 = [];
+            let tempState = [];
+            
+            // k1
+            let a1 = getAccelerations(state);
+            for(let i=0; i<state.length; i++) {
+                k1.push({vx: state[i].vx, vy: state[i].vy, ax: a1[i].ax, ay: a1[i].ay});
+                tempState[i] = {
+                    m: state[i].m,
+                    x: state[i].x + 0.5*dt_step*k1[i].vx,
+                    y: state[i].y + 0.5*dt_step*k1[i].vy,
+                    vx: state[i].vx + 0.5*dt_step*k1[i].ax,
+                    vy: state[i].vy + 0.5*dt_step*k1[i].ay
+                };
+            }
+            
+            // k2
+            let a2 = getAccelerations(tempState);
+            for(let i=0; i<state.length; i++) {
+                k2.push({vx: tempState[i].vx, vy: tempState[i].vy, ax: a2[i].ax, ay: a2[i].ay});
+                tempState[i] = {
+                    m: state[i].m,
+                    x: state[i].x + 0.5*dt_step*k2[i].vx,
+                    y: state[i].y + 0.5*dt_step*k2[i].vy,
+                    vx: state[i].vx + 0.5*dt_step*k2[i].ax,
+                    vy: state[i].vy + 0.5*dt_step*k2[i].ay
+                };
+            }
+            
+            // k3
+            let a3 = getAccelerations(tempState);
+            for(let i=0; i<state.length; i++) {
+                k3.push({vx: tempState[i].vx, vy: tempState[i].vy, ax: a3[i].ax, ay: a3[i].ay});
+                tempState[i] = {
+                    m: state[i].m,
+                    x: state[i].x + dt_step*k3[i].vx,
+                    y: state[i].y + dt_step*k3[i].vy,
+                    vx: state[i].vx + dt_step*k3[i].ax,
+                    vy: state[i].vy + dt_step*k3[i].ay
+                };
+            }
+            
+            // k4
+            let a4 = getAccelerations(tempState);
+            for(let i=0; i<state.length; i++) {
+                k4.push({vx: tempState[i].vx, vy: tempState[i].vy, ax: a4[i].ax, ay: a4[i].ay});
+            }
+            
+            // Update
+            for(let i=0; i<state.length; i++) {
+                state[i].x += (dt_step/6) * (k1[i].vx + 2*k2[i].vx + 2*k3[i].vx + k4[i].vx);
+                state[i].y += (dt_step/6) * (k1[i].vy + 2*k2[i].vy + 2*k3[i].vy + k4[i].vy);
+                state[i].vx += (dt_step/6) * (k1[i].ax + 2*k2[i].ax + 2*k3[i].ax + k4[i].ax);
+                state[i].vy += (dt_step/6) * (k1[i].ay + 2*k2[i].ay + 2*k3[i].ay + k4[i].ay);
+            }
+        }
+
+        // --- MATH & TELEMETRY ---
+        function calculateEnergy(state) {
+            let ke = 0, pe = 0;
+            for(let i=0; i<state.length; i++) {
+                let v2 = state[i].vx**2 + state[i].vy**2;
+                ke += 0.5 * state[i].m * v2;
+                
+                for(let j=i+1; j<state.length; j++) {
+                    let dx = state[j].x - state[i].x;
+                    let dy = state[j].y - state[i].y;
+                    let r = Math.sqrt(dx*dx + dy*dy);
+                    pe -= G * state[i].m * state[j].m / Math.max(r, SOFTENING);
+                }
+            }
+            return ke + pe;
+        }
+
+        function calculateAngularMomentum(state) {
+            let L = 0;
+            let com = getCenterOfMass(state);
+            for(let i=0; i<state.length; i++) {
+                let rx = state[i].x - com.x;
+                let ry = state[i].y - com.y;
+                // Cross product r x (m*v) in 2D
+                L += state[i].m * (rx * state[i].vy - ry * state[i].vx);
+            }
+            return L;
+        }
+        
+        function getCenterOfMass(state) {
+            let cx=0, cy=0, tm=0;
+            for(let b of state) {
+                cx += b.m * b.x;
+                cy += b.m * b.y;
+                tm += b.m;
+            }
+            return {x: cx/tm, y: cy/tm, m: tm};
+        }
+
+        // --- PRESETS ---
+        function loadPreset(name) {
+            trails = [[], [], []];
+            ghostTrails = [[], [], []];
+            showChaos = false;
+            
+            if(name === 'figure8') {
+                // Chenciner & Montgomery Figure-8
+                let v = 0.347111;
+                let vx_p = 0.347111;
+                let vy_p = 0.532728;
+                bodies = [
+                    new Body(1,  0.97000436, -0.24308753,  0.4662036850,  0.4323657300),
+                    new Body(1, -0.97000436,  0.24308753,  0.4662036850,  0.4323657300),
+                    new Body(1,  0,           0,          -2*0.4662036850,-2*0.4323657300)
+                ];
+                scale = 200;
+                panX = 0; panY = 0;
+            } else if (name === 'lagrange') {
+                // Equilateral Triangle
+                bodies = [
+                    new Body(1, 1, 0, 0, 0.5),
+                    new Body(1, -0.5, 0.866, -0.433, -0.25),
+                    new Body(1, -0.5, -0.866, 0.433, -0.25)
+                ];
+                scale = 150;
+            } else if (name === 'pythagorean') {
+                // Burrau's problem
+                bodies = [
+                    new Body(3, 1, 3, 0, 0),
+                    new Body(4, -2, -1, 0, 0),
+                    new Body(5, 1, -1, 0, 0)
+                ];
+                scale = 80;
+            } else if (name === 'sunearthmoon') {
+                bodies = [
+                    new Body(10, 0, 0, 0, -0.1),       // "Sun"
+                    new Body(1, 2, 0, 0, 2.236),       // "Earth"
+                    new Body(0.1, 2.2, 0, 0, 2.943)    // "Moon" (Earth v + Moon v)
+                ];
+                scale = 100;
+            } else if (name === 'chaos') {
+                // Modified figure 8 that is unstable
+                bodies = [
+                    new Body(1,  1, -0.2,  0.4,  0.4),
+                    new Body(1, -1,  0.2,  0.4,  0.4),
+                    new Body(1,  0,  0,   -0.8, -0.8)
+                ];
+                // Clone for ghost with TINY perturbation (0.0001)
+                ghostBodies = bodies.map(b => new Body(b.m, b.x + 0.0001, b.y, b.vx, b.vy));
+                showChaos = true;
+                scale = 150;
+            }
+            
+            // Recenter system CoM momentum to zero
+            let com = getCenterOfMass(bodies);
+            let px=0, py=0;
+            for(let b of bodies) { px += b.m*b.vx; py += b.m*b.vy; }
+            for(let b of bodies) { 
+                b.vx -= px/com.m; 
+                b.vy -= py/com.m;
+                b.x -= com.x;
+                b.y -= com.y;
+            }
+            if(showChaos) {
+                for(let b of ghostBodies) {
+                    b.vx -= px/com.m; 
+                    b.vy -= py/com.m;
+                    b.x -= com.x;
+                    b.y -= com.y;
+                }
+            }
+            
+            updateSlidersFromBodies();
+        }
+
+        // --- RENDER & LOOP ---
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resize() {
+            let container = document.getElementById('canvas-container');
+            canvas.width = container.clientWidth * window.devicePixelRatio;
+            canvas.height = container.clientHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        window.addEventListener('resize', resize);
+        
+        function drawBody(b, color, rMult=1, isGhost=false) {
+            let cx = canvas.width/window.devicePixelRatio / 2 + (b.x * scale) + panX;
+            let cy = canvas.height/window.devicePixelRatio / 2 - (b.y * scale) + panY; // flip Y for math coords
+            
+            let r = Math.max(3, Math.pow(b.m, 1/3) * 6) * rMult;
+            
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI*2);
+            ctx.fillStyle = isGhost ? color + '40' : color;
+            ctx.fill();
+            
+            if(!isGhost) {
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = color;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+        
+        function drawTrail(pts, color, isGhost=false) {
+            if(pts.length < 2) return;
+            ctx.beginPath();
+            let cx = canvas.width/window.devicePixelRatio / 2 + panX;
+            let cy = canvas.height/window.devicePixelRatio / 2 + panY;
+            
+            ctx.moveTo(cx + pts[0].x * scale, cy - pts[0].y * scale);
+            for(let i=1; i<pts.length; i++) {
+                ctx.lineTo(cx + pts[i].x * scale, cy - pts[i].y * scale);
+            }
+            ctx.strokeStyle = isGhost ? color + '30' : color + '80';
+            ctx.lineWidth = isGhost ? 1 : 2;
+            ctx.stroke();
+        }
+
+        let simTicks = 0;
+        function loop() {
+            // Physics sub-stepping for stability
+            let subSteps = 10;
+            let actualDt = (dt * timeSpeed) / subSteps;
+            
+            for(let s=0; s<subSteps; s++) {
+                stepRK4(bodies, actualDt);
+                if(showChaos) stepRK4(ghostBodies, actualDt);
+            }
+            
+            simTicks++;
+            if(simTicks % 5 === 0) {
+                for(let i=0; i<3; i++) {
+                    trails[i].push({x: bodies[i].x, y: bodies[i].y});
+                    if(trails[i].length > trailMaxLen) trails[i].shift();
+                    
+                    if(showChaos) {
+                        ghostTrails[i].push({x: ghostBodies[i].x, y: ghostBodies[i].y});
+                        if(ghostTrails[i].length > trailMaxLen) ghostTrails[i].shift();
+                    }
+                }
+                updateHUD();
+                updateAudio();
+            }
+
+            // Render
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            let w = canvas.width/window.devicePixelRatio;
+            let h = canvas.height/window.devicePixelRatio;
+            let cx = w/2 + panX;
+            let cy = h/2 + panY;
+
+            // Draw Trails
+            if(document.getElementById('show-trails').checked) {
+                for(let i=0; i<3; i++) {
+                    drawTrail(trails[i], colors[i]);
+                    if(showChaos) drawTrail(ghostTrails[i], '#cbd5e1', true);
+                }
+            }
+
+            // Draw CoM
+            if(document.getElementById('show-com').checked) {
+                let com = getCenterOfMass(bodies);
+                ctx.beginPath();
+                ctx.arc(cx + com.x*scale, cy - com.y*scale, 4, 0, Math.PI*2);
+                ctx.fillStyle = '#64748b';
+                ctx.fill();
+                ctx.strokeStyle = '#94a3b8';
+                ctx.stroke();
+            }
+
+            // Draw Vectors
+            if(document.getElementById('show-vectors').checked) {
+                for(let i=0; i<3; i++) {
+                    let b = bodies[i];
+                    ctx.beginPath();
+                    ctx.moveTo(cx + b.x*scale, cy - b.y*scale);
+                    ctx.lineTo(cx + (b.x + b.vx)*scale, cy - (b.y + b.vy)*scale);
+                    ctx.strokeStyle = colors[i] + 'aa';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+
+            // Draw Bodies
+            for(let i=0; i<3; i++) {
+                if(showChaos) drawBody(ghostBodies[i], '#cbd5e1', 0.8, true);
+                drawBody(bodies[i], colors[i]);
+            }
+
+            requestAnimationFrame(loop);
+        }
+
+        // --- HUD UPDATES ---
+        function updateHUD() {
+            let e = calculateEnergy(bodies);
+            let L = calculateAngularMomentum(bodies);
+            
+            document.getElementById('hud-energy').innerText = e.toFixed(4);
+            document.getElementById('hud-angmom').innerText = L.toFixed(4);
+            
+            let vels = bodies.map(b => Math.sqrt(b.vx**2 + b.vy**2));
+            document.getElementById('hud-v1').innerText = vels[0].toFixed(3);
+            document.getElementById('hud-v2').innerText = vels[1].toFixed(3);
+            document.getElementById('hud-v3').innerText = vels[2].toFixed(3);
+            
+            let minDist = Infinity;
+            for(let i=0; i<3; i++) {
+                for(let j=i+1; j<3; j++) {
+                    let d = Math.hypot(bodies[i].x-bodies[j].x, bodies[i].y-bodies[j].y);
+                    if(d < minDist) minDist = d;
+                }
+            }
+            document.getElementById('hud-dist').innerText = minDist.toFixed(3);
+            
+            let stateEl = document.getElementById('hud-state');
+            if(minDist > 20) {
+                stateEl.innerText = "EJECTION";
+                stateEl.className = "text-rose-500 font-bold animate-pulse";
+            } else if (showChaos) {
+                let div = Math.hypot(bodies[0].x - ghostBodies[0].x, bodies[0].y - ghostBodies[0].y);
+                if(div > 1) {
+                    stateEl.innerText = "CHAOS DIVERGENCE";
+                    stateEl.className = "text-rose-400";
+                } else {
+                    stateEl.innerText = "TWINS TRACKING";
+                    stateEl.className = "text-sky-400";
+                }
+            } else {
+                stateEl.innerText = "BOUND ORBITS";
+                stateEl.className = "text-emerald-400";
+            }
+        }
+
+        // --- INTERACTIVITY ---
+        function updateSlidersFromBodies() {
+            document.getElementById('m1').value = bodies[0].m;
+            document.getElementById('val-m1').innerText = bodies[0].m.toFixed(1);
+            document.getElementById('m2').value = bodies[1].m;
+            document.getElementById('val-m2').innerText = bodies[1].m.toFixed(1);
+            document.getElementById('m3').value = bodies[2].m;
+            document.getElementById('val-m3').innerText = bodies[2].m.toFixed(1);
+        }
+
+        ['m1', 'm2', 'm3'].forEach((id, i) => {
+            let el = document.getElementById(id);
+            el.addEventListener('input', (e) => {
+                let val = parseFloat(e.target.value);
+                document.getElementById('val-'+id).innerText = val.toFixed(1);
+                bodies[i].m = val;
+            });
+        });
+
+        document.getElementById('speed').addEventListener('input', (e) => {
+            timeSpeed = parseFloat(e.target.value);
+            document.getElementById('val-speed').innerText = timeSpeed.toFixed(1) + 'x';
+        });
+
+        document.getElementById('volume').addEventListener('input', (e) => {
+            let val = parseFloat(e.target.value);
+            document.getElementById('val-vol').innerText = Math.round(val*100) + '%';
+            if(masterGain) masterGain.gain.value = val;
+        });
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                loadPreset(e.target.dataset.preset);
+            });
+        });
+
+        // Mouse Drag Interaction
+        let isDragging = false;
+        let dragBodyIdx = -1;
+        let lastMouseX, lastMouseY;
+
+        canvas.addEventListener('mousedown', (e) => {
+            let rect = canvas.getBoundingClientRect();
+            let mx = e.clientX - rect.left;
+            let my = e.clientY - rect.top;
+            
+            let w = canvas.width/window.devicePixelRatio;
+            let h = canvas.height/window.devicePixelRatio;
+            
+            // Check body click
+            for(let i=0; i<3; i++) {
+                let bx = w/2 + panX + bodies[i].x * scale;
+                let by = h/2 + panY - bodies[i].y * scale;
+                
+                if(Math.hypot(mx-bx, my-by) < 20) {
+                    isDragging = true;
+                    dragBodyIdx = i;
+                    trails[i] = []; // Clear trail
+                    return;
+                }
+            }
+            
+            // Pan
+            isDragging = true;
+            dragBodyIdx = -1;
+            lastMouseX = mx;
+            lastMouseY = my;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if(!isDragging) return;
+            let rect = canvas.getBoundingClientRect();
+            let mx = e.clientX - rect.left;
+            let my = e.clientY - rect.top;
+            
+            if(dragBodyIdx !== -1) {
+                let w = canvas.width/window.devicePixelRatio;
+                let h = canvas.height/window.devicePixelRatio;
+                bodies[dragBodyIdx].x = (mx - w/2 - panX) / scale;
+                bodies[dragBodyIdx].y = -(my - h/2 - panY) / scale;
+                // Zero out velocity on drag for easier manual setup
+                bodies[dragBodyIdx].vx = 0;
+                bodies[dragBodyIdx].vy = 0;
+                if(showChaos) {
+                    ghostBodies[dragBodyIdx].x = bodies[dragBodyIdx].x + 0.0001;
+                    ghostBodies[dragBodyIdx].y = bodies[dragBodyIdx].y;
+                    ghostBodies[dragBodyIdx].vx = 0;
+                    ghostBodies[dragBodyIdx].vy = 0;
+                }
+            } else {
+                panX += mx - lastMouseX;
+                panY += my - lastMouseY;
+                lastMouseX = mx;
+                lastMouseY = my;
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => { isDragging = false; });
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            scale *= e.deltaY > 0 ? 0.9 : 1.1;
+        });
+
+        // Initialize
+        document.getElementById('start-btn').addEventListener('click', () => {
+            document.getElementById('audio-overlay').style.display = 'none';
+            initAudio();
+            resize();
+            loadPreset('figure8');
+            loop();
+        });
+
+        // Initial setup for background without audio
+        resize();
+        loadPreset('figure8');
+        // A simple background drawing before start
+        ctx.fillStyle = '#0b1217';
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        
+    </script>
+</body>
+</html>

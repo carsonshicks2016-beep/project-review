@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spaghettification & Tidal Fall Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: #0b1217; color: #f8fafc; overflow-x: hidden; }
+        .hud-panel { background: rgba(17, 26, 34, 0.7); backdrop-filter: blur(8px); border: 1px solid #1d2b38; }
+        .data-font { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        input[type=range] { accent-color: #00d4e0; }
+        canvas { display: block; width: 100%; height: 100%; }
+        .horizon-glow { box-shadow: 0 0 50px rgba(0, 0, 0, 1); }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center z-10 relative">
+        <div>
+            <h1 class="text-2xl font-bold text-sky-400">Spaghettification Simulator</h1>
+            <p class="text-sm text-slate-400">Black Hole Tidal Fall & Relativistic Observers</p>
+        </div>
+        <button id="btn-audio" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-lg">
+            Initialize Audio & Start
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+        
+        <!-- Controls Sidebar -->
+        <aside class="w-full lg:w-80 bg-slate-900 border-r border-slate-800 p-4 flex flex-col gap-6 overflow-y-auto z-10">
+            
+            <div class="space-y-2">
+                <h3 class="text-sky-400 font-semibold uppercase text-xs tracking-wider">Presets</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 transition" data-preset="stellar">Cygnus X-1<br><span class="text-[10px] text-slate-400">15 M_☉</span></button>
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 transition" data-preset="smbh">Sagittarius A*<br><span class="text-[10px] text-slate-400">4.3M M_☉</span></button>
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 transition" data-preset="super">M87*<br><span class="text-[10px] text-slate-400">6.5B M_☉</span></button>
+                    <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 rounded border border-slate-700 transition" data-preset="micro">Micro BH<br><span class="text-[10px] text-slate-400">Subatomic</span></button>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <h3 class="text-sky-400 font-semibold uppercase text-xs tracking-wider">Parameters</h3>
+                
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs">
+                        <label>Black Hole Mass (M_☉)</label>
+                        <span id="val-mass" class="data-font text-sky-300">15</span>
+                    </div>
+                    <input type="range" id="slider-mass" class="w-full" min="0" max="100" step="1" value="15">
+                    <!-- Log scale internal mapping for mass -->
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs">
+                        <label>Initial Distance (r_s)</label>
+                        <span id="val-dist" class="data-font text-sky-300">10.0</span>
+                    </div>
+                    <input type="range" id="slider-dist" class="w-full" min="1.01" max="100" step="0.1" value="10">
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs">
+                        <label>Tensile Strength</label>
+                        <span id="val-tensile" class="data-font text-sky-300">Human Body</span>
+                    </div>
+                    <select id="select-tensile" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-sm text-slate-300">
+                        <option value="1e4">Human Body (~10^4 Pa)</option>
+                        <option value="1e7">Steel Cable (~10^7 Pa)</option>
+                        <option value="1e9">Carbon Fiber (~10^9 Pa)</option>
+                        <option value="1e15">Neutronium (~10^15 Pa)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <h3 class="text-sky-400 font-semibold uppercase text-xs tracking-wider">Perspective</h3>
+                <div class="flex bg-slate-950 rounded-lg p-1 border border-slate-800">
+                    <button id="toggle-outside" class="flex-1 py-1.5 text-xs rounded bg-sky-600 text-white font-medium transition">Outside Observer</button>
+                    <button id="toggle-inside" class="flex-1 py-1.5 text-xs rounded text-slate-400 hover:text-white transition">Infalling Astronaut</button>
+                </div>
+                <p class="text-[10px] text-slate-500 italic mt-1" id="perspective-desc">Time slows down, redshift increases near horizon.</p>
+            </div>
+            
+            <div class="mt-auto">
+                <button id="btn-reset" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded text-sm transition">Reset Drop</button>
+            </div>
+
+        </aside>
+
+        <!-- Visualization Area -->
+        <main class="flex-1 relative bg-black">
+            <!-- Canvas -->
+            <canvas id="sim-canvas"></canvas>
+
+            <!-- HUD Elements -->
+            <div class="absolute top-4 left-4 hud-panel p-4 rounded-2xl w-64 pointer-events-none">
+                <h4 class="text-sky-400 text-xs font-bold uppercase tracking-wider mb-2 border-b border-slate-700 pb-1">Telemetry</h4>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Distance (r)</span>
+                        <span id="hud-r" class="data-font text-white">0 r_s</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Velocity</span>
+                        <span id="hud-v" class="data-font text-white">0 c</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Time Dilation</span>
+                        <span id="hud-dt" class="data-font text-rose-400">1.000x</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="absolute top-4 right-4 hud-panel p-4 rounded-2xl w-64 pointer-events-none">
+                <h4 class="text-sky-400 text-xs font-bold uppercase tracking-wider mb-2 border-b border-slate-700 pb-1">Tidal Forces</h4>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Radial Stretch</span>
+                        <span id="hud-stretch" class="data-font text-amber-400">0 G</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Lateral Crush</span>
+                        <span id="hud-crush" class="data-font text-amber-400">0 G</span>
+                    </div>
+                    <div class="mt-2 pt-2 border-t border-slate-700">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400 text-xs">Structural Integrity</span>
+                            <span id="hud-status" class="text-xs font-bold text-emerald-400">NOMINAL</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-1.5 mt-1 rounded-full overflow-hidden">
+                            <div id="stress-bar" class="bg-emerald-500 h-full w-0 transition-all"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="horizon-alert" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-rose-500 text-4xl font-black tracking-widest uppercase opacity-0 transition-opacity pointer-events-none drop-shadow-[0_0_15px_rgba(244,63,94,0.8)]">
+                Horizon Crossed
+            </div>
+        </main>
+    </div>
+
+    <!-- Explainer Cards -->
+    <footer class="bg-slate-900 border-t border-slate-800 p-4 z-10 grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
+        <div class="hud-panel p-4 rounded-xl">
+            <h5 class="text-sky-400 font-bold mb-1">1. Differential Gravity</h5>
+            <p class="text-xs text-slate-300 leading-relaxed">Spaghettification happens because gravity follows an inverse-square law. The pull on an object's feet is stronger than on its head. This difference (tidal force) stretches it radially and compresses it laterally.</p>
+        </div>
+        <div class="hud-panel p-4 rounded-xl">
+            <h5 class="text-sky-400 font-bold mb-1">2. The Mass Paradox</h5>
+            <p class="text-xs text-slate-300 leading-relaxed">Counter-intuitively, supermassive black holes are safer to approach! Tidal forces at the horizon scale with $1/M^2$. You can cross a supermassive black hole's horizon unharmed, while a small stellar black hole will shred you millions of miles away.</p>
+        </div>
+        <div class="hud-panel p-4 rounded-xl">
+            <h5 class="text-emerald-400 font-bold mb-1">3. Relativity of Time</h5>
+            <p class="text-xs text-slate-300 leading-relaxed">To an outside observer, the falling astronaut appears to slow down and freeze at the horizon, their light redshifting to infinity. To the astronaut (proper time), they cross the horizon in a finite amount of time, noticing nothing unusual until they approach the singularity.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Physics Constants
+        const G = 6.67430e-11; // Gravitational constant (m^3 kg^-1 s^-2)
+        const c = 299792458;   // Speed of light (m/s)
+        const M_sun = 1.989e30; // Solar mass (kg)
+        const g_earth = 9.80665; // Earth gravity (m/s^2)
+        
+        // Sim State
+        let state = {
+            mass_sun: 15, // Solar masses
+            M: 15 * M_sun,
+            r_s: 0, // Schwarzschild radius
+            
+            // Object properties (astronaut proxy)
+            length: 2, // 2 meters tall
+            width: 0.5, // 0.5 meters wide
+            mass_obj: 80, // kg
+            tensile_strength: 1e4, // Pa
+            
+            // Dynamics
+            r: 0, // Current distance from singularity (meters)
+            v: 0, // Radial velocity (dr/dtau) (m/s)
+            proper_time: 0,
+            coord_time: 0,
+            
+            // Display
+            perspective: 'outside', // 'outside' or 'inside'
+            running: false,
+            destroyed: false,
+            horizon_crossed: false,
+            
+            // Forces
+            a_tidal_radial: 0,
+            a_tidal_lateral: 0,
+            stress: 0 // Pa
+        };
+
+        // Audio System
+        let audioCtx;
+        let heartbeatOsc, heartbeatGain;
+        let droneOsc, droneGain;
+        let stressNoise, stressFilter, stressGain;
+        let lastPingTime = 0;
+        let pingIntervalBase = 1.0; // 1 second proper time between pings
+
+        function initAudio() {
+            if(audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Heartbeat/Ping (Astronaut comms)
+            heartbeatOsc = audioCtx.createOscillator();
+            heartbeatOsc.type = 'sine';
+            heartbeatGain = audioCtx.createGain();
+            heartbeatGain.gain.value = 0;
+            heartbeatOsc.connect(heartbeatGain);
+            heartbeatGain.connect(audioCtx.destination);
+            heartbeatOsc.start();
+            
+            // Cosmic Drone
+            droneOsc = audioCtx.createOscillator();
+            droneOsc.type = 'triangle';
+            droneOsc.frequency.value = 50;
+            droneGain = audioCtx.createGain();
+            droneGain.gain.value = 0;
+            droneOsc.connect(droneGain);
+            droneGain.connect(audioCtx.destination);
+            droneOsc.start();
+            
+            // Stress Noise
+            const bufferSize = audioCtx.sampleRate * 2;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+            stressNoise = audioCtx.createBufferSource();
+            stressNoise.buffer = buffer;
+            stressNoise.loop = true;
+            stressFilter = audioCtx.createBiquadFilter();
+            stressFilter.type = 'lowpass';
+            stressGain = audioCtx.createGain();
+            stressGain.gain.value = 0;
+            stressNoise.connect(stressFilter);
+            stressFilter.connect(stressGain);
+            stressGain.connect(audioCtx.destination);
+            stressNoise.start();
+            
+            document.getElementById('btn-audio').style.display = 'none';
+            state.running = true;
+            lastTime = performance.now();
+            requestAnimationFrame(simLoop);
+        }
+
+        // Canvas Setup
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() {
+            canvas.width = canvas.clientWidth * window.devicePixelRatio;
+            canvas.height = canvas.clientHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // UI Binding
+        function updateDerivedState() {
+            state.M = state.mass_sun * M_sun;
+            state.r_s = (2 * G * state.M) / (c * c);
+        }
+
+        function resetSim() {
+            updateDerivedState();
+            let initial_r_rs = parseFloat(document.getElementById('slider-dist').value);
+            state.r = initial_r_rs * state.r_s;
+            state.v = 0;
+            state.proper_time = 0;
+            state.coord_time = 0;
+            state.destroyed = false;
+            state.horizon_crossed = false;
+            
+            document.getElementById('horizon-alert').style.opacity = 0;
+            document.getElementById('stress-bar').style.width = '0%';
+            document.getElementById('stress-bar').className = 'bg-emerald-500 h-full w-0 transition-all';
+            document.getElementById('hud-status').innerText = 'NOMINAL';
+            document.getElementById('hud-status').className = 'text-xs font-bold text-emerald-400';
+            
+            if(audioCtx) {
+                droneGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+                stressGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+            }
+        }
+
+        // Preset handling
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const type = e.currentTarget.dataset.preset;
+                let massSlider = document.getElementById('slider-mass');
+                if(type === 'stellar') massSlider.value = 40; // ~15 Msun mapped
+                else if(type === 'smbh') massSlider.value = 80; // mapped
+                else if(type === 'super') massSlider.value = 100;
+                else if(type === 'micro') massSlider.value = 10;
+                
+                massSlider.dispatchEvent(new Event('input'));
+                resetSim();
+            });
+        });
+
+        // Logarithmic mass slider mapping
+        // 0 -> 1e-8 Msun, 100 -> 1e10 Msun
+        function mapSliderToMass(val) {
+            const minLog = -8;
+            const maxLog = 10;
+            const logVal = minLog + (val / 100) * (maxLog - minLog);
+            return Math.pow(10, logVal);
+        }
+
+        document.getElementById('slider-mass').addEventListener('input', (e) => {
+            state.mass_sun = mapSliderToMass(e.target.value);
+            // Format for display
+            let displayVal = state.mass_sun;
+            let unit = " M_☉";
+            if (displayVal >= 1e9) { displayVal = (displayVal/1e9).toFixed(1) + "B"; }
+            else if (displayVal >= 1e6) { displayVal = (displayVal/1e6).toFixed(1) + "M"; }
+            else if (displayVal < 1) { displayVal = displayVal.toExponential(1); }
+            else { displayVal = displayVal.toFixed(1); }
+            document.getElementById('val-mass').innerText = displayVal + unit;
+            
+            // Only update derived, don't reset unless we want to
+            updateDerivedState();
+            // keep ratio of r/r_s same
+            let distRs = parseFloat(document.getElementById('slider-dist').value);
+            state.r = distRs * state.r_s;
+        });
+
+        document.getElementById('slider-dist').addEventListener('input', (e) => {
+            document.getElementById('val-dist').innerText = parseFloat(e.target.value).toFixed(1);
+            resetSim();
+        });
+
+        document.getElementById('select-tensile').addEventListener('change', (e) => {
+            state.tensile_strength = parseFloat(e.target.value);
+        });
+
+        document.getElementById('toggle-outside').addEventListener('click', () => {
+            state.perspective = 'outside';
+            document.getElementById('toggle-outside').className = "flex-1 py-1.5 text-xs rounded bg-sky-600 text-white font-medium transition";
+            document.getElementById('toggle-inside').className = "flex-1 py-1.5 text-xs rounded text-slate-400 hover:text-white transition bg-transparent";
+            document.getElementById('perspective-desc').innerText = "Time slows down, redshift increases near horizon.";
+        });
+
+        document.getElementById('toggle-inside').addEventListener('click', () => {
+            state.perspective = 'inside';
+            document.getElementById('toggle-inside').className = "flex-1 py-1.5 text-xs rounded bg-sky-600 text-white font-medium transition";
+            document.getElementById('toggle-outside').className = "flex-1 py-1.5 text-xs rounded text-slate-400 hover:text-white transition bg-transparent";
+            document.getElementById('perspective-desc').innerText = "Time passes normally. Crossing horizon in finite time.";
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', resetSim);
+        document.getElementById('btn-audio').addEventListener('click', initAudio);
+
+        // Simulation Loop
+        let lastTime = 0;
+        
+        function simLoop(timestamp) {
+            if (!state.running) return;
+            
+            const dt_real = Math.min((timestamp - lastTime) / 1000, 0.05); // Cap dt
+            lastTime = timestamp;
+
+            // Physics Step
+            if (state.r > 0 && !state.horizon_crossed) {
+                // Newtonian approximation for simplicity in fall dynamics, 
+                // but we add relativistic effects for time and rendering.
+                // a = -GM/r^2
+                let a = - (G * state.M) / (state.r * state.r);
+                
+                // Relativistic adjustment for proper time vs coordinate time
+                // dt_proper = dt_coord * sqrt(1 - r_s/r)
+                let time_dilation = 1;
+                if (state.r > state.r_s) {
+                    time_dilation = Math.sqrt(1 - state.r_s / state.r);
+                } else {
+                    time_dilation = 0; // Frozen for outside observer
+                }
+                
+                let dt_sim;
+                if (state.perspective === 'outside') {
+                    // Real time IS coordinate time
+                    dt_sim = dt_real;
+                    // Object's velocity in coordinate frame slows down near horizon
+                    // v_coord = dr/dt = dr/dtau * (dtau/dt) 
+                    // Actually, let's keep it simple: simulate in proper time, map to screen
+                    // If outside observer, sim runs slower as r -> r_s
+                    
+                    // The fall in proper time is what causes acceleration
+                    // Let's step proper time based on perspective
+                    let dtau = dt_real * time_dilation;
+                    state.v += a * dtau; // simple Euler
+                    state.r += state.v * dtau;
+                    state.proper_time += dtau;
+                    state.coord_time += dt_real;
+                } else {
+                    // Inside observer: real time IS proper time
+                    let dtau = dt_real * 10; // Speed up sim a bit for playability
+                    state.v += a * dtau;
+                    state.r += state.v * dtau;
+                    state.proper_time += dtau;
+                    if(time_dilation > 0) state.coord_time += dtau / time_dilation;
+                }
+
+                // Tidal Forces
+                // Δa_radial = (2 G M L) / r^3
+                state.a_tidal_radial = (2 * G * state.M * state.length) / Math.pow(state.r, 3);
+                // Δa_lateral = (G M W) / r^3
+                state.a_tidal_lateral = (G * state.M * state.width) / Math.pow(state.r, 3);
+                
+                // Stress = Force / Area. Force = mass * a_tidal. Area roughly width^2
+                let f_stretch = state.mass_obj * state.a_tidal_radial;
+                let area = Math.PI * Math.pow(state.width/2, 2);
+                state.stress = f_stretch / area;
+
+                if (state.stress > state.tensile_strength && !state.destroyed) {
+                    state.destroyed = true;
+                    if(audioCtx) {
+                        stressGain.gain.setTargetAtTime(0.5, audioCtx.currentTime, 0.05);
+                        setTimeout(() => stressGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5), 500);
+                    }
+                }
+
+                if (state.r <= state.r_s && !state.horizon_crossed) {
+                    state.horizon_crossed = true;
+                    state.r = Math.max(state.r, 0.1); // prevent divide by zero just in case
+                    document.getElementById('horizon-alert').style.opacity = 1;
+                }
+            }
+
+            updateHUD();
+            updateAudio();
+            draw();
+
+            requestAnimationFrame(simLoop);
+        }
+
+        function updateHUD() {
+            let r_rs = state.r / state.r_s;
+            document.getElementById('hud-r').innerText = r_rs.toFixed(3) + " r_s";
+            
+            let v_c = Math.abs(state.v) / c;
+            document.getElementById('hud-v').innerText = (v_c).toFixed(4) + " c";
+            
+            let dilation = state.r > state.r_s ? 1 / Math.sqrt(1 - state.r_s / state.r) : Infinity;
+            document.getElementById('hud-dt').innerText = (dilation > 1000 ? "INF" : dilation.toFixed(3)) + "x";
+
+            let rad_g = state.a_tidal_radial / g_earth;
+            document.getElementById('hud-stretch').innerText = (rad_g > 1e6 ? rad_g.toExponential(2) : rad_g.toFixed(1)) + " G";
+            
+            let lat_g = state.a_tidal_lateral / g_earth;
+            document.getElementById('hud-crush').innerText = (lat_g > 1e6 ? lat_g.toExponential(2) : lat_g.toFixed(1)) + " G";
+
+            let stressRatio = Math.min(state.stress / state.tensile_strength, 1);
+            let bar = document.getElementById('stress-bar');
+            bar.style.width = (stressRatio * 100) + "%";
+            
+            let status = document.getElementById('hud-status');
+            if (state.destroyed) {
+                status.innerText = "SPAGHETTIFIED";
+                status.className = "text-xs font-bold text-rose-500";
+                bar.className = "bg-rose-500 h-full transition-all";
+            } else if (stressRatio > 0.8) {
+                status.innerText = "CRITICAL";
+                status.className = "text-xs font-bold text-amber-500";
+                bar.className = "bg-amber-500 h-full transition-all";
+            } else {
+                status.innerText = "NOMINAL";
+                status.className = "text-xs font-bold text-emerald-400";
+                bar.className = "bg-emerald-500 h-full transition-all";
+            }
+        }
+
+        function updateAudio() {
+            if (!audioCtx) return;
+
+            let dilation = state.r > state.r_s ? Math.sqrt(1 - state.r_s / state.r) : 0.001;
+            
+            // Ping Logic
+            let nowProper = state.proper_time;
+            if (state.perspective === 'outside') {
+                // To outside observer, pings slow down and redshift
+                let perceivedInterval = pingIntervalBase / dilation;
+                if (state.coord_time - lastPingTime > perceivedInterval && state.r > state.r_s) {
+                    lastPingTime = state.coord_time;
+                    let freq = 800 * dilation; // Redshift pitch
+                    playPing(freq, 0.1);
+                }
+            } else {
+                // To inside observer, pings are constant
+                if (nowProper - lastPingTime > pingIntervalBase) {
+                    lastPingTime = nowProper;
+                    playPing(800, 0.1);
+                }
+                
+                // Cosmic drone rises as you fall
+                let droneFreq = 50 + (state.r_s / state.r) * 100;
+                droneOsc.frequency.setTargetAtTime(droneFreq, audioCtx.currentTime, 0.1);
+                if (!state.destroyed && state.running) {
+                    droneGain.gain.setTargetAtTime(0.2, audioCtx.currentTime, 0.5);
+                }
+            }
+
+            // Continuous stress groaning before breaking
+            let stressRatio = Math.min(state.stress / state.tensile_strength, 1);
+            if (!state.destroyed && stressRatio > 0.1) {
+                stressFilter.frequency.value = 100 + stressRatio * 1000;
+                stressGain.gain.setTargetAtTime(stressRatio * 0.3, audioCtx.currentTime, 0.1);
+            } else if (!state.destroyed) {
+                stressGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+            }
+        }
+
+        function playPing(freq, vol) {
+            heartbeatOsc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            heartbeatGain.gain.cancelScheduledValues(audioCtx.currentTime);
+            heartbeatGain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            heartbeatGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+        }
+
+        function draw() {
+            let w = canvas.clientWidth;
+            let h = canvas.clientHeight;
+            
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, w, h);
+
+            // Origin at center bottom
+            let cx = w / 2;
+            let cy = h * 0.8;
+
+            // Scale for rendering
+            // Max distance shown is max slider dist
+            let max_r = parseFloat(document.getElementById('slider-dist').max) * state.r_s;
+            // Let's make r_s visible. If r_s is small, scale up.
+            // Dynamic scale: want the object and BH visible
+            
+            let scale;
+            if (state.r < state.r_s * 5) {
+                // Zoomed in near horizon
+                scale = (h * 0.4) / (state.r_s * 3);
+            } else {
+                // Zoomed out
+                scale = (h * 0.6) / state.r;
+            }
+
+            // Draw Black Hole
+            let r_s_px = state.r_s * scale;
+            
+            // Accretion disk / glow
+            let gradient = ctx.createRadialGradient(cx, cy, r_s_px*0.8, cx, cy, r_s_px * 3);
+            gradient.addColorStop(0, 'rgba(0,0,0,1)');
+            gradient.addColorStop(0.2, 'rgba(0,0,0,1)');
+            gradient.addColorStop(0.25, 'rgba(239, 68, 68, 0.5)'); // Reddish photon ring
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r_s_px * 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Event Horizon
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(cx, cy, r_s_px, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Draw Object
+            if (state.r > 0) {
+                let obj_y = cy - (state.r * scale);
+                
+                // Deformation
+                let stretchFactor = 1;
+                let crushFactor = 1;
+                
+                if (state.stress > 0) {
+                    let stressRatio = state.stress / state.tensile_strength;
+                    if (state.destroyed) {
+                        stretchFactor = 10;
+                        crushFactor = 0.1;
+                    } else {
+                        stretchFactor = 1 + stressRatio * 2;
+                        crushFactor = 1 / (1 + stressRatio * 0.5);
+                    }
+                }
+
+                // Base size in px (exaggerated so it's visible)
+                let base_len_px = Math.max(20, state.length * scale * 1e6); // artificially boost size for visual
+                let base_wid_px = Math.max(10, state.width * scale * 1e6);
+                
+                // If it's too big, cap it
+                base_len_px = Math.min(base_len_px, h/4);
+                base_wid_px = Math.min(base_wid_px, w/10);
+
+                let len_px = base_len_px * stretchFactor;
+                let wid_px = base_wid_px * crushFactor;
+
+                // Color based on redshift
+                let dilation = state.r > state.r_s ? Math.sqrt(1 - state.r_s / state.r) : 0;
+                let r_col = 255;
+                let g_col = state.perspective === 'outside' ? Math.floor(255 * dilation) : 255;
+                let b_col = state.perspective === 'outside' ? Math.floor(255 * dilation) : 255;
+                let alpha = state.perspective === 'outside' ? Math.max(0.1, dilation) : 1;
+
+                if (state.destroyed) {
+                    r_col = 255; g_col = 50; b_col = 50;
+                    alpha *= 0.5;
+                }
+
+                ctx.fillStyle = `rgba(${r_col}, ${g_col}, ${b_col}, ${alpha})`;
+                
+                ctx.beginPath();
+                ctx.ellipse(cx, obj_y, wid_px/2, len_px/2, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Init
+        updateDerivedState();
+        document.getElementById('slider-mass').dispatchEvent(new Event('input'));
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+{"pid": 4624, "command": ["run.py", "--fable", "50000", "--fable-stage", "auto", "--out", "smooth", "--fable-no-promote"], "out": "smooth"}

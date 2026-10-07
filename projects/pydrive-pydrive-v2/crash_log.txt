@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/Users/REVIEW_USER/Desktop/Python/Supra Ai 2/supra/app_ppo.py", line 331, in run
+    draw_road(pygame, screen, cam, trk, (34, 35, 40), (110, 70, 70), (70, 72, 80))
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/REVIEW_USER/Desktop/Python/Supra Ai 2/supra/app.py", line 144, in draw_road
+    indices = [(center_idx + off) % M for off in range(-window, window + 1)]
+               ~~~~~~~~~~~~~~~~~~~^~~
+KeyboardInterrupt

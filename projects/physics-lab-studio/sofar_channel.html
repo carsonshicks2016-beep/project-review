@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOFAR Sound Channel Simulator</title>
+    <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"DM Sans"', 'sans-serif'],
+          display: ['"Space Grotesk"', 'sans-serif'],
+          mono: ['"Space Grotesk"', 'monospace'],
+        },
+        colors: {
+          slate: {
+            50: '#f8fafc',
+            100: '#f1f5f9',
+            200: '#e2e8f0',
+            300: '#cbd5e1',
+            400: '#8ba3b8',
+            500: '#64748b',
+            600: '#475569',
+            700: '#334155',
+            800: '#1d2b38',
+            900: '#111a22',
+            950: '#0b1217',
+          },
+          sky: {
+            400: '#00f0ff',
+            500: '#00d4e0',
+          },
+          emerald: {
+            400: '#ccff00',
+            500: '#b3e600',
+          },
+          rose: {
+            400: '#ff0055',
+            500: '#e6004c',
+          },
+          amber: {
+            400: '#ffb300',
+            500: '#e6a100',
+          }
+        },
+        boxShadow: {
+          'neon': '0 0 10px rgba(0, 240, 255, 0.2), 0 0 20px rgba(0, 240, 255, 0.1)',
+          'neon-lime': '0 0 10px rgba(204, 255, 0, 0.2), 0 0 20px rgba(204, 255, 0, 0.1)',
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  body {
+    background-color: #0b1217 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    letter-spacing: -0.02em;
+  }
+  .font-mono, .data-readout {
+    font-family: 'Space Grotesk', monospace !important;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Sharper aesthetics */
+  .rounded-2xl { border-radius: 0.375rem !important; }
+  .rounded-xl { border-radius: 0.375rem !important; }
+  .rounded-lg { border-radius: 0.25rem !important; }
+  .shadow-xl, .shadow-2xl { box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+  
+  /* Technical UI elements */
+  button { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85em; font-weight: 600; }
+  input[type=range]::-webkit-slider-thumb { border-radius: 0 !important; width: 8px !important; height: 16px !important; background: #00f0ff !important; }
+</style>
+
+    <style>
+        body { margin: 0; padding: 0; background-color: #0b1217; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+        .canvas-container { position: relative; width: 100%; height: 500px; border-radius: 1rem; overflow: hidden; background: linear-gradient(to bottom, #00d4e0, #1e3a8a, #0b1217, #0b1217); border: 1px solid #1d2b38; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); }
+        canvas { display: block; width: 100%; height: 100%; }
+        .hud { position: absolute; top: 1rem; right: 1rem; background: rgba(17, 26, 34, 0.7); backdrop-filter: blur(8px); padding: 1rem; border-radius: 0.75rem; border: 1px solid #334155; pointer-events: none; }
+        .hud-left { position: absolute; top: 1rem; left: 1rem; background: rgba(17, 26, 34, 0.7); backdrop-filter: blur(8px); padding: 1rem; border-radius: 0.75rem; border: 1px solid #334155; pointer-events: none; }
+        .value { font-family: ui-monospace, monospace; color: #00f0ff; }
+        .good-value { color: #b3e600; }
+        .warn-value { color: #f59e0b; }
+        .crit-value { color: #e6004c; }
+        input[type="range"] { accent-color: #00f0ff; }
+    </style>
+</head>
+<body class="p-4 md:p-8 flex flex-col gap-6">
+
+    <header>
+        <h1 class="text-3xl font-bold text-sky-400">Underwater SOFAR Sound Channel Simulator</h1>
+        <p class="text-slate-400 mt-2">Interactive ray-tracing of acoustic propagation in the ocean.</p>
+    </header>
+
+    <main class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        <!-- Canvas Area -->
+        <div class="lg:col-span-3 flex flex-col gap-4">
+            <div class="canvas-container">
+                <canvas id="oceanCanvas"></canvas>
+                <div class="hud-left">
+                    <h3 class="text-xs uppercase text-slate-500 font-bold mb-1">Sound Speed Profile</h3>
+                    <div class="text-sm">Depth: <span id="hud-source-depth" class="value">1000 m</span></div>
+                    <div class="text-sm">Speed at Source: <span id="hud-source-speed" class="value">1480 m/s</span></div>
+                    <div class="text-sm mt-2">SOFAR Axis: <span class="value">1000 m</span></div>
+                    <div class="text-sm">Min Speed: <span class="value">1478 m/s</span></div>
+                </div>
+                <div class="hud">
+                    <h3 class="text-xs uppercase text-slate-500 font-bold mb-1">Propagation Stats</h3>
+                    <div class="text-sm">Rays Traced: <span id="hud-total-rays" class="value">21</span></div>
+                    <div class="text-sm">Trapped Rays: <span id="hud-trapped-rays" class="value good-value">15</span></div>
+                    <div class="text-sm">Escaped Rays: <span id="hud-escaped-rays" class="value warn-value">6</span></div>
+                    <div class="text-sm mt-2">Sound Received: <span id="hud-reception" class="value">Strong</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Area -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col gap-5">
+            <h2 class="text-xl font-semibold text-slate-200">Controls</h2>
+            
+            <div class="flex flex-col gap-2">
+                <label class="text-sm text-slate-400 flex justify-between">
+                    Source Depth
+                    <span id="lbl-depth" class="font-mono text-sky-400">1000 m</span>
+                </label>
+                <input type="range" id="slider-depth" min="0" max="4000" value="1000" step="10">
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <label class="text-sm text-slate-400 flex justify-between">
+                    Launch Angle Spread
+                    <span id="lbl-angle" class="font-mono text-sky-400">±15°</span>
+                </label>
+                <input type="range" id="slider-angle" min="1" max="45" value="15" step="1">
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <label class="text-sm text-slate-400 flex justify-between">
+                    Number of Rays
+                    <span id="lbl-rays" class="font-mono text-sky-400">21</span>
+                </label>
+                <input type="range" id="slider-rays" min="5" max="51" value="21" step="2">
+            </div>
+
+            <div class="flex gap-2 mt-2">
+                <button id="btn-play" class="flex-1 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold py-2 px-4 rounded-lg transition-colors">
+                    Re-emit Rays
+                </button>
+                <button id="btn-audio" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-slate-50 font-semibold py-2 px-4 rounded-lg transition-colors">
+                    Play Sound
+                </button>
+            </div>
+
+            <hr class="border-slate-800 my-2">
+
+            <h3 class="text-sm font-semibold text-slate-300">Presets</h3>
+            <div class="grid grid-cols-2 gap-2">
+                <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 px-2 rounded border border-slate-700" data-depth="1000" data-angle="15">Whale in SOFAR</button>
+                <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 px-2 rounded border border-slate-700" data-depth="10" data-angle="20">Surface Ship</button>
+                <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 px-2 rounded border border-slate-700" data-depth="300" data-angle="10">Submarine</button>
+                <button class="preset-btn bg-slate-800 hover:bg-slate-700 text-xs py-2 px-2 rounded border border-slate-700" data-depth="3000" data-angle="20">Deep Source</button>
+            </div>
+        </div>
+    </main>
+
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+            <h3 class="text-lg font-semibold text-sky-400 mb-2">1. Sound Speed Minimum</h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+                In the ocean, sound speed depends on temperature and pressure. Near the surface, the water is warm, so sound travels fast. As depth increases, temperature drops, causing sound speed to decrease. However, below about 1000m, the temperature becomes constant but the pressure continues to rise, causing sound speed to increase again. This creates a minimum sound speed at the SOFAR channel axis.
+            </p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+            <h3 class="text-lg font-semibold text-emerald-400 mb-2">2. Ray Bending (Snell's Law)</h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+                Snell's law dictates that sound waves bend (refract) towards regions of lower sound speed. If a sound wave is emitted near the SOFAR axis and travels upward, the increasing sound speed bends it back down. If it travels downward, increasing pressure bends it back up. The sound becomes "trapped" in the channel, oscillating around the minimum speed axis without hitting the surface or seafloor.
+            </p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+            <h3 class="text-lg font-semibold text-rose-400 mb-2">3. Long Distance Travel</h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+                Because trapped sound rays do not lose energy to acoustic scattering at the rough sea surface or absorption in the muddy ocean floor, they can travel vast distances. Whales utilize this channel to communicate across entire ocean basins. During the Cold War, the US Navy deployed the SOSUS system to listen for submarines using the SOFAR channel.
+            </p>
+        </div>
+    </section>
+
+    <script>
+        // Physics Constants & State
+        const MAX_DEPTH = 5000; // m
+        const MAX_DIST = 100000; // 100 km
+        
+        // Munk Profile constants
+        const Z_AXIS = 1000;
+        const B = 1300;
+        const EPSILON = 0.00737;
+        const C0 = 1500;
+
+        let sourceDepth = 1000;
+        let angleSpread = 15; // degrees
+        let numRays = 21;
+        
+        let rays = [];
+        let animationTime = 0;
+        let maxAnimationTime = 0;
+        let isAnimating = false;
+        let lastTimestamp = 0;
+
+        // Audio State
+        let audioCtx = null;
+        let isPlayingAudio = false;
+
+        // Elements
+        const canvas = document.getElementById('oceanCanvas');
+        const ctx = canvas.getContext('2d');
+        const sDepth = document.getElementById('slider-depth');
+        const sAngle = document.getElementById('slider-angle');
+        const sRays = document.getElementById('slider-rays');
+        
+        // Munk Sound Speed Profile
+        function getSoundSpeed(z) {
+            const eta = 2 * (z - Z_AXIS) / B;
+            return C0 * (1 + EPSILON * (eta + Math.exp(-eta) - 1));
+        }
+
+        function getSoundSpeedGradient(z) {
+            const eta = 2 * (z - Z_AXIS) / B;
+            return C0 * EPSILON * (2 / B) * (1 - Math.exp(-eta));
+        }
+
+        // Ray Tracing
+        function calculateRays() {
+            rays = [];
+            let trappedCount = 0;
+            let escapedCount = 0;
+            const dt = 0.05; // seconds
+            const maxT = 80; // max simulation time
+
+            for (let i = 0; i < numRays; i++) {
+                // Calculate angle from -spread to +spread
+                let normalizedAngle = numRays > 1 ? (i / (numRays - 1)) * 2 - 1 : 0;
+                let angleDeg = normalizedAngle * angleSpread;
+                let theta = angleDeg * Math.PI / 180;
+                
+                let x = 0;
+                let z = sourceDepth;
+                let path = [{x, z}];
+                let isTrapped = true;
+                let escaped = false;
+
+                for (let t = 0; t < maxT; t += dt) {
+                    if (x > MAX_DIST || z < 0 || z > MAX_DEPTH) {
+                        if (!escaped && (z <= 0 || z >= MAX_DEPTH)) {
+                            escaped = true;
+                            isTrapped = false;
+                        }
+                        break;
+                    }
+                    
+                    let c = getSoundSpeed(z);
+                    let dc_dz = getSoundSpeedGradient(z);
+                    
+                    // Euler integration for ray path
+                    let dx = c * Math.cos(theta) * dt;
+                    let dz = c * Math.sin(theta) * dt;
+                    let dtheta = -(dc_dz) * (Math.cos(theta) / c) * dt;
+
+                    x += dx;
+                    z += dz;
+                    theta += dtheta;
+
+                    path.push({x, z});
+                }
+                
+                if (isTrapped) trappedCount++;
+                else escapedCount++;
+
+                rays.push({ path, isTrapped });
+                if (path.length > maxAnimationTime) {
+                    maxAnimationTime = path.length;
+                }
+            }
+
+            // Update HUD
+            document.getElementById('hud-source-speed').innerText = getSoundSpeed(sourceDepth).toFixed(1) + " m/s";
+            document.getElementById('hud-total-rays').innerText = numRays;
+            
+            const trEl = document.getElementById('hud-trapped-rays');
+            trEl.innerText = trappedCount;
+            trEl.className = trappedCount > 0 ? 'value good-value' : 'value crit-value';
+            
+            const esEl = document.getElementById('hud-escaped-rays');
+            esEl.innerText = escapedCount;
+            esEl.className = escapedCount > numRays/2 ? 'value warn-value' : 'value';
+
+            // Determine Reception Quality at 100km, 1000m depth
+            const receptionEl = document.getElementById('hud-reception');
+            if (trappedCount > numRays * 0.5 && sourceDepth > 500 && sourceDepth < 2000) {
+                receptionEl.innerText = "Strong (In Channel)";
+                receptionEl.className = "value good-value";
+            } else if (trappedCount > 0) {
+                receptionEl.innerText = "Weak (Multi-path)";
+                receptionEl.className = "value warn-value";
+            } else {
+                receptionEl.innerText = "None (Shadow Zone)";
+                receptionEl.className = "value crit-value";
+            }
+        }
+
+        function resize() {
+            // Support high DPI displays
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.parentNode.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            draw(true);
+        }
+
+        function getX(dist) {
+            // Offset by 150px for the profile graph
+            const graphWidth = 150;
+            const w = canvas.width / (window.devicePixelRatio || 1) - graphWidth;
+            return graphWidth + (dist / MAX_DIST) * w;
+        }
+
+        function getY(depth) {
+            const h = canvas.height / (window.devicePixelRatio || 1);
+            return (depth / MAX_DEPTH) * h;
+        }
+
+        function draw(full = false) {
+            const rect = canvas.parentNode.getBoundingClientRect();
+            const w = rect.width;
+            const h = rect.height;
+            const graphWidth = 150;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Draw Sound Speed Profile Graph Background
+            ctx.fillStyle = 'rgba(17, 26, 34, 0.9)';
+            ctx.fillRect(0, 0, graphWidth, h);
+            ctx.strokeStyle = '#334155';
+            ctx.beginPath();
+            ctx.moveTo(graphWidth, 0);
+            ctx.lineTo(graphWidth, h);
+            ctx.stroke();
+
+            // Draw Profile Curve
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let z = 0; z <= MAX_DEPTH; z += 50) {
+                let c = getSoundSpeed(z);
+                // Map c from 1475-1540 to 0-graphWidth
+                let cMap = ((c - 1475) / (1540 - 1475)) * (graphWidth - 20) + 10;
+                if (z === 0) ctx.moveTo(cMap, getY(z));
+                else ctx.lineTo(cMap, getY(z));
+            }
+            ctx.stroke();
+
+            // Label Profile
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '10px monospace';
+            ctx.fillText('1475 m/s', 10, h - 10);
+            ctx.fillText('1540', graphWidth - 30, h - 10);
+
+            // Draw SOFAR Axis
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(0, getY(Z_AXIS));
+            ctx.lineTo(w, getY(Z_AXIS));
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.font = '12px system-ui';
+            ctx.fillText('SOFAR Axis (1000m)', graphWidth + 10, getY(Z_AXIS) - 5);
+
+            // Draw Receiver (Target Area)
+            ctx.fillStyle = 'rgba(179, 230, 0, 0.3)';
+            ctx.fillRect(w - 20, getY(Z_AXIS) - 50, 20, 100);
+            ctx.fillStyle = '#b3e600';
+            ctx.fillText('Receiver', w - 55, getY(Z_AXIS) - 55);
+
+            // Draw Rays
+            let drawLimit = full ? maxAnimationTime : animationTime;
+            
+            rays.forEach(ray => {
+                ctx.beginPath();
+                ctx.moveTo(getX(ray.path[0].x), getY(ray.path[0].z));
+                
+                const limit = Math.min(ray.path.length, drawLimit);
+                for (let i = 1; i < limit; i++) {
+                    ctx.lineTo(getX(ray.path[i].x), getY(ray.path[i].z));
+                }
+                
+                if (ray.isTrapped) {
+                    ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)'; // Cyan for trapped
+                    ctx.lineWidth = 1.5;
+                } else {
+                    ctx.strokeStyle = 'rgba(230, 0, 76, 0.3)'; // Rose for escaped
+                    ctx.lineWidth = 1;
+                }
+                ctx.stroke();
+
+                // Draw end point or wave front
+                if (limit > 0 && limit < ray.path.length) {
+                    ctx.fillStyle = ray.isTrapped ? '#00f0ff' : '#e6004c';
+                    ctx.beginPath();
+                    ctx.arc(getX(ray.path[limit-1].x), getY(ray.path[limit-1].z), 2, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            });
+
+            // Draw Source
+            ctx.fillStyle = '#f8fafc';
+            ctx.beginPath();
+            ctx.arc(getX(0), getY(sourceDepth), 6, 0, Math.PI*2);
+            ctx.fill();
+            ctx.strokeStyle = '#0b1217';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw source depth line on graph
+            ctx.strokeStyle = 'rgba(248, 250, 252, 0.3)';
+            ctx.beginPath();
+            ctx.moveTo(0, getY(sourceDepth));
+            ctx.lineTo(getX(0), getY(sourceDepth));
+            ctx.stroke();
+        }
+
+        function animate(timestamp) {
+            if (!isAnimating) return;
+            
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            const delta = timestamp - lastTimestamp;
+            lastTimestamp = timestamp;
+
+            // Advance animation by frames (speed control)
+            animationTime += 4; 
+
+            draw();
+
+            if (animationTime < maxAnimationTime) {
+                requestAnimationFrame(animate);
+            } else {
+                isAnimating = false;
+            }
+        }
+
+        function startAnimation() {
+            calculateRays();
+            animationTime = 0;
+            lastTimestamp = 0;
+            isAnimating = true;
+            requestAnimationFrame(animate);
+        }
+
+        function playAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            if (isPlayingAudio) return;
+            isPlayingAudio = true;
+            const btn = document.getElementById('btn-audio');
+            btn.innerText = "Playing...";
+            btn.classList.add("opacity-75");
+
+            // Calculate reception strength based on how many rays are trapped
+            let trappedCount = rays.filter(r => r.isTrapped).length;
+            let efficiency = trappedCount / numRays;
+            
+            // Reverb / Multi-path effect
+            const duration = 2.0;
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+
+            // Whale-like frequency sweep (200Hz down to 100Hz)
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + duration);
+
+            // Filter
+            filter.type = 'lowpass';
+            filter.frequency.value = 400;
+
+            // Volume envelope
+            const maxVol = Math.max(0.05, efficiency * 0.4); // Max 0.4 volume, never completely silent
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(maxVol, audioCtx.currentTime + duration * 0.2);
+            
+            // If in channel, add some flutter/multi-path effect by modulating gain
+            if (efficiency > 0.5) {
+                for (let i = 0; i < 5; i++) {
+                    let t = audioCtx.currentTime + duration * 0.3 + (i * 0.2);
+                    gain.gain.setValueAtTime(maxVol, t);
+                    gain.gain.linearRampToValueAtTime(maxVol * 0.6, t + 0.1);
+                }
+            }
+
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+
+            setTimeout(() => {
+                isPlayingAudio = false;
+                btn.innerText = "Play Sound";
+                btn.classList.remove("opacity-75");
+            }, duration * 1000);
+        }
+
+        // Event Listeners
+        window.addEventListener('resize', resize);
+        
+        function updateFromUI() {
+            sourceDepth = parseInt(sDepth.value);
+            angleSpread = parseInt(sAngle.value);
+            numRays = parseInt(sRays.value);
+            
+            document.getElementById('lbl-depth').innerText = sourceDepth + " m";
+            document.getElementById('hud-source-depth').innerText = sourceDepth + " m";
+            document.getElementById('lbl-angle').innerText = "±" + angleSpread + "°";
+            document.getElementById('lbl-rays').innerText = numRays;
+            
+            startAnimation();
+        }
+
+        sDepth.addEventListener('input', updateFromUI);
+        sAngle.addEventListener('input', updateFromUI);
+        sRays.addEventListener('input', updateFromUI);
+        
+        document.getElementById('btn-play').addEventListener('click', startAnimation);
+        document.getElementById('btn-audio').addEventListener('click', playAudio);
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                sDepth.value = e.target.dataset.depth;
+                sAngle.value = e.target.dataset.angle;
+                updateFromUI();
+            });
+        });
+
+        // Init
+        resize();
+        updateFromUI();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+[diagnostics] wrote telemetry bundle -> diagnostics/fable5_919_ring_flow_best_club_20260718_122810
+[diagnostics] raw trace: diagnostics/fable5_919_ring_flow_best_club_20260718_122810/raw_trace.jsonl.gz
+[diagnostics] summary:   diagnostics/fable5_919_ring_flow_best_club_20260718_122810/summary.md

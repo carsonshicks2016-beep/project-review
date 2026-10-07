@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "puffbot"
+version = "2.0.0"
+description = "Melee Bot v2: asynchronous actor-learner Jigglypuff specialist"
+requires-python = ">=3.12,<3.14"
+dependencies = ["melee==0.47.3", "torch==2.14.0", "numpy==2.5.3", "fastapi==0.141.1", "uvicorn==0.52.4"]
+
+[project.scripts]
+puffbot = "puffbot.cli:main"
+
+[tool.setuptools.package-data]
+puffbot = ["web/*"]
+
+[tool.setuptools.packages.find]
+include = ["puffbot*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
