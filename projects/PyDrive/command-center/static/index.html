@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en" data-car="787b">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supra Command Center</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏎️</text></svg>">
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/pitwall.css">
+  <link rel="stylesheet" href="/static/lineage.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">R</span>
+      <div>
+        <div class="eyebrow">Supra Race Ops</div>
+        <h1>Command <b>Center</b></h1>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="signature-mark" id="fish-egg" type="button" title="system mark" aria-label="system mark">
+        <code>&gt;&lt;((((&#39;&gt;</code>
+      </button>
+      <div class="sysmeta">
+        <span id="clock-chip" class="chip">local</span>
+        <span id="cpu-chip" class="chip">CPU 0%</span>
+        <span id="task-chip" class="chip">0 running</span>
+        <button id="quit-btn" class="chip" style="background:#ff3b30; color:white; border:none; cursor:pointer; font-weight:bold;">Quit Server</button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="groups" role="tablist" aria-label="Sections">
+    <button class="group active" data-group="ops">Ops</button>
+    <button class="group" data-group="train">Train</button>
+    <button class="group" data-group="drive">Drive</button>
+    <button class="group" data-group="analyze">Analyze</button>
+    <button class="group" data-group="garage">Garage</button>
+  </nav>
+
+  <div class="subnav-rail">
+    <nav class="tabs" data-group="ops">
+      <button class="tab active" data-tab="ops">Overview</button>
+    </nav>
+    <nav class="tabs" data-group="train" hidden>
+      <button class="tab" data-tab="train">Ring PPO</button>
+      <button class="tab" data-tab="ringrace">Ring Race</button>
+      <button class="tab" data-tab="fable">Fable Five</button>
+      <button class="tab" data-tab="fablega">Fable GA</button>
+    </nav>
+    <nav class="tabs" data-group="drive" hidden>
+      <button class="tab" data-tab="drive">Manual Drive</button>
+      <button class="tab" data-tab="watch">Watch</button>
+      <button class="tab" data-tab="race">Race</button>
+    </nav>
+    <nav class="tabs" data-group="analyze" hidden>
+      <button class="tab" data-tab="diagnostics">Brain Lab</button>
+      <button class="tab" data-tab="observatory">3D Observatory</button>
+    </nav>
+    <nav class="tabs" data-group="garage" hidden>
+      <button class="tab" data-tab="checkpoints">Brains</button>
+      <button class="tab" data-tab="tracks">Tracks</button>
+    </nav>
+  </div>
+
+  <main class="content">
+    <!-- OPS -->
+    <section class="panel active ops-panel" id="tab-ops">
+      <section class="ops-hero">
+        <div>
+          <div class="eyebrow">Local Neural Motorsport Lab</div>
+          <h2>Race Engineering Console</h2>
+        </div>
+        <div class="ops-hero-metrics">
+          <div><span>Track Focus</span><b>NORDSCHLEIFE</b></div>
+          <div><span>Primary Car</span><b>MAZDA 787B</b></div>
+          <div><span>Telemetry</span><b>DIAGNOSTIC EXPORT</b></div>
+        </div>
+      </section>
+
+      <section class="ops-grid">
+        <div class="ops-card ops-live">
+          <div class="ops-card-head">
+            <div><span class="eyebrow">Pit Wall</span><h3>Active Runs</h3></div>
+            <button class="mini" id="ops-refresh">refresh</button>
+          </div>
+          <div id="ops-active-runs" class="ops-run-list"></div>
+        </div>
+
+        <div class="ops-card ops-actions">
+          <div class="ops-card-head">
+            <div><span class="eyebrow">Launch Bay</span><h3>Fast Actions</h3></div>
+          </div>
+          <div class="ops-action-grid">
+            <button class="recall" id="ops-return-telemetry">Return to Telemetry</button>
+            <button id="ops-ring-live">Live Ring Trainer</button>
+            <button id="ops-ring-diagnose">Diagnose Ring Best</button>
+            <button id="ops-watch-best">Watch Ring Best</button>
+            <button id="ops-open-garage">Checkpoint Garage</button>
+          </div>
+        </div>
+
+        <div class="ops-card ops-garage">
+          <div class="ops-card-head">
+            <div><span class="eyebrow">Garage State</span><h3>Recent Brains</h3></div>
+            <button class="mini" id="ops-open-watch">watch bay</button>
+          </div>
+          <div id="ops-checkpoints" class="ops-mini-list"></div>
+        </div>
+
+        <div class="ops-card ops-diag">
+          <div class="ops-card-head">
+            <div><span class="eyebrow">Telemetry Lab</span><h3>Latest Diagnostics</h3></div>
+            <button class="mini" id="ops-open-diagnostics">open lab</button>
+          </div>
+          <div id="ops-diagnostics" class="ops-mini-list"></div>
+        </div>
+      </section>
+    </section>
+
+    <!-- DRIVE -->
+    <section class="panel" id="tab-drive">
+      <div class="section-title">
+        <div>
+          <span class="eyebrow">Driver Bay</span>
+          <h2>Manual 2D Shakedown</h2>
+        </div>
+      </div>
+      <div class="garage-selector-row">
+        <div class="row selector-controls">
+          <div class="field"><label>Chassis</label><div id="drive-car" class="seg"></div></div>
+          <div class="field"><label>Audio</label><div id="drive-audio" class="seg"></div></div>
+        </div>
+        <div class="car-preview" id="drive-car-preview" aria-live="polite"></div>
+      </div>
+      <h3>Pick a track</h3>
+      <div class="track-grid" id="drive-tracks"></div>
+      <button class="go" id="drive-go">🕹️ Drive Selected Track</button>
+      <p class="kbhint">In the window — <b>F</b> effects menu · <b>1–0</b> toggle FX (smoke · skids · dust · sparks · drift meter · camera · streaks) · <b>G</b> day/dusk/night · <b>V</b> all on/off · <b>B</b> beams · <b>Tab</b> dashboard · <b>M</b> mute</p>
+
+      <div class="divider">or generate one</div>
+      <div class="row">
+        <div class="field"><label>Archetype</label><div id="gen-style" class="seg"></div></div>
+        <div class="field"><label>Difficulty <b id="gen-diff-v">0.50</b></label>
+          <input type="range" id="gen-diff" min="0" max="1" step="0.05" value="0.5"></div>
+        <div class="field"><label>Length <b id="gen-len-v">1200</b> m</label>
+          <input type="range" id="gen-len" min="600" max="2000" step="50" value="1200"></div>
+      </div>
+      <button class="go ghost" id="drive-gen-go">🛠️ Drive Generated Track</button>
+    </section>
+
+    <!-- TRAIN -->
+    <section class="panel" id="tab-train">
+      <div class="section-title">
+        <div>
+          <span class="eyebrow">Training Deck</span>
+          <h2>Policy Development</h2>
+        </div>
+      </div>
+      <section class="ring-lane" id="ring-lane">
+        <div class="ring-head">
+          <div>
+            <div class="eyebrow">Nordschleife PPO Specialist</div>
+            <h2>Nürburgring Ring Trainer</h2>
+          </div>
+          <div class="ring-badges">
+            <span class="chip">20.832 km</span>
+            <span class="chip">real elevation</span>
+            <span class="chip">Mazda 787B</span>
+          </div>
+        </div>
+        <div class="ring-grid">
+          <div class="field"><label>Iterations <b id="ring-iv">8000</b></label>
+            <input type="range" id="ring-iters" min="200" max="50000" step="200" value="8000"></div>
+          <div class="field"><label>Workers <b id="ring-wv">8</b></label>
+            <input type="range" id="ring-workers" min="1" max="8" step="1" value="8"></div>
+          <div class="field"><label>Vector envs <b id="ring-ev">8</b></label>
+            <input type="range" id="ring-envs" min="1" max="32" step="1" value="8"></div>
+          <div class="field"><label>Plateau patience <b id="ring-patv">850</b></label>
+            <input type="range" id="ring-patience" min="200" max="2500" step="50" value="850"></div>
+          <div class="field"><label>Reseed tries <b id="ring-mrv">6</b></label>
+            <input type="range" id="ring-maxrestarts" min="0" max="10" step="1" value="6"></div>
+          <div class="field"><label>Run name</label>
+            <input id="ring-out" value="nordschleife_787b_ppo.pt" autocomplete="off"></div>
+          <div class="field"><label>Continue / watch checkpoint</label>
+            <select id="ring-ck"></select></div>
+        </div>
+        <div class="ring-actions">
+          <button class="go" id="ring-train">Start Ring PPO</button>
+          <button class="go ghost" id="ring-live">Live 2D Trainer</button>
+          <button class="go ghost" id="ring-continue">Continue Best</button>
+          <button class="go ghost" id="ring-watch">Watch Best 2D</button>
+          <button class="go ghost" id="ring-diagnose">Diagnose Best</button>
+        </div>
+      </section>
+      <div class="train-modes" id="train-modes" role="tablist" aria-label="Training mode"></div>
+      <div class="train-cards" id="train-cards"></div>
+    </section>
+
+    <!-- RING RACE -->
+    <section class="panel" id="tab-ringrace">
+      <div class="section-title">
+        <div>
+          <span class="eyebrow">Dedicated 787B Nordschleife Pipeline</span>
+          <h2>Ring Race</h2>
+        </div>
+        <div class="ring-badges">
+          <span class="chip">20.832 km</span>
+          <span class="chip">real Ring elevation</span>
+          <span class="chip">separate PPO path</span>
+        </div>
+      </div>
+
+      <div class="ring-race-layout">
+        <section class="ring-race-card">
+          <div class="ring-card-head">
+            <div><span class="eyebrow">Training Section</span><h3>Survive → Fast → Attack</h3></div>
+            <span class="chip">Mazda 787B</span>
+          </div>
+          <div class="ring-grid">
+            <div class="field"><label>Stage</label><div id="rr-stage" class="seg"></div></div>
+            <div class="field"><label>Iterations <b id="rr-iv">8000</b></label>
+              <input type="range" id="rr-iters" min="1" max="50000" step="100" value="8000"></div>
+            <div class="field"><label>Workers <b id="rr-wv">8</b></label>
+              <input type="range" id="rr-workers" min="1" max="8" step="1" value="8"></div>
+            <div class="field"><label>Vector envs <b id="rr-ev">8</b></label>
+              <input type="range" id="rr-envs" min="1" max="32" step="1" value="8"></div>
+            <div class="field"><label>Plateau patience <b id="rr-patv">850</b></label>
+              <input type="range" id="rr-patience" min="0" max="2500" step="50" value="850"></div>
+            <div class="field"><label>Reseed tries <b id="rr-mrv">6</b></label>
+              <input type="range" id="rr-maxrestarts" min="0" max="10" step="1" value="6"></div>
+            <div class="field"><label>Anneal</label><div id="rr-anneal" class="seg"></div></div>
+            <div class="field"><label>Resume checkpoint</label>
+              <select id="rr-resume"></select></div>
+            <div class="field"><label>Output checkpoint</label>
+              <input id="rr-out" value="ring_787b_survive.pt" autocomplete="off"></div>
+          </div>
+          <div class="ring-elevation-line">Elevation mode: <b>Real Ring Elevation</b></div>
+          <div class="ring-actions ring-race-actions">
+            <button class="go" id="rr-start-survive">Start Survival</button>
+            <button class="go" id="rr-start-fast">Start Fast</button>
+            <button class="go" id="rr-start-attack">Start Attack</button>
+            <button class="go" id="rr-start-auto">Start Auto Pipeline</button>
+            <button class="go ghost" id="rr-continue">Continue Current Stage</button>
+            <button class="go ghost" id="rr-live">Live Training Viewer</button>
+            <button class="go ghost" id="rr-stop">Stop Run</button>
+          </div>
+        </section>
+
+        <section class="ring-race-card">
+          <div class="ring-card-head">
+            <div><span class="eyebrow">Pipeline State</span><h3>Gate Board</h3></div>
+            <button class="mini" id="rr-refresh">refresh</button>
+          </div>
+          <div class="ring-state-grid" id="rr-state-grid">
+            <div><span>Current stage</span><b id="rr-state-stage">--</b></div>
+            <div><span>Active checkpoint</span><b id="rr-state-active">--</b></div>
+            <div><span>Best checkpoint</span><b id="rr-state-best">--</b></div>
+            <div><span>Last score</span><b id="rr-state-score">--</b></div>
+            <div><span>Stage gate</span><b id="rr-state-gate">--</b></div>
+            <div><span>Reseeds</span><b id="rr-state-reseed">--</b></div>
+            <div><span>Recommendation</span><b id="rr-state-rec">--</b></div>
+          </div>
+          <div class="ring-mini-metrics" id="rr-mini-metrics"></div>
+        </section>
+
+        <section class="ring-race-card ring-review-card">
+          <div class="ring-card-head">
+            <div><span class="eyebrow">Watch And Diagnostics Section</span><h3>Judge The Brain</h3></div>
+            <span class="chip">2D viewer</span>
+          </div>
+          <div class="ring-grid">
+            <div class="field"><label>Ring checkpoint</label>
+              <select id="rr-watch-ck"></select></div>
+            <div class="field"><label>Latest diagnostic folder</label>
+              <input id="rr-diag-path" value="none yet" readonly></div>
+            <div class="field"><label>summary.md</label>
+              <input id="rr-summary-path" value="none yet" readonly></div>
+            <div class="field"><label>README_FOR_AI.md</label>
+              <input id="rr-readme-path" value="none yet" readonly></div>
+          </div>
+          <div class="ring-actions ring-race-actions">
+            <button class="go" id="rr-watch-best">Watch Best 2D</button>
+            <button class="go ghost" id="rr-watch-selected">Watch Selected</button>
+            <button class="go ghost" id="rr-diagnose-best">Diagnose Best</button>
+            <button class="go ghost" id="rr-diagnose-selected">Diagnose Selected</button>
+          </div>
+          <div class="ring-state-grid ring-judgement" id="rr-judgement">
+            <div><span>Best clean lap</span><b id="rr-best-lap">--</b></div>
+            <div><span>Clean progress</span><b id="rr-clean-progress">--</b></div>
+            <div><span>Off-track seconds</span><b id="rr-offtrack">--</b></div>
+            <div><span>Invalid laps</span><b id="rr-invalid">--</b></div>
+            <div><span>Max Dottinger</span><b id="rr-dottinger">--</b></div>
+            <div><span>Termination counts</span><b id="rr-terms">--</b></div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- FABLE FIVE -->
+    <section class="panel" id="tab-fable">
+      <div class="fable-shell">
+        <div class="fable-bg" aria-hidden="true">
+          <svg class="fable-ring" viewBox="-30 -30 1060 845" preserveAspectRatio="xMidYMid meet">
+            <polyline id="fring" fill="none" points="621,581 610,588 599,594 588,600 577,607 566,613 555,620 545,626 534,633 523,639 512,646 501,652 490,659 479,665 468,672 457,678 447,686 438,695 430,705 422,714 413,724 406,735 400,746 391,754 382,763 375,774 363,774 352,781 341,774 332,765 325,755 315,752 308,763 301,774 291,781 279,785 267,783 256,777 244,772 231,770 219,770 207,772 198,763 192,752 182,744 176,734 163,732 151,728 148,716 140,707 130,699 120,692 109,684 99,676 91,667 83,657 75,647 68,637 62,625 62,613 65,601 71,589 73,577 76,564 77,552 76,539 75,526 72,514 68,502 63,490 58,478 54,466 50,454 45,443 37,432 27,424 16,419 5,413 0,402 9,394 21,390 33,385 44,380 54,371 65,365 74,356 83,347 93,339 103,331 111,321 117,310 122,298 124,286 124,273 133,264 139,254 135,243 143,234 154,226 164,219 172,209 181,200 191,192 200,183 208,173 213,161 211,149 208,136 199,129 187,127 176,120 167,112 171,101 183,96 194,89 203,80 206,68 212,57 221,49 234,47 245,52 256,59 266,67 272,78 282,75 292,70 305,69 318,69 331,69 343,73 355,72 362,62 363,49 369,39 381,35 393,31 405,27 417,25 430,23 442,20 454,15 464,7 475,0 487,0 491,11 491,24 490,37 490,49 490,62 493,74 499,86 508,95 518,103 529,108 541,113 553,118 566,118 578,118 591,119 603,121 616,123 628,126 641,129 653,134 663,141 673,149 684,155 695,161 708,161 720,157 731,151 741,144 751,136 762,129 774,126 787,125 799,123 811,123 812,135 802,143 792,151 782,158 771,165 772,175 781,168 790,159 801,153 813,150 826,147 838,145 849,139 859,131 866,120 867,108 870,96 877,86 889,82 900,88 912,91 924,95 934,103 942,113 953,117 965,122 973,132 980,143 978,155 972,166 969,178 976,189 988,193 998,200 999,212 1000,225 992,234 980,234 967,232 955,233 949,243 941,254 934,264 929,276 929,288 929,301 929,314 926,325 917,334 904,337 893,343 884,352 876,361 870,373 864,384 855,392 843,398 833,406 821,409 808,412 796,416 784,420 772,421 760,417 750,409 739,406 728,412 717,419 711,429 719,439 729,445 741,450 753,454 762,462 767,474 769,486 765,498 756,507 744,512 733,518 722,524 711,531 621,581"/>
+            <use href="#fring" class="fring-base"/>
+            <use href="#fring" class="fring-pulse"/>
+            <use href="#fring" class="fring-pulse fring-pulse2"/>
+          </svg>
+          <div class="fable-scan"></div>
+        </div>
+
+        <header class="fable-hero">
+          <div class="fable-hero-left">
+            <span class="fable-eyebrow" id="fb-program-eyebrow">Superhuman Nordschleife Program</span>
+            <h2 class="fable-title">FABLE<b>FIVE</b>
+              <span class="fable-title-sub">PPO N&uuml;rburgring Pipeline &middot; <span id="fb-edition-name">Mazda 787B</span></span></h2>
+            <div class="fable-hero-rule"></div>
+          </div>
+          <div class="fable-hero-chips">
+            <span class="fchip" id="fb-physics-chip">legacy speed envelope</span>
+            <span class="fchip">clean-lap rules</span>
+            <span class="fchip fchip-car">20.832 km &middot; real elevation</span>
+          </div>
+        </header>
+
+        <div class="fable-grid">
+          <section class="fable-card fable-train">
+            <div class="fable-card-head">
+              <div><span class="fable-kicker">Training Section</span>
+                <h3 class="fable-card-title">Stage Ladder</h3></div>
+              <span class="fchip">envelope-guided PPO</span>
+            </div>
+            <div class="field" style="margin-bottom:10px;">
+              <label>Edition <span style="font-weight:normal;opacity:0.7;">&mdash; car &amp; human benchmark</span></label>
+              <div id="fb-edition" class="seg"></div>
+            </div>
+            <div id="fb-stage" class="seg fable-ladder"></div>
+            <div class="fable-controls">
+              <div class="field"><label>Iterations <b id="fb-iv">6000</b></label>
+                <input type="range" id="fb-iters" min="1" max="50000" step="100" value="6000"></div>
+              <div class="field"><label>Workers <b id="fb-wv">64</b></label>
+                <input type="range" id="fb-workers" min="1" max="64" step="1" value="64"></div>
+              <div class="field"><label>Vector envs <b id="fb-ev">64</b></label>
+                <input type="range" id="fb-envs" min="1" max="64" step="1" value="64"></div>
+              <div class="field"><label>Plateau patience <b id="fb-patv">stage default</b></label>
+                <input type="range" id="fb-patience" min="0" max="2500" step="50" value="0"></div>
+              <div class="field"><label>Envelope scale <b id="fb-scalev">stage default</b></label>
+                <input type="range" id="fb-scale" min="0" max="1.2" step="0.02" value="0"></div>
+              <div class="field"><label>Resume checkpoint</label>
+                <select id="fb-resume"></select></div>
+              <div class="field" style="flex-direction:row;align-items:center;margin-top:10px;">
+                <input type="checkbox" id="fb-open-floor" style="width:auto;margin-right:8px;">
+                <label for="fb-open-floor" style="margin:0;cursor:pointer;">Open Best Floor <span style="font-weight:normal;opacity:0.7;">(allow saving slower experimental laps)</span></label>
+              </div>
+              <div class="field"><label>Output checkpoint</label>
+                <input id="fb-out" value="fable5_ring_foundation.pt" autocomplete="off"></div>
+            </div>
+            <p class="fable-note" id="fb-program-note">Warm start &mdash; foundation auto-transplants <b>ring_787b_best.pt</b> into the fable-v1 obs; each later stage resumes the previous stage&rsquo;s <b>&starf;best</b>.</p>
+            <div class="fable-actions">
+              <button class="fbtn recall" id="fb-return-telemetry">Return to Telemetry</button>
+              <button class="fbtn fbtn-primary" id="fb-start">Start Stage</button>
+              <button class="fbtn fbtn-primary" id="fb-auto">Run Auto Ladder</button>
+              <button class="fbtn" id="fb-scratch" title="Full auto ladder with no seed checkpoint — trains a brand-new driver from zero under the current rules. Files go to a separate *_scratch prefix; the champion is only replaced if the scratch run beats it.">Scratch Run</button>
+              <button class="fbtn" id="fb-continue">Continue Selected</button>
+              <button class="fbtn" id="fb-live">Live Training Viewer</button>
+              <button class="fbtn fbtn-danger" id="fb-stop">Stop Run</button>
+            </div>
+          </section>
+
+          <section class="fable-card fable-board">
+            <div class="fable-card-head">
+              <div><span class="fable-kicker">Pipeline State</span>
+                <h3 class="fable-card-title">Stage Board</h3></div>
+              <button class="fbtn fbtn-mini" id="fb-refresh">refresh</button>
+            </div>
+            <div class="fable-stats" id="fb-state-grid">
+              <div class="fable-stat"><span>Current stage</span><b id="fb-state-stage">--</b></div>
+              <div class="fable-stat"><span>Active checkpoint</span><b id="fb-state-active">--</b></div>
+              <div class="fable-stat"><span>Best checkpoint</span><b id="fb-state-best">--</b></div>
+              <div class="fable-stat"><span>Last metric</span><b id="fb-state-score">--</b></div>
+              <div class="fable-stat"><span>Clean sectors</span><b id="fb-state-clean">--</b></div>
+              <div class="fable-stat"><span>Pace ratio</span><b id="fb-state-pace">--</b></div>
+              <div class="fable-stat fable-stat-wide"><span>Recommendation</span><b id="fb-state-rec">--</b></div>
+            </div>
+            <div class="fable-stats" id="fb-faithful-gates" style="display:none;margin-top:12px;">
+              <div class="fable-stat"><span>TRAINING</span><b id="fb-gate-training">--</b></div>
+              <div class="fable-stat"><span>PHYSICS VALIDATED</span><b id="fb-gate-physics">--</b></div>
+              <div class="fable-stat"><span>ORACLE FEASIBLE</span><b id="fb-gate-oracle">--</b></div>
+              <div class="fable-stat"><span>SIM RECORD</span><b id="fb-gate-sim">--</b></div>
+              <div class="fable-stat"><span>ROBUST RECORD</span><b id="fb-gate-robust">--</b></div>
+            </div>
+            <div class="fable-mini" id="fb-mini-metrics"></div>
+            <div class="fable-card-head" style="margin-top:16px">
+              <div><span class="fable-kicker">Pit Wall</span>
+                <h3 class="fable-card-title">Decision Log</h3></div>
+            </div>
+            <div class="fable-pitlog" id="fb-pitlog"><i>no decisions yet</i></div>
+          </section>
+        </div>
+
+        <section class="fable-card fable-lap">
+          <div class="fable-card-head">
+            <div><span class="fable-kicker">Lap Board</span>
+              <h3 class="fable-card-title">Superhuman Watch</h3></div>
+            <span class="fchip">clean laps only count</span>
+          </div>
+          <div class="fable-times" id="fb-lapboard">
+            <div class="fable-time fable-time-hero"><span>Best clean lap</span><b class="ftime" id="fb-best-lap">--</b></div>
+            <div class="fable-time"><span>Theoretical &middot; envelope</span><b class="ftime" id="fb-theo-lap">--</b></div>
+            <div class="fable-time"><span>Bellof &rsquo;83 &middot; human bar</span><b class="ftime" id="fb-bellof">6:11.13</b></div>
+            <div class="fable-time"><span>919 Evo &middot; record contract</span><b class="ftime" id="fb-evo">5:19.546</b></div>
+            <div class="fable-time fable-time-status"><span>vs human bar</span><b id="fb-vs-human">--</b><i id="fb-superhuman">--</i></div>
+          </div>
+          <div class="fable-lapbar" aria-hidden="true">
+            <div class="fable-lapbar-track">
+              <div class="fable-lapbar-fill" id="fb-lapbar-fill"></div>
+              <div class="fable-mark" id="fb-mark-theo"><em>envelope</em></div>
+              <div class="fable-mark fable-mark-bellof" id="fb-mark-bellof"><em>superhuman</em></div>
+            </div>
+            <div class="fable-lapbar-ends"><span>pace</span><span>919 Evo record</span></div>
+          </div>
+          <div class="fable-watchrow">
+            <div class="field"><label>Fable checkpoint</label>
+              <select id="fb-watch-ck"></select></div>
+            <div class="field"><label>Latest diagnostic folder</label>
+              <input id="fb-diag-path" value="none yet" readonly></div>
+          </div>
+          <div class="fable-actions">
+            <button class="fbtn fbtn-primary" id="fb-watch-best">Watch Best 2D</button>
+            <button class="fbtn" id="fb-watch-selected">Watch Selected 2D</button>
+            <button class="fbtn fbtn-primary" id="fb-watch-best-3d">Watch Best 3D</button>
+            <button class="fbtn" id="fb-watch-selected-3d">Watch Selected 3D</button>
+            <button class="fbtn fbtn-primary" id="fb-watch-best-25d">Watch Best 2.5D</button>
+            <button class="fbtn" id="fb-watch-selected-25d">Watch Selected 2.5D</button>
+            <button class="fbtn" id="fb-diagnose-best">Diagnose Best</button>
+            <button class="fbtn" id="fb-diagnose-selected">Diagnose Selected</button>
+          </div>
+          <div class="fable-stats fable-stats-row" id="fb-judgement">
+            <div class="fable-stat"><span>Max progress</span><b id="fb-progress">--</b></div>
+            <div class="fable-stat"><span>Terminal rate</span><b id="fb-terminal">--</b></div>
+            <div class="fable-stat"><span>Off-track seconds</span><b id="fb-offtrack">--</b></div>
+            <div class="fable-stat"><span>Termination counts</span><b id="fb-terms">--</b></div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- FABLE GA (evolution baseline vs PPO) -->
+    <section class="panel" id="tab-fablega">
+      <div class="fable-shell">
+        <header class="fable-hero">
+          <div class="fable-hero-left">
+            <span class="fable-eyebrow">Rudimentary Baseline &middot; Same Task, Different Learner</span>
+            <h2 class="fable-title">FABLE<b>GA</b>
+              <span class="fable-title-sub">Genetic Algorithm vs PPO &middot; Mazda 787B &middot; Nordschleife</span></h2>
+            <div class="fable-hero-rule"></div>
+          </div>
+          <div class="fable-hero-chips">
+            <span class="fchip">same fable-v1 obs (68d)</span>
+            <span class="fchip">same reward + eval</span>
+            <span class="fchip fchip-car">evolution, not gradient</span>
+          </div>
+        </header>
+
+        <p class="fable-note" style="margin:0 0 14px;">
+          The GA evolves a population of MLP genomes through the <b>same <code>FableEnv</code></b>
+          PPO trains on &mdash; identical car, track, observation, control (steer/long/gear-offset),
+          reward, and the identical <code>FableEvaluator</code> lap eval. Only the optimiser differs.
+          Its <code>[eval-ga]</code> lap is directly comparable to Fable Five&rsquo;s <code>[eval-fable]</code>.
+          Run <b>one</b> headless job (parallel, strongest); <b>Follow Live Training</b> opens a cheap,
+          read-only window that drives the current champion as training improves it.
+        </p>
+
+        <div class="fable-grid">
+          <section class="fable-card fable-train">
+            <div class="fable-card-head">
+              <div><span class="fable-kicker">Training Section</span>
+                <h3 class="fable-card-title">Evolve the Population</h3></div>
+              <span class="fchip">elitism &middot; tournament &middot; crossover</span>
+            </div>
+            <div id="fga-stage" class="seg fable-ladder"></div>
+            <div class="fable-controls">
+              <div class="field"><label>Generations <b id="fga-gv">5000</b></label>
+                <input type="range" id="fga-gens" min="50" max="20000" step="50" value="5000"></div>
+              <div class="field"><label>Population <b id="fga-pv">96</b></label>
+                <input type="range" id="fga-pop" min="8" max="256" step="8" value="96"></div>
+              <div class="field"><label>Workers <b id="fga-wv">8</b></label>
+                <input type="range" id="fga-workers" min="1" max="64" step="1" value="8"></div>
+              <div class="field"><label>Wall-clock budget (min) <b id="fga-mv">off</b></label>
+                <input type="range" id="fga-minutes" min="0" max="720" step="10" value="0"></div>
+              <div class="field"><label>Eval every (gens) <b id="fga-ev">5</b></label>
+                <input type="range" id="fga-eval" min="1" max="50" step="1" value="5"></div>
+              <div class="field"><label>Hidden layers <span style="font-weight:normal;opacity:.7">(PPO parity = 128,128)</span></label>
+                <input id="fga-hidden" value="128,128" autocomplete="off"></div>
+              <div class="field"><label>Resume checkpoint</label>
+                <select id="fga-resume"></select></div>
+              <div class="field"><label>Output checkpoint</label>
+                <input id="fga-out" value="ga_787b_ring.npz" autocomplete="off"></div>
+            </div>
+            <p class="fable-note">Fixed generation count is the wrong knob for a fair fight &mdash; set a
+              <b>wall-clock budget</b> to match a PPO run and keep the generation cap high.
+              Evolution is embarrassingly parallel: raise <b>workers</b> + <b>population</b> headless.</p>
+            <div class="fable-actions">
+              <button class="fbtn fbtn-primary" id="fga-start">Start Evolving</button>
+              <button class="fbtn" id="fga-continue">Continue Selected</button>
+              <button class="fbtn" id="fga-live">Follow Live Training</button>
+              <button class="fbtn fbtn-danger" id="fga-stop">Stop Run</button>
+            </div>
+          </section>
+
+          <section class="fable-card fable-board">
+            <div class="fable-card-head">
+              <div><span class="fable-kicker">Evolution State</span>
+                <h3 class="fable-card-title">Champion Board</h3></div>
+              <button class="fbtn fbtn-mini" id="fga-refresh">refresh</button>
+            </div>
+            <div class="fable-stats" id="fga-state-grid">
+              <div class="fable-stat"><span>Generation</span><b id="fga-state-gen">--</b></div>
+              <div class="fable-stat"><span>Champion metric</span><b id="fga-state-metric">--</b></div>
+              <div class="fable-stat"><span>Best fitness</span><b id="fga-state-fit">--</b></div>
+              <div class="fable-stat"><span>Clean sectors</span><b id="fga-state-clean">--</b></div>
+              <div class="fable-stat"><span>Pace ratio</span><b id="fga-state-pace">--</b></div>
+              <div class="fable-stat"><span>Champion file</span><b id="fga-state-file">--</b></div>
+            </div>
+            <div class="fable-mini" id="fga-mini-metrics"></div>
+          </section>
+        </div>
+
+        <section class="fable-card fable-lap">
+          <div class="fable-card-head">
+            <div><span class="fable-kicker">Lap Board</span>
+              <h3 class="fable-card-title">GA vs the Benchmark</h3></div>
+            <span class="fchip">clean laps only count</span>
+          </div>
+          <div class="fable-times" id="fga-lapboard">
+            <div class="fable-time fable-time-hero"><span>Best clean lap (GA)</span><b class="ftime" id="fga-best-lap">--</b></div>
+            <div class="fable-time"><span>Theoretical &middot; envelope</span><b class="ftime" id="fga-theo-lap">--</b></div>
+            <div class="fable-time"><span>Bellof &rsquo;83 &middot; human bar</span><b class="ftime" id="fga-bellof">6:11.13</b></div>
+            <div class="fable-time fable-time-status"><span>vs human bar</span><b id="fga-vs-human">--</b><i id="fga-superhuman">--</i></div>
+          </div>
+          <div class="fable-lapbar" aria-hidden="true">
+            <div class="fable-lapbar-track">
+              <div class="fable-lapbar-fill" id="fga-lapbar-fill"></div>
+              <div class="fable-mark" id="fga-mark-theo"><em>envelope</em></div>
+              <div class="fable-mark fable-mark-bellof" id="fga-mark-bellof"><em>superhuman</em></div>
+            </div>
+            <div class="fable-lapbar-ends"><span>pace</span><span>919 Evo record</span></div>
+          </div>
+          <div class="fable-watchrow">
+            <div class="field"><label>GA champion checkpoint</label>
+              <select id="fga-watch-ck"></select></div>
+          </div>
+          <div class="fable-actions">
+            <button class="fbtn fbtn-primary" id="fga-watch-best">Watch Champion 2D</button>
+            <button class="fbtn" id="fga-watch-selected">Watch Selected</button>
+          </div>
+          <div class="fable-stats fable-stats-row" id="fga-judgement">
+            <div class="fable-stat"><span>Max progress</span><b id="fga-progress">--</b></div>
+            <div class="fable-stat"><span>Terminal rate</span><b id="fga-terminal">--</b></div>
+            <div class="fable-stat"><span>Genome size</span><b id="fga-genome">--</b></div>
+            <div class="fable-stat"><span>Population</span><b id="fga-popsize">--</b></div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- FABLE FIVE OBSERVATORY HUB -->
+    <section class="panel" id="tab-observatory">
+      <div class="observatory-hub">
+        <div class="observatory-hub-head">
+          <div>
+            <span class="eyebrow">Fable Five &middot; Python-authoritative playback</span>
+            <h2>3D Brain Observatory</h2>
+            <p>The browser renders streamed telemetry. Physics, sensors, normalization, RaceBox, policy inference, probes, and audio stay authoritative in Python.</p>
+          </div>
+          <span class="observatory-live" id="obs-hub-state">catalogue loading</span>
+        </div>
+        <div class="observatory-picker">
+          <div class="field"><label>Edition</label><div class="seg" id="obs-edition"></div></div>
+          <div class="field"><label>Resolved brain</label><b id="obs-brain">--</b></div>
+          <div class="field"><label>Compatibility</label><b id="obs-compat">--</b></div>
+          <div class="field"><label>Active follow</label><b id="obs-follow">boundary-safe</b></div>
+        </div>
+        <div class="observatory-truth" id="obs-warning">Validated Fable checkpoints only. Historical policies retain an amber warning.</div>
+        <div class="fable-actions" style="margin-top:16px;">
+          <div style="display:flex; gap:16px; flex-wrap:wrap; width:100%;">
+            <div style="flex:1; min-width:280px; padding:16px; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+              <h4 style="margin:0 0 8px 0; color:#fff; display:flex; align-items:center; gap:8px;">
+                <span>Fable Five Observatory</span>
+                <span class="chip" style="font-size:10px;">PYTHON TRUTH</span>
+              </h4>
+              <p style="font-size:12px; color:var(--pw-muted); margin-bottom:12px; line-height:1.4;">Authoritative Three.js telemetry playback with Brain X-Ray, replay, and camera controls.</p>
+              <div style="display:flex; gap:8px;">
+                <button class="go ghost" id="obs-open-replay" style="flex:1; padding:8px 12px; font-size:12px;">Open Best Replay</button>
+                <button class="go ghost" id="obs-open-follow" style="flex:1; padding:8px 12px; font-size:12px;">Follow Active</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WATCH -->
+    <section class="panel" id="tab-watch">
+      <div class="section-title">
+        <div>
+          <span class="eyebrow">Replay Bay</span>
+          <h2>Checkpoint Watch</h2>
+        </div>
+      </div>
+
+      <!-- car-separated garage for pipeline training runs -->
+      <div class="train-garage" id="train-garage">
+        <div class="tg-head">
+          <div><span class="eyebrow">Training Runs</span>
+            <h3 class="tg-title">Pipeline brains — separated by car</h3></div>
+          <span class="tg-lock">🔒 each brain replays with its own stamped car — no cross-contamination</span>
+        </div>
+        <div class="tg-groups" id="tg-groups"></div>
+      </div>
+
+      <h3 class="tg-manual-head">Any checkpoint · manual replay</h3>
+      <div class="garage-selector-row watch-selector-row">
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div class="row selector-controls">
+            <div class="field" style="min-width:420px"><label>Checkpoint to watch</label>
+              <select id="watch-ckpt"></select></div>
+            <div class="field"><label>Iteration</label><div id="watch-which" class="seg"></div></div>
+            <button class="mini" id="watch-refresh" style="align-self:flex-end">↻ refresh</button>
+          </div>
+          <div class="row selector-controls">
+            <div class="field"><label>Opponents <span style="color:#7b8190;font-weight:400">(competitive race brains only)</span></label>
+              <div style="display:flex;gap:4px">
+                <select id="watch-opp1" class="opp-select"><option value="none">none</option></select>
+                <select id="watch-opp2" class="opp-select"><option value="none">none</option></select>
+                <select id="watch-opp3" class="opp-select"><option value="none">none</option></select>
+              </div>
+            </div>
+            <div class="field"><label>Car Override <span style="color:#7b8190;font-weight:400">(defaults to trained car)</span></label>
+              <select id="watch-car-override"><option value="">auto</option></select>
+            </div>
+          </div>
+        </div>
+        <div class="car-preview watch-preview" id="watch-car-preview" aria-live="polite"></div>
+      </div>
+      <h3>On which track</h3>
+      <div class="track-grid" id="watch-tracks"></div>
+      <div style="display: flex; gap: 10px;">
+        <button class="go" id="watch-go">👁️ Watch (2D)</button>
+      </div>
+      <p class="kbhint">In the window — <b>F</b> effects menu · <b>1–0</b> toggle FX · <b>G</b> day/dusk/night · <b>V</b> all on/off · <b>B</b> beams · <b>Tab</b> dashboard · <b>M</b> mute. Drift smoke + skid marks show automatically while sliding.</p>
+    </section>
+
+    <!-- COMPETITIVE RACE -->
+    <section class="panel" id="tab-race">
+      <div class="section-title">
+        <div>
+          <span class="eyebrow">Race Control</span>
+          <h2>Multi-Car Evaluation</h2>
+        </div>
+      </div>
+      <div class="garage-selector-row watch-selector-row">
+        <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+          <h3>Select Competitors (2-5 Cars)</h3>
+          <p style="color:#7b8190;font-size:14px;margin-top:-8px;margin-bottom:8px">All cars race symmetrically. The camera dynamically follows the leader.</p>
+          <div class="row selector-controls">
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <select id="race-opp1" class="opp-select"><option value="none">none</option></select>
+              <select id="race-opp2" class="opp-select"><option value="none">none</option></select>
+              <select id="race-opp3" class="opp-select"><option value="none">none</option></select>
+              <select id="race-opp4" class="opp-select"><option value="none">none</option></select>
+              <select id="race-opp5" class="opp-select"><option value="none">none</option></select>
+            </div>
+            <button class="mini" id="race-refresh" style="margin-left:auto">↻ refresh</button>
+          </div>
+        </div>
+      </div>
+      <h3>On which track</h3>
+      <div class="track-grid" id="race-tracks"></div>
+      <div style="display: flex; gap: 10px;">
+        <button class="go" id="race-go">🏁 Start Race (2D)</button>
+        <button class="go" id="race-diagnose" style="background: var(--accent2);">Diagnose Race</button>
+      </div>
+    </section>
+
+    <!-- CHECKPOINTS -->
+    <section class="panel" id="tab-checkpoints">
+      <div class="ck-head section-title">
+        <div><span class="eyebrow">Checkpoint Garage</span><h2>Saved Policies</h2></div>
+        <button class="mini" id="ck-refresh">refresh</button>
+      </div>
+      <div id="ck-list" class="ck-list"></div>
+    </section>
+
+    <!-- DIAGNOSTICS -->
+    <section class="panel" id="tab-diagnostics">
+      <div class="ck-head section-title">
+        <div><span class="eyebrow">Telemetry Lab</span><h2>Diagnostic Exports</h2></div>
+        <button class="mini" id="diag-refresh">refresh</button>
+      </div>
+
+      <!-- FABLE FIVE BRAIN LAB -->
+      <div class="brainlab">
+        <div class="ck-head section-title">
+          <div><span class="eyebrow">Fable Five</span><h2 class="brainlab-title">Brain Lab</h2>
+            <p class="brainlab-sub">Run a Fable Five brain through the envelope-aware battery &mdash; two flying line laps, 16 sector starts, lap-closure drills &mdash; and read exactly what it does off the data.</p></div>
+          <button class="mini" id="brain-refresh">refresh</button>
+        </div>
+        <div class="brainlab-toolbar">
+          <div class="field"><label>Checkpoint</label>
+            <select id="brain-ck"></select></div>
+          <button class="go" id="brain-run">Run Diagnostics</button>
+          <span class="brain-status" id="brain-status"></span>
+        </div>
+        <div class="brainlab-split">
+          <div class="brain-reports" id="brain-reports"></div>
+          <div class="brain-report" id="brain-report"><i class="brain-empty">Select a report, or run diagnostics on a brain.</i></div>
+        </div>
+      </div>
+
+      <div class="ck-head section-title" style="margin-top:22px">
+        <div><span class="eyebrow">Generic</span><h2>Telemetry Exports</h2></div>
+      </div>
+      <div class="diagnostic-toolbar">
+        <button class="go ghost" id="diag-ring-go">Diagnose Ring Best</button>
+        <button class="go ghost" id="diag-watch-go">Watch Selected Checkpoint</button>
+      </div>
+      <div id="diag-list" class="diag-list"></div>
+    </section>
+
+    <!-- TRACKS -->
+    <section class="panel" id="tab-tracks">
+      <div class="section-title">
+        <div><span class="eyebrow">Circuit Atlas</span><h2>Track Library</h2></div>
+      </div>
+      <div class="track-grid big" id="all-tracks"></div>
+    </section>
+  </main>
+
+  <!-- FULL SCREEN TRAINING DASHBOARD — the Fable pit wall -->
+  <section class="training-dashboard hidden" id="dock">
+    <div class="tdx-bg" aria-hidden="true"><div class="tdx-scan"></div></div>
+
+    <div class="td-header" id="dock-head">
+      <div class="tdx-head-left">
+        <div class="td-status-box">
+          <div class="td-status-dot"></div>
+          <span class="td-status-text">RUNNING</span>
+        </div>
+        <div class="tdx-title-box">
+          <span class="fable-kicker">Pit Wall</span>
+          <h2 class="tdx-title">TRAINING<b>TELEMETRY</b></h2>
+        </div>
+        <div class="pw-rail" id="pw-rail"></div>
+        <div class="dock-tabs" id="dock-tabs"></div>
+      </div>
+      <div class="td-controls">
+        <button class="fbtn fbtn-mini" id="dock-toggle">Exit Telemetry</button>
+        <button class="fbtn fbtn-mini fbtn-danger" id="dock-stop">■ Stop Run</button>
+      </div>
+    </div>
+
+    <!-- the chase -->
+    <!-- LINEAGE WALL — race / drift / hybrid runs. The .pw-* panels below are
+         the Nordschleife ring instrument and are hidden for these runs. -->
+    <div id="lineage-wall" hidden>
+      <div class="lw-head">
+        <span class="lw-kicker" id="lw-kicker">Lineage</span>
+        <span class="lw-title" id="lw-title">—</span>
+        <span class="lw-sub" id="lw-sub"></span>
+      </div>
+      <div class="lw-verdict" id="lw-verdict" data-tone="idle">Waiting for a run.</div>
+
+      <section class="lw-panel">
+        <div class="lw-ph">Score decomposition</div>
+        <div id="lw-score"></div>
+      </section>
+
+      <section class="lw-panel">
+        <div class="lw-ph">Objective frontier</div>
+        <div class="lw-chart tall" id="lw-frontier"></div>
+      </section>
+
+      <section class="lw-panel wide">
+        <div class="lw-ph">Deterministic eval <span class="lw-cap">score · lap · style</span></div>
+        <div class="lw-chart" id="lw-objective"></div>
+      </section>
+
+      <section class="lw-panel">
+        <div class="lw-ph">Curriculum <span class="lw-cap" id="lw-curriculum-cap"></span></div>
+        <div class="lw-chart short" id="lw-curriculum"></div>
+      </section>
+
+      <section class="lw-panel">
+        <div class="lw-ph">Optimizer health <span class="lw-cap" id="lw-health-cap"></span></div>
+        <div class="lw-chart short" id="lw-entropy"></div>
+        <div class="lw-chart short" id="lw-loss"></div>
+      </section>
+
+      <section class="lw-panel wide">
+        <div class="lw-ph">Run state</div>
+        <div class="lw-state" id="lw-state"></div>
+      </section>
+    </div>
+
+    <section class="pw-panel pw-chase" data-accent="violet">
+      <div>
+        <div class="pw-cap" id="pw-gap-cap">Gap to Bellof &middot; 6:11.13</div>
+        <div class="pw-delta-big num" id="pw-gap">--</div>
+        <div class="pw-delta-to" id="pw-gap-to">&#9672; waiting for a banked lap</div>
+      </div>
+      <div class="pw-axis pw-chart" id="pw-axis"></div>
+      <div class="pw-bestcard">
+        <div class="pw-cap">Banked best lap</div>
+        <div class="pw-lap num" id="pw-best-lap">--</div>
+        <div class="pw-meta" id="pw-best-meta"></div>
+      </div>
+    </section>
+
+    <!-- main grid -->
+    <div class="pw-maingrid">
+      <div class="pw-col">
+        <section class="pw-panel" data-accent="red">
+          <div class="pw-ph"><span class="pw-chip" style="background:var(--pw-red);color:var(--pw-red)"></span>Circuit &mdash; failure heat
+            <span class="pw-sub">20.83 km &middot; 16 sectors</span></div>
+          <div class="pw-mapwrap" id="pw-mapwrap"></div>
+          <div class="pw-maplegend">
+            <span><b style="background:var(--pw-green);color:var(--pw-green)"></b>clean flow</span>
+            <span><b style="background:var(--pw-amber);color:var(--pw-amber)"></b>heat building</span>
+            <span><b style="background:var(--pw-red);color:var(--pw-red)"></b>death zone &middot; agitated</span>
+          </div>
+        </section>
+        <section class="pw-panel pw-tower" data-accent="violet">
+          <div class="pw-ph"><span class="pw-chip" style="background:var(--pw-violet);color:var(--pw-violet)"></span>Sector tower
+            <span class="pw-sub">hover &#8674; map</span></div>
+          <table id="pw-tower" aria-label="per-sector results">
+            <thead><tr><th>S</th><th>Name</th><th>Pace</th><th></th><th>Heat</th><th>State</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </section>
+      </div>
+
+      <div class="pw-col">
+        <section class="pw-panel" data-accent="green">
+          <div class="pw-ph"><span class="pw-chip" style="background:var(--pw-green);color:var(--pw-green)"></span>Lap telemetry
+            <span class="pw-sub" id="chart-stats-perf"></span></div>
+          <div class="td-chart-container"><canvas id="chart-canvas"></canvas></div>
+        </section>
+        <section class="pw-panel" data-accent="red">
+          <div class="pw-ph"><span class="pw-chip" style="background:var(--pw-red);color:var(--pw-red)"></span>Network health
+            <span class="pw-sub" id="chart-stats-health"></span></div>
+          <div class="td-chart-container"><canvas id="chart-canvas-health"></canvas></div>
+        </section>
+        <section class="pw-panel pw-chart" data-accent="violet">
+          <div class="pw-ph"><span class="pw-chip" style="background:var(--pw-violet);color:var(--pw-violet)"></span>Eval metric &mdash; this run
+            <span class="pw-sub">deterministic pit-log evals &middot; flags = pit calls</span></div>
+          <div id="pw-evalchart"></div>
+        </section>
+        <section class="pw-panel" data-accent="cyan">
+          <div class="pw-ph"><span class="pw-chip" style="background:var(--pw-cyan);color:var(--pw-cyan)"></span>Optimiser channels
+            <span class="pw-sub">live train log</span></div>
+          <div class="pw-smgrid" id="pw-ppo"></div>
+        </section>
+        <section class="pw-panel pw-chart" data-accent="amber">
+          <div class="pw-ph"><span class="pw-chip" style="background:var(--pw-amber);color:var(--pw-amber)"></span>Calm ladder &amp; envelope scale
+            <span class="pw-sub">lr per pit call &middot; scale per segment</span></div>
+          <div id="pw-ladders"></div>
+        </section>
+      </div>
+
+      <div class="pw-col right">
+        <section class="pw-panel pw-observatory" data-accent="cyan">
+          <div class="pw-ph"><span class="pw-chip" style="background:var(--pw-cyan);color:var(--pw-cyan)"></span>Brain Observatory
+            <span class="pw-sub">full-page GPU view &middot; no embedded canvas</span></div>
+          <div class="pw-observatory-card">
+            <b id="pw-observatory-edition">selected Fable edition</b>
+            <span>Open the authoritative 3D brain view in its own page. Training telemetry remains lightweight here.</span>
+            <button class="fbtn fbtn-mini" id="pw-open-observatory">Open Observatory</button>
+          </div>
+        </section>
+        <section class="pw-panel" data-accent="green">
+          <div class="pw-ph"><span class="pw-chip" style="background:var(--pw-green);color:var(--pw-green)"></span>Gates
+            <span class="pw-sub">healthy &middot; mastery</span></div>
+          <div id="pw-gates"></div>
+          <div class="pw-verdict" id="pw-verdict">&#9647; no eval yet</div>
+        </section>
+        <section class="pw-panel" data-accent="amber">
+          <div class="pw-ph"><span class="pw-chip" style="background:var(--pw-amber);color:var(--pw-amber)"></span>Pit levers</div>
+          <div class="pw-levers" id="pw-levers"></div>
+        </section>
+        <section class="pw-panel" data-accent="red">
+          <div class="pw-ph"><span class="pw-chip" style="background:var(--pw-red);color:var(--pw-red)"></span>Pit wall feed
+            <span class="pw-sub">race control messages</span></div>
+          <div class="pw-feed" id="pw-feed"></div>
+        </section>
+        <section class="pw-panel" data-accent="violet">
+          <div class="pw-ph"><span class="pw-chip" style="background:var(--pw-violet);color:var(--pw-violet)"></span>Garage &mdash; hall of fame</div>
+          <div class="pw-garage" id="pw-garage"></div>
+        </section>
+      </div>
+    </div>
+
+    <!-- brain lab -->
+    <section class="pw-panel pw-lab" data-accent="cyan">
+      <div class="pw-ph"><span class="pw-chip" style="background:var(--pw-cyan);color:var(--pw-cyan)"></span>Brain lab &mdash; banked-best telemetry
+        <span class="pw-sub">drag to scrub &middot; cursor mirrors on circuit map</span></div>
+      <div id="pw-labstrip"></div>
+      <div class="pw-labmeta" id="pw-labmeta"></div>
+    </section>
+
+    <div class="pw-beh" id="pw-beh"></div>
+
+    <!-- session feed -->
+    <section class="pw-panel" data-accent="amber">
+      <div class="pw-ph"><span class="pw-chip" style="background:var(--pw-amber);color:var(--pw-amber)"></span>Session feed &mdash; live log
+        <span class="pw-sub"><span class="lg-pit">PIT</span> <span class="lg-eval">EVAL</span>
+          <span class="lg-best">BEST</span> <span class="lg-gate">GATE</span>
+          <span class="lg-warn">ALERT</span></span></div>
+      <pre class="console" id="console">Launch something to see live output&hellip;</pre>
+    </section>
+
+  </section>
+
+  <script src="/static/charts.js"></script>
+  <script src="/static/app.js"></script>
+  <script src="/static/pitwall.js"></script>
+  <script src="/static/lineage.js"></script>
+  <script src="/static/dock-router.js"></script>
+  <script src="/static/nav.js"></script>
+</body>
+</html>
