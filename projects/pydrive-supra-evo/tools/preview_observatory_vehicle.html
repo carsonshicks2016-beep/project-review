@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Observatory Vehicle QA</title>
+  <style>
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: radial-gradient(circle at 50% 30%, #dce4e7, #7f8d91 55%, #33393b); }
+    canvas { display: block; width: 100%; height: 100%; }
+    #label { position: fixed; left: 28px; top: 24px; padding: 10px 13px; color: #f4f5ed; background: #111719d9; border-left: 3px solid #d8ff3e; font: 600 13px/1.35 system-ui,sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/observatory/node_modules/three/build/three.module.js",
+        "three/addons/": "/observatory/node_modules/three/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="label">Vehicle QA</div>
+  <script type="module">
+    import * as THREE from "three";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+    const query = new URLSearchParams(location.search);
+    const car = query.get("car") || "mazda787b";
+    const view = query.get("view") || "front3q";
+    const root = "/observatory/public/assets/observatory/vehicles";
+    const manifest = await fetch(`${root}/${car}/asset_manifest.json`).then((response) => response.json());
+    document.querySelector("#label").textContent = `${manifest.display_name || car} · ${view}`;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.92;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.append(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x89979b, 11, 20);
+    const camera = new THREE.PerspectiveCamera(34, innerWidth / innerHeight, 0.05, 60);
+    const positions = {
+      front: [6.4, 1.42, 0],
+      rear: [-6.4, 1.48, 0],
+      side: [0.0, 1.35, -6.5],
+      front3q: [5.25, 1.75, -4.2],
+      rear3q: [-5.25, 1.72, 4.2],
+      top: [2.0, 7.5, -3.0],
+    };
+    camera.position.fromArray(positions[view] || positions.front3q);
+    camera.lookAt(0, 0.43, 0);
+
+    scene.add(new THREE.HemisphereLight(0xe9f4ff, 0x292e29, 1.65));
+    const key = new THREE.DirectionalLight(0xffffff, 3.25);
+    key.position.set(4.5, 8, -5.5);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.camera.left = -6;
+    key.shadow.camera.right = 6;
+    key.shadow.camera.top = 5;
+    key.shadow.camera.bottom = -5;
+    scene.add(key);
+    const rim = new THREE.DirectionalLight(0x9fc8ff, 2.1);
+    rim.position.set(-5, 4, 6);
+    scene.add(rim);
+    const warm = new THREE.DirectionalLight(0xffc19b, 1.05);
+    warm.position.set(3, 2, 5);
+    scene.add(warm);
+
+    const ground = new THREE.Mesh(
+      new THREE.CircleGeometry(9, 96),
+      new THREE.MeshStandardMaterial({ color: 0x252a2b, roughness: 0.92, metalness: 0.02 }),
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(3.0, 3.03, 128),
+      new THREE.MeshBasicMaterial({ color: 0xaeb9b7, transparent: true, opacity: 0.34 }),
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.003;
+    scene.add(ring);
+
+    const gltf = await new GLTFLoader().loadAsync(`${root}/${car}/${manifest.entry_glb}`);
+    const basis = new THREE.Group();
+    basis.rotation.x = -Math.PI / 2;
+    gltf.scene.traverse((object) => {
+      if (!object.isMesh) return;
+      object.castShadow = true;
+      object.receiveShadow = true;
+      const source = object.material;
+      if (source?.map) source.map.colorSpace = THREE.SRGBColorSpace;
+    });
+    basis.add(gltf.scene);
+    scene.add(basis);
+
+    renderer.setAnimationLoop(() => renderer.render(scene, camera));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    window.vehicleQa = { ready: true, car, view, manifest };
+  </script>
+</body>
+</html>
